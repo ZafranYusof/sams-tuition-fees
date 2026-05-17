@@ -3,7 +3,6 @@
 **Module 4: Manage Student Tuition Fees**  
 By Zafran (CB23109)
 
-A standalone tuition fees management module extracted from the SAMs (Student Academic Management System) project.
 
 ## Features
 
