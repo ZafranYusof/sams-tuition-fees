@@ -1,0 +1,12 @@
+node_modules/
+.env
+.dart_tool/
+build/
+*.iml
+.idea/
+.gradle/
+local.properties
+*.apk
+*.aab
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
