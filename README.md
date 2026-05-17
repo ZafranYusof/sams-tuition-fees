@@ -48,7 +48,7 @@ flutter run
 
 | Role    | Email                        | Password    |
 |---------|------------------------------|-------------|
-| Student | zafran@student.umpsa.edu.my  | password123 |
+| Student | zafran@umpsa.edu.my  | password123 |
 | Admin   | admin@sams.edu.my            | admin123    |
 
 ## Project Structure
