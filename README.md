@@ -15,7 +15,6 @@ By Zafran (CB23109)
 
 - **Backend**: Node.js + Express + MongoDB
 - **Frontend**: Flutter (Dart) with Riverpod state management
-- **Design Theme**: Dark blue (#0A1929), Primary (#2196F3), Gold accent (#FFB74D)
 
 ## Setup
 
