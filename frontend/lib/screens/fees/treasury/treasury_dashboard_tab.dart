@@ -13,23 +13,54 @@ class TreasuryDashboardTab extends ConsumerStatefulWidget {
   ConsumerState<TreasuryDashboardTab> createState() => _TreasuryDashboardTabState();
 }
 
-class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> {
+class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> with TickerProviderStateMixin {
   List<dynamic> _fees = [];
   bool _loading = true;
+
+  late AnimationController _staggerController;
+  late AnimationController _progressController;
+  late List<Animation<double>> _staggerAnims;
 
   @override
   void initState() {
     super.initState();
+    _staggerController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
+    _progressController = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+    _staggerAnims = List.generate(4, (i) => CurvedAnimation(
+      parent: _staggerController,
+      curve: Interval(i * 0.15, 0.5 + i * 0.15, curve: Curves.easeOutCubic),
+    ));
     _load();
+  }
+
+  @override
+  void dispose() {
+    _staggerController.dispose();
+    _progressController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
     try {
       final fees = await ApiService.get('/fees');
       setState(() { _fees = fees; _loading = false; });
+      _staggerController.forward();
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (mounted) _progressController.forward();
+      });
     } catch (e) {
       setState(() => _loading = false);
     }
+  }
+
+  Widget _fadeSlide(Animation<double> anim, {required Widget child}) {
+    return AnimatedBuilder(
+      animation: anim,
+      builder: (_, __) => Opacity(
+        opacity: anim.value,
+        child: Transform.translate(offset: Offset(0, 14 * (1 - anim.value)), child: child),
+      ),
+    );
   }
 
   int get _totalStudents => _fees.map((f) => f['student']?['_id'] ?? f['student']).toSet().length;
@@ -209,7 +240,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> {
                 const SizedBox(height: 28),
 
                 // --- HEADER ---
-                Row(
+                _fadeSlide(_staggerAnims[0], child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(child: Column(
@@ -230,12 +261,12 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> {
                       child: const Icon(Icons.account_balance_rounded, color: SAMsTheme.primary, size: 20),
                     ),
                   ],
-                ),
+                )),
 
                 const SizedBox(height: 28),
 
                 // --- COLLECTION OVERVIEW ---
-                Container(
+                _fadeSlide(_staggerAnims[1], child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: t.cardColor,
@@ -266,22 +297,27 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: LinearProgressIndicator(
-                          value: _pct,
-                          minHeight: 4,
-                          backgroundColor: t.dividerColor,
-                          valueColor: const AlwaysStoppedAnimation<Color>(SAMsTheme.primary),
+                      // Animated progress bar
+                      AnimatedBuilder(
+                        animation: _progressController,
+                        builder: (_, __) => ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: _pct * _progressController.value,
+                            minHeight: 4,
+                            backgroundColor: t.dividerColor,
+                            valueColor: const AlwaysStoppedAnimation<Color>(SAMsTheme.primary),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
+                )),
 
                 const SizedBox(height: 16),
 
                 // --- STAT CARDS (2x2) ---
+                _fadeSlide(_staggerAnims[2], child: Column(children: [
                 Row(children: [
                   Expanded(child: _MetricTile(icon: Icons.people_outline_rounded, label: 'Students', value: '$_totalStudents')),
                   const SizedBox(width: 12),
@@ -293,6 +329,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> {
                   const SizedBox(width: 12),
                   Expanded(child: _MetricTile(icon: Icons.receipt_outlined, label: 'Total Fees', value: '${_fees.length}')),
                 ]),
+                ])),
 
                 const SizedBox(height: 28),
 
