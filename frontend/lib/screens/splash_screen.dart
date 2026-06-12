@@ -3,8 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../config/theme.dart';
 
 class SplashScreen extends StatefulWidget {
-  final Widget nextScreen;
-  const SplashScreen({super.key, required this.nextScreen});
+  final Widget? nextScreen;
+  const SplashScreen({super.key, this.nextScreen});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -23,15 +23,18 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _slide = Tween<double>(begin: 14, end: 0).animate(CurvedAnimation(parent: _controller, curve: const Interval(0, 0.85, curve: Curves.easeOutCubic)));
     _controller.forward();
 
-    Future.delayed(const Duration(milliseconds: 2400), () {
-      if (mounted) {
-        Navigator.pushReplacement(context, PageRouteBuilder(
-          pageBuilder: (_, __, ___) => widget.nextScreen,
-          transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
-          transitionDuration: const Duration(milliseconds: 500),
-        ));
-      }
-    });
+    // Only navigate if nextScreen is provided (legacy usage)
+    if (widget.nextScreen != null) {
+      Future.delayed(const Duration(milliseconds: 2400), () {
+        if (mounted) {
+          Navigator.pushReplacement(context, PageRouteBuilder(
+            pageBuilder: (_, __, ___) => widget.nextScreen!,
+            transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
+            transitionDuration: const Duration(milliseconds: 500),
+          ));
+        }
+      });
+    }
   }
 
   @override

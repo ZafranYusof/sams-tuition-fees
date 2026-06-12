@@ -25,8 +25,15 @@ class SAMsApp extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final themeState = ref.watch(themeProvider);
 
-    // After splash, land on login or home based on auth state
-    final destination = authState.isAuthenticated ? const MainShell() : const LoginScreen();
+    // Wire up 401 logout handler - removed, handled in ApiService directly
+
+    // Show splash while auth is initializing
+    Widget home;
+    if (authState.isInitializing) {
+      home = const SplashScreen();
+    } else {
+      home = authState.isAuthenticated ? const MainShell() : const LoginScreen();
+    }
 
     return MaterialApp(
       title: 'SAMs - Tuition Fees',
@@ -34,7 +41,7 @@ class SAMsApp extends ConsumerWidget {
       theme: SAMsLightTheme.theme,
       darkTheme: SAMsTheme.darkTheme,
       themeMode: themeState.isDark ? ThemeMode.dark : ThemeMode.light,
-      home: SplashScreen(nextScreen: destination),
+      home: home,
     );
   }
 }

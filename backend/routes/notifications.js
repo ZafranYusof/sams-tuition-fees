@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const { auth } = require('../middleware/auth');
+const { auth, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -16,41 +16,8 @@ const notificationSchema = new mongoose.Schema({
 
 const Notification = mongoose.models.Notification || mongoose.model('Notification', notificationSchema);
 
-// GET /api/notifications/:studentId
-router.get('/:studentId', auth, async (req, res) => {
-  try {
-    const notifications = await Notification.find({ studentId: req.params.studentId }).sort({ createdAt: -1 });
-    res.json({ notifications });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// PUT /api/notifications/:id/read
-router.put('/:id/read', auth, async (req, res) => {
-  try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid notification ID' });
-    }
-    await Notification.findByIdAndUpdate(req.params.id, { read: true });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// PUT /api/notifications/:studentId/read-all
-router.put('/:studentId/read-all', auth, async (req, res) => {
-  try {
-    await Notification.updateMany({ studentId: req.params.studentId }, { read: true });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// POST /api/notifications - create notification(s)
-router.post('/', auth, async (req, res) => {
+// POST /api/notifications - create notification(s) [admin only]
+router.post('/', auth, adminOnly, async (req, res) => {
   try {
     const { notifications } = req.body;
     if (Array.isArray(notifications) && notifications.length > 0) {
@@ -65,12 +32,13 @@ router.post('/', auth, async (req, res) => {
     const notif = await Notification.create({ studentId, title, message, type: type || 'reminder' });
     res.status(201).json({ success: true, notification: notif });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Create notification error:', err.message);
+    res.status(500).json({ error: 'Failed to create notification' });
   }
 });
 
-// POST /api/notifications/send-reminder - bulk send payment reminders to unpaid students
-router.post('/send-reminder', auth, async (req, res) => {
+// POST /api/notifications/send-reminder - bulk send payment reminders [admin only]
+router.post('/send-reminder', auth, adminOnly, async (req, res) => {
   try {
     const { studentIds, message } = req.body;
     if (!Array.isArray(studentIds) || studentIds.length === 0) {
@@ -86,7 +54,64 @@ router.post('/send-reminder', auth, async (req, res) => {
     const created = await Notification.insertMany(notifications);
     res.status(201).json({ success: true, count: created.length });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Send reminder error:', err.message);
+    res.status(500).json({ error: 'Failed to send reminders' });
+  }
+});
+
+// PUT /api/notifications/read-all/:studentId - mark all as read (specific path to avoid conflict)
+router.put('/read-all/:studentId', auth, async (req, res) => {
+  try {
+    // Authorization: only own notifications or admin
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id);
+    if (user.studentId !== req.params.studentId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    await Notification.updateMany({ studentId: req.params.studentId }, { read: true });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Read-all error:', err.message);
+    res.status(500).json({ error: 'Failed to mark notifications as read' });
+  }
+});
+
+// PUT /api/notifications/:id/read - mark single as read
+router.put('/:id/read', auth, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid notification ID' });
+    }
+    const notif = await Notification.findById(req.params.id);
+    if (!notif) return res.status(404).json({ error: 'Notification not found' });
+    // Authorization: only own notification or admin
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id);
+    if (notif.studentId !== user.studentId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    await Notification.findByIdAndUpdate(req.params.id, { read: true });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Mark read error:', err.message);
+    res.status(500).json({ error: 'Failed to mark notification as read' });
+  }
+});
+
+// GET /api/notifications/:studentId - get notifications for student
+router.get('/:studentId', auth, async (req, res) => {
+  try {
+    // Authorization: only own notifications or admin
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id);
+    if (user.studentId !== req.params.studentId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    const notifications = await Notification.find({ studentId: req.params.studentId }).sort({ createdAt: -1 });
+    res.json({ notifications });
+  } catch (err) {
+    console.error('Get notifications error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
   }
 });
 

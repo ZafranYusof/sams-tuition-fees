@@ -25,7 +25,7 @@ class PaymentModel {
 
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
     return PaymentModel(
-      id: json['_id'] ?? '',
+      id: json['_id'] ?? json['id'] ?? '',
       studentId: json['student'] is Map ? json['student']['_id'] : (json['student'] ?? ''),
       feeId: json['fee'] is Map ? json['fee']['_id'] : (json['fee'] ?? ''),
       amount: (json['amount'] ?? 0).toDouble(),

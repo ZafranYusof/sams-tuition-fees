@@ -32,13 +32,40 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   void _register() {
+    final studentId = _studentIdController.text.trim();
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final faculty = _facultyController.text.trim();
+    final program = _programController.text.trim();
+
+    // Input validation
+    if (studentId.isEmpty || name.isEmpty || email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all required fields (Student ID, Name, Email, Password)'), backgroundColor: SAMsTheme.error),
+      );
+      return;
+    }
+    if (!email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid email address'), backgroundColor: SAMsTheme.error),
+      );
+      return;
+    }
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password must be at least 6 characters'), backgroundColor: SAMsTheme.error),
+      );
+      return;
+    }
+
     ref.read(authProvider.notifier).register(
-      _studentIdController.text.trim(),
-      _nameController.text.trim(),
-      _emailController.text.trim(),
-      _passwordController.text,
-      _facultyController.text.trim(),
-      _programController.text.trim(),
+      studentId,
+      name,
+      email,
+      password,
+      faculty,
+      program,
     );
   }
 

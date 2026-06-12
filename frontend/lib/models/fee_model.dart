@@ -53,7 +53,7 @@ class FeeModel {
 
   factory FeeModel.fromJson(Map<String, dynamic> json) {
     return FeeModel(
-      id: json['_id'] ?? '',
+      id: json['_id'] ?? json['id'] ?? '',
       studentId: json['student'] is Map ? json['student']['_id'] : (json['student'] ?? ''),
       semester: json['semester'] ?? 1,
       academicYear: json['academicYear'] ?? '',

@@ -1,5 +1,5 @@
-import 'dart:async';
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
@@ -18,6 +18,12 @@ class ApiService {
     };
   }
 
+  /// Handle 401 - clear token and signal re-login needed
+  static Future<void> _handleUnauthorized() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+  }
+
   static Future<dynamic> get(String endpoint) async {
     try {
       final response = await http.get(
@@ -25,6 +31,8 @@ class ApiService {
         headers: await _headers(),
       ).timeout(const Duration(seconds: 30));
       return _handleResponse(response);
+    } on TimeoutException {
+      throw Exception('Request timed out. Please check your connection.');
     } on Exception catch (e) {
       if (e.toString().contains('TimeoutException')) {
         throw Exception('Request timed out. Please check your connection.');
@@ -41,6 +49,8 @@ class ApiService {
         body: jsonEncode(body),
       ).timeout(const Duration(seconds: 30));
       return _handleResponse(response);
+    } on TimeoutException {
+      throw Exception('Request timed out. Please check your connection.');
     } on Exception catch (e) {
       if (e.toString().contains('TimeoutException')) {
         throw Exception('Request timed out. Please check your connection.');
@@ -57,6 +67,8 @@ class ApiService {
         body: jsonEncode(body),
       ).timeout(const Duration(seconds: 30));
       return _handleResponse(response);
+    } on TimeoutException {
+      throw Exception('Request timed out. Please check your connection.');
     } on Exception catch (e) {
       if (e.toString().contains('TimeoutException')) {
         throw Exception('Request timed out. Please check your connection.');
@@ -66,7 +78,23 @@ class ApiService {
   }
 
   static dynamic _handleResponse(http.Response response) {
-    final data = jsonDecode(response.body);
+    // Handle 401 - token expired or invalid
+    if (response.statusCode == 401) {
+      _handleUnauthorized();
+      throw Exception('Session expired. Please login again.');
+    }
+
+    // Try to parse JSON, handle non-JSON responses gracefully
+    dynamic data;
+    try {
+      data = jsonDecode(response.body);
+    } on FormatException {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {'message': 'Success'};
+      }
+      throw Exception('Server error. Please try again later.');
+    }
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return data;
     } else {

@@ -41,7 +41,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab> {
       final user = ref.read(authProvider).user;
       final sid = user?['studentId'] ?? user?['student_id'] ?? '';
       if (sid.isNotEmpty) {
-        await ApiService.put('/notifications/$sid/read-all', {});
+        await ApiService.put('/notifications/read-all/$sid', {});
         await _load();
       }
     } catch (_) {}
@@ -49,6 +49,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab> {
 
   Future<void> _markRead(String id) async {
     try {
+      if (id.isEmpty) return;
       await ApiService.put('/notifications/$id/read', {});
       await _load();
     } catch (_) {}
@@ -56,29 +57,66 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab> {
 
   int get _unreadCount => _alerts.where((a) => a['read'] == false).length;
 
+  IconData _typeIcon(String type) {
+    switch (type) {
+      case 'payment': return Icons.check_circle_outline_rounded;
+      case 'warning': return Icons.warning_amber_rounded;
+      case 'reminder': return Icons.notifications_none_rounded;
+      default: return Icons.info_outline_rounded;
+    }
+  }
+
+  Color _typeColor(String type) {
+    switch (type) {
+      case 'payment': return SAMsTheme.success;
+      case 'warning': return SAMsTheme.warning;
+      case 'reminder': return SAMsTheme.primary;
+      default: return SAMsTheme.textMuted;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Scaffold(appBar: AppBar(title: const Text('Alerts')), body: const Center(child: CircularProgressIndicator(color: SAMsTheme.primary)));
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: SAMsTheme.background,
+        appBar: AppBar(
+          backgroundColor: SAMsTheme.background,
+          elevation: 0,
+          title: const Text('Alerts', style: TextStyle(color: SAMsTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+        ),
+        body: const Center(child: CircularProgressIndicator(color: SAMsTheme.primary, strokeWidth: 2)),
+      );
+    }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Alerts')),
+      backgroundColor: SAMsTheme.background,
+      appBar: AppBar(
+        backgroundColor: SAMsTheme.background,
+        elevation: 0,
+        title: const Text('Alerts', style: TextStyle(color: SAMsTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+      ),
       body: RefreshIndicator(
         color: SAMsTheme.primary,
         onRefresh: _load,
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('$_unreadCount unread', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13)),
+                  Text('$_unreadCount unread', style: const TextStyle(color: SAMsTheme.textMuted, fontSize: 13)),
                   GestureDetector(
                     onTap: _unreadCount > 0 ? _markAllRead : null,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(8), border: Border.all(color: Theme.of(context).dividerColor)),
-                      child: const Text('Mark All Read', style: TextStyle(color: SAMsTheme.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                      decoration: BoxDecoration(
+                        color: SAMsTheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: SAMsTheme.border),
+                      ),
+                      child: Text('Mark All Read', style: TextStyle(color: _unreadCount > 0 ? SAMsTheme.primary : SAMsTheme.textMuted, fontSize: 12, fontWeight: FontWeight.w600)),
                     ),
                   ),
                 ],
@@ -87,42 +125,50 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab> {
             Expanded(
               child: _alerts.isEmpty
                   ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Icon(Icons.notifications_off_outlined, size: 48, color: Theme.of(context).textTheme.bodySmall?.color),
+                      const Icon(Icons.notifications_off_outlined, size: 40, color: SAMsTheme.textMuted),
                       const SizedBox(height: 12),
-                      Text('No notifications yet', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 14)),
+                      const Text('No notifications yet', style: TextStyle(color: SAMsTheme.textMuted, fontSize: 13)),
                     ]))
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                       itemCount: _alerts.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (_, i) {
                         final a = _alerts[i];
                         final isRead = a['read'] == true;
                         final type = a['type'] ?? 'info';
-                        final icon = type == 'payment' ? '✅' : (type == 'warning' ? '⚠️' : (type == 'reminder' ? '🔔' : 'ℹ️'));
+                        final icon = _typeIcon(type);
+                        final color = _typeColor(type);
                         return GestureDetector(
-                          onTap: !isRead ? () => _markRead(a['id'] ?? a['_id'] ?? '') : null,
+                          onTap: !isRead ? () => _markRead(a['_id']?.toString() ?? '') : null,
                           child: Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: isRead ? Theme.of(context).cardColor : Theme.of(context).cardColor,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: isRead ? Theme.of(context).dividerColor : SAMsTheme.primary.withOpacity(0.3)),
+                              color: SAMsTheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: isRead ? SAMsTheme.border : color.withOpacity(0.3)),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(icon, style: const TextStyle(fontSize: 24)),
+                                Container(
+                                  width: 34, height: 34,
+                                  decoration: BoxDecoration(
+                                    color: color.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(icon, color: color, size: 18),
+                                ),
                                 const SizedBox(width: 12),
                                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                  Text(a['title'] ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
+                                  Text(a['title'] ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: SAMsTheme.textPrimary)),
                                   const SizedBox(height: 4),
-                                  Text(a['message'] ?? '', style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color, height: 1.4)),
+                                  Text(a['message'] ?? '', style: const TextStyle(fontSize: 12, color: SAMsTheme.textSecondary, height: 1.4)),
                                   const SizedBox(height: 6),
-                                  Text((a['createdAt'] ?? a['created_at'])?.toString().substring(0, 10) ?? '', style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
+                                  Text((a['createdAt'] ?? a['created_at'])?.toString().substring(0, 10) ?? '', style: const TextStyle(fontSize: 11, color: SAMsTheme.textMuted)),
                                 ])),
                                 if (!isRead)
-                                  Container(width: 8, height: 8, margin: const EdgeInsets.only(top: 4), decoration: const BoxDecoration(color: SAMsTheme.primary, shape: BoxShape.circle)),
+                                  Container(width: 7, height: 7, margin: const EdgeInsets.only(top: 4), decoration: const BoxDecoration(color: SAMsTheme.primary, shape: BoxShape.circle)),
                               ],
                             ),
                           ),

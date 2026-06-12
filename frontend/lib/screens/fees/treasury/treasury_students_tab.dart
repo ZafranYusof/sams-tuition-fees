@@ -30,11 +30,45 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab> {
     }
   }
 
-  List<dynamic> get _filtered => _fees.where((f) {
-    final student = f['student'] ?? {};
+  /// Group fees by student and aggregate
+  List<Map<String, dynamic>> get _students {
+    final Map<String, Map<String, dynamic>> grouped = {};
+    for (var f in _fees) {
+      final student = f['student'] ?? {};
+      final studentId = student is Map ? (student['_id'] ?? student['studentId'] ?? '') : (f['studentId'] ?? '');
+      if (studentId.isEmpty) continue;
+      
+      if (!grouped.containsKey(studentId)) {
+        grouped[studentId] = {
+          'student': student is Map ? student : {'_id': studentId, 'studentId': studentId},
+          'totalAmount': 0.0,
+          'paidAmount': 0.0,
+          'feeCount': 0,
+          'status': 'paid',
+        };
+      }
+      
+      grouped[studentId]!['totalAmount'] = (grouped[studentId]!['totalAmount'] as double) + ((f['totalAmount'] ?? 0) as num).toDouble();
+      grouped[studentId]!['paidAmount'] = (grouped[studentId]!['paidAmount'] as double) + ((f['paidAmount'] ?? 0) as num).toDouble();
+      grouped[studentId]!['feeCount'] = (grouped[studentId]!['feeCount'] as int) + 1;
+      
+      // Determine worst status
+      final feeStatus = f['status'] ?? 'unpaid';
+      final currentStatus = grouped[studentId]!['status'] as String;
+      if (feeStatus == 'unpaid' || feeStatus == 'overdue') {
+        grouped[studentId]!['status'] = 'unpaid';
+      } else if (feeStatus == 'partial' && currentStatus != 'unpaid') {
+        grouped[studentId]!['status'] = 'partial';
+      }
+    }
+    return grouped.values.toList();
+  }
+
+  List<Map<String, dynamic>> get _filtered => _students.where((s) {
+    final student = s['student'] ?? {};
     final q = _query.toLowerCase();
-    final matchQ = q.isEmpty || (student['name'] ?? '').toLowerCase().contains(q) || (student['studentId'] ?? '').toLowerCase().contains(q);
-    final status = f['status'] ?? 'unpaid';
+    final matchQ = q.isEmpty || (student['name'] ?? '').toString().toLowerCase().contains(q) || (student['studentId'] ?? '').toString().toLowerCase().contains(q);
+    final status = s['status'] ?? 'unpaid';
     final matchF = _filter == 'all' ||
         (_filter == 'paid' && status == 'paid') ||
         (_filter == 'partial' && status == 'partial') ||
@@ -82,11 +116,12 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab> {
                   itemCount: _filtered.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (_, i) {
-                    final f = _filtered[i];
-                    final student = f['student'] ?? {};
-                    final status = f['status'] ?? 'unpaid';
-                    final balance = ((f['totalAmount'] ?? 0) - (f['paidAmount'] ?? 0)).toDouble();
+                    final s = _filtered[i];
+                    final student = s['student'] ?? {};
+                    final status = s['status'] ?? 'unpaid';
+                    final balance = ((s['totalAmount'] ?? 0) as num).toDouble() - ((s['paidAmount'] ?? 0) as num).toDouble();
                     final isPaid = status == 'paid';
+                    final feeCount = s['feeCount'] ?? 0;
 
                     return Container(
                       padding: const EdgeInsets.all(14),
@@ -96,13 +131,13 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab> {
                         Container(
                           width: 42, height: 42,
                           decoration: BoxDecoration(color: SAMsTheme.primary.withOpacity(0.15), shape: BoxShape.circle),
-                          child: Center(child: Text((student['name'] ?? 'S')[0].toUpperCase(), style: const TextStyle(color: SAMsTheme.primary, fontWeight: FontWeight.w700, fontSize: 16))),
+                          child: Center(child: Text(((student['name'] ?? 'S') as String).isNotEmpty ? (student['name'] as String)[0].toUpperCase() : 'S', style: const TextStyle(color: SAMsTheme.primary, fontWeight: FontWeight.w700, fontSize: 16))),
                         ),
                         const SizedBox(width: 12),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(student['name'] ?? 'Unknown', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
                           const SizedBox(height: 2),
-                          Text('${student['studentId'] ?? ''} · ${student['program'] ?? ''}', style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
+                          Text('${student['studentId'] ?? ''} · ${student['program'] ?? ''} · $feeCount fee(s)', style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
                           const SizedBox(height: 6),
                           Row(children: [
                             Container(

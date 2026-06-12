@@ -39,7 +39,7 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> {
   double get _balance {
     double total = 0;
     for (var f in _fees) {
-      total += ((f['totalAmount'] ?? 0) - (f['paidAmount'] ?? 0)).toDouble();
+      total += ((f['totalAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble();
     }
     return total;
   }
@@ -48,7 +48,20 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> {
     if (_fees.isEmpty) return 0;
     if (_selFeeIndex == 0) return _balance;
     final fee = _fees[_selFeeIndex - 1];
-    return ((fee['totalAmount'] ?? 0) - (fee['paidAmount'] ?? 0)).toDouble();
+    return ((fee['totalAmount'] ?? 0) as num).toDouble() - ((fee['paidAmount'] ?? 0) as num).toDouble();
+  }
+
+  String get _deadlineStr {
+    for (var f in _fees) {
+      if (f['dueDate'] != null) {
+        final d = DateTime.tryParse(f['dueDate'].toString());
+        if (d != null) {
+          final months = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+          return '${d.day} ${months[d.month]} ${d.year}';
+        }
+      }
+    }
+    return 'N/A';
   }
 
   Future<void> _pay() async {
@@ -60,12 +73,12 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> {
       if (_selFeeIndex == 0) {
         // Pay all unpaid fees
         for (var f in _fees) {
-          final bal = ((f['totalAmount'] ?? 0) - (f['paidAmount'] ?? 0)).toDouble();
+          final bal = ((f['totalAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble();
           if (bal > 0) feesToPay.add({'id': f['_id'], 'amount': bal});
         }
       } else {
         final fee = _fees[_selFeeIndex - 1];
-        final bal = ((fee['totalAmount'] ?? 0) - (fee['paidAmount'] ?? 0)).toDouble();
+        final bal = ((fee['totalAmount'] ?? 0) as num).toDouble() - ((fee['paidAmount'] ?? 0) as num).toDouble();
         if (bal > 0) feesToPay.add({'id': fee['_id'], 'amount': bal});
       }
 
@@ -74,68 +87,83 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> {
         return;
       }
 
-      // For simplicity, pay the first fee (gateway creates one bill per fee)
-      final targetFee = feesToPay.first;
+      // Pay all fees sequentially
+      bool anySuccess = false;
+      String? lastTxnId;
       
-      if (_selMethod == 'fpx') {
-        // Toyyibpay FPX flow
-        final result = await ApiService.post('/payment/fpx/create', {
-          'feeId': targetFee['id'],
-          'amount': targetFee['amount'],
-          'description': 'UMPSA Tuition Fee Payment',
-          'bank': _selBank,
-        });
-        
-        final paymentUrl = result['paymentUrl'];
-        final billCode = result['billCode'];
-        
-        if (paymentUrl != null && mounted) {
-          // Open WebView for FPX payment
-          final success = await Navigator.push<bool>(context, MaterialPageRoute(
-            builder: (_) => _PaymentWebView(url: paymentUrl, title: 'FPX Payment'),
-          ));
+      for (final targetFee in feesToPay) {
+        if (_selMethod == 'fpx') {
+          // Toyyibpay FPX flow
+          final result = await ApiService.post('/payment/fpx/create', {
+            'feeId': targetFee['id'],
+            'amount': targetFee['amount'],
+            'description': 'UMPSA Tuition Fee Payment',
+            'bank': _selBank,
+          });
           
-          // Check payment status after returning
-          if (success == true || success == null) {
-            final status = await ApiService.get('/payment/fpx/status/$billCode');
-            if (status['status'] == 'success') {
-              setState(() {
-                _receipt = {'status': 'paid', 'amount': targetFee['amount'], 'txn_id': billCode, 'bank': _selBank};
-              });
+          final paymentUrl = result['paymentUrl'];
+          final billCode = result['billCode'];
+          
+          if (paymentUrl != null && mounted) {
+            // Open WebView for FPX payment
+            final success = await Navigator.push<bool>(context, MaterialPageRoute(
+              builder: (_) => _PaymentWebView(url: paymentUrl, title: 'FPX Payment'),
+            ));
+            
+            // Check payment status after returning
+            if (success == true || success == null) {
+              final status = await ApiService.get('/payment/fpx/status/$billCode');
+              if (status['status'] == 'success') {
+                anySuccess = true;
+                lastTxnId = billCode;
+              } else {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment pending or failed. Check history.'), backgroundColor: SAMsTheme.warning));
+                break; // Stop paying remaining fees if one fails
+              }
             } else {
-              if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment pending or failed. Check history.'), backgroundColor: SAMsTheme.warning));
+              break; // User cancelled
             }
           }
-        }
-      } else {
-        // Stripe Card flow (Checkout Session)
-        final result = await ApiService.post('/payment/card/create-intent', {
-          'feeId': targetFee['id'],
-          'amount': targetFee['amount'],
-        });
-        
-        final paymentUrl = result['paymentUrl'];
-        final sessionId = result['paymentIntentId'];
-        
-        if (paymentUrl != null && mounted) {
-          final success = await Navigator.push<bool>(context, MaterialPageRoute(
-            builder: (_) => _PaymentWebView(url: paymentUrl, title: 'Card Payment'),
-          ));
+        } else {
+          // Stripe Card flow (Checkout Session)
+          final result = await ApiService.post('/payment/card/create-intent', {
+            'feeId': targetFee['id'],
+            'amount': targetFee['amount'],
+          });
           
-          // Confirm payment status
-          if (success == true || success == null) {
-            final confirm = await ApiService.post('/payment/card/confirm', {'paymentIntentId': sessionId});
-            if (confirm['status'] == 'success') {
-              setState(() {
-                _receipt = {'status': 'paid', 'amount': targetFee['amount'], 'txn_id': sessionId, 'bank': 'Card'};
-              });
+          final paymentUrl = result['paymentUrl'];
+          final sessionId = result['paymentIntentId'];
+          
+          if (paymentUrl != null && mounted) {
+            final success = await Navigator.push<bool>(context, MaterialPageRoute(
+              builder: (_) => _PaymentWebView(url: paymentUrl, title: 'Card Payment'),
+            ));
+            
+            // Confirm payment status
+            if (success == true || success == null) {
+              final confirm = await ApiService.post('/payment/card/confirm', {'paymentIntentId': sessionId});
+              if (confirm['status'] == 'success') {
+                anySuccess = true;
+                lastTxnId = sessionId;
+              } else {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Card payment pending or failed.'), backgroundColor: SAMsTheme.warning));
+                break;
+              }
             } else {
-              if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Card payment pending or failed.'), backgroundColor: SAMsTheme.warning));
+              break; // User cancelled
             }
           }
         }
       }
+
+      if (anySuccess) {
+        setState(() {
+          _receipt = {'status': 'paid', 'amount': _amount, 'txn_id': lastTxnId ?? '', 'bank': _selMethod == 'fpx' ? _selBank : 'Card'};
+        });
+      }
       setState(() => _paying = false);
+      // Refresh fees after payment flow
+      await _load();
     } catch (e) {
       setState(() => _paying = false);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: SAMsTheme.error));
@@ -157,10 +185,10 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> {
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(color: SAMsTheme.error.withOpacity(0.1), borderRadius: BorderRadius.circular(14), border: Border.all(color: SAMsTheme.error.withOpacity(0.3))),
-            child: const Column(children: [
-              Text('⏰ Payment Deadline', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: SAMsTheme.accent)),
-              SizedBox(height: 4),
-              Text('30 June 2026', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: SAMsTheme.error)),
+            child: Column(children: [
+              const Text('⏰ Payment Deadline', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: SAMsTheme.accent)),
+              const SizedBox(height: 4),
+              Text(_deadlineStr, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: SAMsTheme.error)),
             ]),
           ),
 
@@ -169,7 +197,7 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> {
             _feeOption('Full Outstanding Balance', _balance, 0),
             ...List.generate(_fees.length, (i) {
               final f = _fees[i];
-              final bal = ((f['totalAmount'] ?? 0) - (f['paidAmount'] ?? 0)).toDouble();
+              final bal = ((f['totalAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble();
               final name = (f['items'] != null && (f['items'] as List).isNotEmpty) ? f['items'][0]['description'] ?? 'Semester ${f['semester']}' : 'Semester ${f['semester']}';
               return _feeOption(name, bal, i + 1);
             }),
@@ -271,7 +299,7 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> {
           Text('Payment Successful!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface)),
           const SizedBox(height: 24),
           _receiptRow('Receipt No.', _receipt!['txn_id']),
-          _receiptRow('Amount', 'RM ${(_receipt!['amount'] as double).toStringAsFixed(2)}'),
+          _receiptRow('Amount', 'RM ${((_receipt!['amount'] as num).toDouble()).toStringAsFixed(2)}'),
           _receiptRow('Bank', _receipt!['bank']),
           _receiptRow('Date', DateTime.now().toString().substring(0, 16)),
           const SizedBox(height: 24),
@@ -309,6 +337,8 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
   bool _loading = true;
   bool _done = false;
   bool _timeoutShown = false;
+  bool _hasError = false;
+  String _errorMessage = '';
   static const _timeoutDuration = Duration(minutes: 5);
 
   @override
@@ -318,8 +348,15 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(NavigationDelegate(
-        onPageStarted: (_) => setState(() => _loading = true),
+        onPageStarted: (_) => setState(() { _loading = true; _hasError = false; }),
         onPageFinished: (_) => setState(() => _loading = false),
+        onWebResourceError: (error) {
+          setState(() {
+            _hasError = true;
+            _loading = false;
+            _errorMessage = error.description;
+          });
+        },
         onNavigationRequest: (request) {
           // Intercept callback/deep link
           if (request.url.contains('samsapp://') || request.url.contains('/payment/success') || request.url.contains('/payment/failed')) {
@@ -383,6 +420,29 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
       body: Stack(children: [
         WebViewWidget(controller: _controller),
         if (_loading) const Center(child: CircularProgressIndicator(color: SAMsTheme.primary)),
+        if (_hasError) Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.wifi_off_rounded, size: 48, color: SAMsTheme.error),
+                const SizedBox(height: 16),
+                const Text('Network Error', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                Text(_errorMessage.isNotEmpty ? _errorMessage : 'Failed to load payment page. Please check your internet connection.', textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: SAMsTheme.textMuted)),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() { _hasError = false; _loading = true; });
+                    _controller.loadRequest(Uri.parse(widget.url));
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ]),
     );
   }

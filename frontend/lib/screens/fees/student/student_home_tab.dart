@@ -39,7 +39,6 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
   double get _balance => _totalDue - _totalPaid;
   double get _pct => _totalDue > 0 ? (_totalPaid / _totalDue).clamp(0.0, 1.0) : 0.0;
 
-  // Dynamic semester info from fee data
   String get _semester {
     if (_fees.isEmpty) return 'Sem 1, 2025/2026';
     final f = _fees.first;
@@ -48,7 +47,6 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
     return 'Sem $sem, $year';
   }
 
-  // Due date from earliest unpaid fee
   DateTime? get _dueDate {
     for (var f in _fees) {
       if ((f['status'] ?? '') != 'paid' && f['dueDate'] != null) {
@@ -65,11 +63,21 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
   }
 
   int get _week {
-    final start = DateTime(2026, 2, 9);
+    // Derive semester start from fee data, fallback to earliest fee createdAt
+    DateTime start = DateTime(2026, 2, 9); // default fallback
+    for (var f in _fees) {
+      if (f['semesterStart'] != null) {
+        final parsed = DateTime.tryParse(f['semesterStart'].toString());
+        if (parsed != null) { start = parsed; break; }
+      }
+      if (f['createdAt'] != null) {
+        final parsed = DateTime.tryParse(f['createdAt'].toString());
+        if (parsed != null && parsed.isBefore(start)) { start = parsed; }
+      }
+    }
     return (DateTime.now().difference(start).inDays ~/ 7 + 1).clamp(1, 16);
   }
 
-  // Last payment
   Map<String, dynamic>? get _lastPayment {
     if (_payments.isEmpty) return null;
     final successful = _payments.where((p) => p['status'] == 'success').toList();
@@ -88,24 +96,27 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
     final dueDateStr = _dueDate != null ? '${_dueDate!.day} ${_monthName(_dueDate!.month)} ${_dueDate!.year}' : 'N/A';
 
     return Scaffold(
+      backgroundColor: SAMsTheme.background,
       appBar: AppBar(
-        title: const Text('Tuition Fees'),
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
+        backgroundColor: SAMsTheme.background,
+        elevation: 0,
+        title: const Text('Tuition Fees', style: TextStyle(color: SAMsTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: SAMsTheme.textPrimary), onPressed: () => Navigator.pop(context)),
         actions: [
           Container(
-            margin: const EdgeInsets.only(right: 12),
+            margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: blocked ? SAMsTheme.error.withOpacity(0.15) : SAMsTheme.success.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: blocked ? SAMsTheme.error.withOpacity(0.3) : SAMsTheme.success.withOpacity(0.3)),
+              color: SAMsTheme.surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: blocked ? SAMsTheme.error.withOpacity(0.4) : SAMsTheme.success.withOpacity(0.4)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(width: 7, height: 7, decoration: BoxDecoration(color: blocked ? SAMsTheme.error : SAMsTheme.success, shape: BoxShape.circle)),
+                Container(width: 6, height: 6, decoration: BoxDecoration(color: blocked ? SAMsTheme.error : SAMsTheme.success, shape: BoxShape.circle)),
                 const SizedBox(width: 6),
-                Text(blocked ? 'Blocked' : 'Active', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: blocked ? SAMsTheme.error : SAMsTheme.success)),
+                Text(blocked ? 'Blocked' : 'Active', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: blocked ? SAMsTheme.error : SAMsTheme.success)),
               ],
             ),
           ),
@@ -115,198 +126,269 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
         color: SAMsTheme.primary,
         onRefresh: _load,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           children: [
-            // Header
-            Text('Hello, $studentId 👋', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface)),
-            const SizedBox(height: 2),
-            Text('$_semester · Week $_week', style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color)),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
 
-            // Dynamic warning based on status
+            // --- HEADER ---
+            const Text('Student', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: SAMsTheme.primary, letterSpacing: 1.2)),
+            const SizedBox(height: 4),
+            Text(studentId, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: SAMsTheme.textPrimary)),
+            const SizedBox(height: 4),
+            Text('$_semester  ·  Week $_week', style: const TextStyle(fontSize: 12, color: SAMsTheme.textMuted)),
+
+            const SizedBox(height: 20),
+
+            // --- WARNING BANNER ---
             if (_balance > 0 && daysLeft <= 30)
               Container(
-                margin: const EdgeInsets.only(bottom: 14),
-                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: (daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.accent).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: (daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.accent).withOpacity(0.3)),
+                  color: SAMsTheme.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border(left: BorderSide(color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.warning, width: 3)),
                 ),
-                child: Text(
-                  daysLeft <= 7
-                    ? '🚨  Payment overdue in $daysLeft days! Pay now to avoid penalties.'
-                    : '⚠️  Payment due in $daysLeft days. Pay before $dueDateStr.',
-                  style: TextStyle(color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.accent, fontSize: 12, fontWeight: FontWeight.w600),
-                ),
+                child: Row(children: [
+                  Icon(daysLeft <= 7 ? Icons.error_outline_rounded : Icons.schedule_rounded, color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.warning, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(
+                    daysLeft <= 7
+                      ? 'Payment overdue in $daysLeft days. Pay now to avoid penalties.'
+                      : 'Payment due in $daysLeft days. Pay before $dueDateStr.',
+                    style: TextStyle(color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.warning, fontSize: 12, fontWeight: FontWeight.w500),
+                  )),
+                ]),
               )
             else if (_week < 5 && _balance > 0)
               Container(
-                margin: const EdgeInsets.only(bottom: 14),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: SAMsTheme.accent.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: SAMsTheme.accent.withOpacity(0.3))),
-                child: const Text('⚠️  Pay before Week 5 to maintain academic access', style: TextStyle(color: SAMsTheme.accent, fontSize: 12, fontWeight: FontWeight.w600)),
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: SAMsTheme.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: const Border(left: BorderSide(color: SAMsTheme.warning, width: 3)),
+                ),
+                child: Row(children: [
+                  const Icon(Icons.info_outline_rounded, color: SAMsTheme.warning, size: 18),
+                  const SizedBox(width: 10),
+                  const Expanded(child: Text('Pay before Week 5 to maintain academic access', style: TextStyle(color: SAMsTheme.warning, fontSize: 12, fontWeight: FontWeight.w500))),
+                ]),
               ),
 
-            // Summary cards
-            Row(
-              children: [
-                Expanded(child: _SummaryCard(label: 'Total Due', value: _fmtRm(_totalDue), emoji: '💰', color: SAMsTheme.primary)),
-                const SizedBox(width: 10),
-                Expanded(child: _SummaryCard(label: 'Paid', value: _fmtRm(_totalPaid), emoji: '✅', color: SAMsTheme.success)),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(child: _SummaryCard(label: 'Balance', value: _fmtRm(_balance), emoji: '⏳', color: SAMsTheme.accent)),
-                const SizedBox(width: 10),
-                Expanded(child: _SummaryCard(label: 'Days Left', value: '$daysLeft', emoji: '📆', color: const Color(0xFFA855F7))),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Progress
+            // --- BALANCE OVERVIEW ---
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).dividerColor)),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: SAMsTheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: SAMsTheme.border),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Payment Progress', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w700, fontSize: 14)),
-                  const SizedBox(height: 10),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('${_fmtRm(_totalPaid)} paid', style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color)),
-                    Text('${(_pct * 100).toStringAsFixed(1)}%', style: const TextStyle(fontSize: 12, color: SAMsTheme.primary, fontWeight: FontWeight.w700)),
-                  ]),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Balance Due', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: SAMsTheme.textMuted)),
+                      Text('${(_pct * 100).toStringAsFixed(1)}% paid', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: SAMsTheme.primary)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(_fmtRm(_balance), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: _balance > 0 ? SAMsTheme.textPrimary : SAMsTheme.success)),
+                  const SizedBox(height: 4),
+                  Text('of ${_fmtRm(_totalDue)} total fees', style: const TextStyle(fontSize: 12, color: SAMsTheme.textMuted)),
+                  const SizedBox(height: 16),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      value: _pct,
+                      minHeight: 4,
+                      backgroundColor: SAMsTheme.surfaceLight,
+                      valueColor: AlwaysStoppedAnimation<Color>(_pct >= 1 ? SAMsTheme.success : SAMsTheme.primary),
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: _pct, minHeight: 8, backgroundColor: Theme.of(context).dividerColor, valueColor: AlwaysStoppedAnimation<Color>(_pct >= 1 ? SAMsTheme.success : SAMsTheme.primary))),
-                  const SizedBox(height: 8),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('RM 0', style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
-                    Text(_fmtRm(_totalDue), style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
-                  ]),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('${_fmtRm(_totalPaid)} paid', style: const TextStyle(fontSize: 11, color: SAMsTheme.textMuted)),
+                      Text(_fmtRm(_totalDue), style: const TextStyle(fontSize: 11, color: SAMsTheme.textMuted)),
+                    ],
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
 
-            // Fee breakdown
+            const SizedBox(height: 12),
+
+            // --- METRIC CARDS (2x2) ---
+            Row(children: [
+              Expanded(child: _MetricTile(icon: Icons.account_balance_wallet_outlined, label: 'Total Due', value: _fmtRm(_totalDue))),
+              const SizedBox(width: 10),
+              Expanded(child: _MetricTile(icon: Icons.check_circle_outline_rounded, label: 'Paid', value: _fmtRm(_totalPaid), accent: SAMsTheme.success)),
+            ]),
+            const SizedBox(height: 10),
+            Row(children: [
+              Expanded(child: _MetricTile(icon: Icons.hourglass_empty_rounded, label: 'Balance', value: _fmtRm(_balance), accent: _balance > 0 ? SAMsTheme.warning : SAMsTheme.success)),
+              const SizedBox(width: 10),
+              Expanded(child: _MetricTile(icon: Icons.calendar_today_rounded, label: 'Days Left', value: '$daysLeft', accent: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.primary)),
+            ]),
+
+            const SizedBox(height: 24),
+
+            // --- FEE BREAKDOWN ---
+            const Text('Fee Breakdown', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: SAMsTheme.textPrimary)),
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).dividerColor)),
+              decoration: BoxDecoration(
+                color: SAMsTheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: SAMsTheme.border),
+              ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Fee Breakdown', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w700, fontSize: 14)),
-                  const SizedBox(height: 12),
                   ..._fees.expand((fee) {
                     final items = (fee['items'] as List?) ?? [];
-                    return items.map((item) => Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor))),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(item['description'] ?? '', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
-                          Text('RM ${((item['amount'] ?? 0) as num).toStringAsFixed(2)}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
-                        ],
+                    return items.map((item) => item);
+                  }).toList().asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final item = entry.value;
+                    final total = _fees.expand((f) => (f['items'] as List?) ?? []).length;
+                    return Column(children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(child: Text(item['description'] ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: SAMsTheme.textPrimary))),
+                            Text('RM ${((item['amount'] ?? 0) as num).toStringAsFixed(2)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: SAMsTheme.textPrimary)),
+                          ],
+                        ),
                       ),
-                    ));
+                      if (i < total - 1) Container(height: 1, margin: const EdgeInsets.symmetric(horizontal: 16), color: SAMsTheme.border),
+                    ]);
                   }),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
 
-            // Last payment
-            if (_lastPayment != null)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).dividerColor)),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Last Payment', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w700, fontSize: 14)),
-                  const SizedBox(height: 12),
-                  Row(children: [
-                    Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(color: SAMsTheme.success.withOpacity(0.12), shape: BoxShape.circle),
-                      child: const Icon(Icons.check_circle_rounded, color: SAMsTheme.success, size: 22),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(_fmtRm(((_lastPayment!['amount'] ?? 0) as num).toDouble()), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface)),
-                      Text(_lastPayment!['paidAt'] != null ? _lastPayment!['paidAt'].toString().length >= 10 ? _lastPayment!['paidAt'].toString().substring(0, 10) : _lastPayment!['paidAt'].toString() : '', style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
-                    ])),
-                    Text('via ${_lastPayment!['method']?.toUpperCase() ?? 'FPX'}', style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color, fontWeight: FontWeight.w600)),
-                  ]),
-                ]),
-              ),
+            const SizedBox(height: 24),
 
-            // Payment deadline
-            if (_dueDate != null && _balance > 0) ...[  
-              const SizedBox(height: 16),
+            // --- LAST PAYMENT ---
+            if (_lastPayment != null) ...[
+              const Text('Last Payment', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: SAMsTheme.textPrimary)),
+              const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: daysLeft <= 7
-                      ? [SAMsTheme.error.withOpacity(0.15), SAMsTheme.error.withOpacity(0.05)]
-                      : [SAMsTheme.primary.withOpacity(0.15), SAMsTheme.primary.withOpacity(0.05)],
-                    begin: Alignment.topLeft, end: Alignment.bottomRight,
-                  ),
+                  color: SAMsTheme.surface,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: (daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.primary).withOpacity(0.3)),
+                  border: Border.all(color: SAMsTheme.border),
                 ),
                 child: Row(children: [
-                  Icon(daysLeft <= 7 ? Icons.warning_rounded : Icons.calendar_today_rounded, color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.primary, size: 28),
-                  const SizedBox(width: 12),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: SAMsTheme.surfaceLight,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.receipt_long_rounded, color: SAMsTheme.success, size: 18),
+                  ),
+                  const SizedBox(width: 14),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Payment Deadline', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).textTheme.bodySmall?.color)),
+                    Text(_fmtRm(((_lastPayment!['amount'] ?? 0) as num).toDouble()), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: SAMsTheme.textPrimary)),
                     const SizedBox(height: 2),
-                    Text(dueDateStr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface)),
+                    Text(
+                      _lastPayment!['paidAt'] != null
+                        ? _lastPayment!['paidAt'].toString().length >= 10
+                          ? _lastPayment!['paidAt'].toString().substring(0, 10)
+                          : _lastPayment!['paidAt'].toString()
+                        : '',
+                      style: const TextStyle(fontSize: 11, color: SAMsTheme.textMuted),
+                    ),
                   ])),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(color: (daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.primary).withOpacity(0.15), borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: SAMsTheme.surfaceLight, borderRadius: BorderRadius.circular(6)),
+                    child: Text('via ${_lastPayment!['method']?.toUpperCase() ?? 'FPX'}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: SAMsTheme.textMuted)),
+                  ),
+                ]),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // --- PAYMENT DEADLINE ---
+            if (_dueDate != null && _balance > 0) ...[
+              const Text('Deadline', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: SAMsTheme.textPrimary)),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: SAMsTheme.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border(left: BorderSide(color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.primary, width: 3)),
+                ),
+                child: Row(children: [
+                  Icon(Icons.event_rounded, color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.primary, size: 22),
+                  const SizedBox(width: 14),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('Payment Due', style: TextStyle(fontSize: 11, color: SAMsTheme.textMuted)),
+                    const SizedBox(height: 2),
+                    Text(dueDateStr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: SAMsTheme.textPrimary)),
+                  ])),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: SAMsTheme.surfaceLight,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                     child: Text('$daysLeft days', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.primary)),
                   ),
                 ]),
               ),
+              const SizedBox(height: 24),
             ],
-            const SizedBox(height: 24),
+
+            const SizedBox(height: 16),
           ],
         ),
       ),
     );
   }
 
-  String _fmtRm(double n) => 'RM ${n.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';  
+  String _fmtRm(double n) => 'RM ${n.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
 
   String _monthName(int m) => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m];
 }
 
-class _SummaryCard extends StatelessWidget {
-  final String label, value, emoji;
-  final Color color;
-  const _SummaryCard({required this.label, required this.value, required this.emoji, required this.color});
+// --- METRIC TILE ---
+class _MetricTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color accent;
+  const _MetricTile({required this.icon, required this.label, required this.value, this.accent = SAMsTheme.primary});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [color.withOpacity(0.2), color.withOpacity(0.05)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        color: SAMsTheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: SAMsTheme.border),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(emoji, style: const TextStyle(fontSize: 22)),
-        const SizedBox(height: 6),
-        Text(label.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Theme.of(context).textTheme.bodySmall?.color, letterSpacing: 0.5)),
-        const SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface)),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: accent, size: 18),
+          const SizedBox(height: 10),
+          Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: SAMsTheme.textPrimary)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(fontSize: 11, color: SAMsTheme.textMuted)),
+        ],
+      ),
     );
   }
 }

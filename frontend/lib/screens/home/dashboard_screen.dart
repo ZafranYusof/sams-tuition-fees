@@ -34,20 +34,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _loadAll() async {
-    await Future.wait([_loadProfileImage(), _loadAnnouncements(), _loadFeeSummary()]);
+    await Future.wait([_loadProfileImage(), _loadFeeSummary()]);
   }
 
   Future<void> _loadProfileImage() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() => _profileImage = prefs.getString('profile_image'));
-  }
-
-  Future<void> _loadAnnouncements() async {
-    try {
-      final data = await ApiService.get('/announcements');
-      if (data is List) setState(() => _announcements = data);
-    } catch (_) {
-      // No announcements endpoint yet, use empty
+    final path = prefs.getString('profile_image');
+    // Verify file exists before setting
+    if (path != null && File(path).existsSync()) {
+      setState(() => _profileImage = path);
     }
   }
 
@@ -55,7 +50,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     try {
       final user = ref.read(authProvider).user;
       final sid = user?['studentId'] ?? user?['student_id'] ?? '';
-      if (sid.isNotEmpty) {
+      // Skip for admin users
+      if (sid.isNotEmpty && user?['role'] != 'admin') {
         final data = await ApiService.get('/fees/$sid/summary');
         setState(() => _feeSummary = data['summary']);
       }

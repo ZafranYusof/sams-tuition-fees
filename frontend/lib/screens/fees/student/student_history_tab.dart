@@ -279,6 +279,8 @@ class _ContinuePayWebView extends StatefulWidget {
 class _ContinuePayWebViewState extends State<_ContinuePayWebView> {
   late final WebViewController _controller;
   bool _loading = true;
+  bool _hasError = false;
+  String _errorMessage = '';
 
   @override
   void initState() {
@@ -286,8 +288,15 @@ class _ContinuePayWebViewState extends State<_ContinuePayWebView> {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(NavigationDelegate(
-        onPageStarted: (_) => setState(() => _loading = true),
+        onPageStarted: (_) => setState(() { _loading = true; _hasError = false; }),
         onPageFinished: (_) => setState(() => _loading = false),
+        onWebResourceError: (error) {
+          setState(() {
+            _hasError = true;
+            _loading = false;
+            _errorMessage = error.description;
+          });
+        },
         onNavigationRequest: (request) {
           if (request.url.contains('samsapp://') || request.url.contains('/payment/success') || request.url.contains('/payment/failed')) {
             final success = request.url.contains('success') || request.url.contains('status_id=1');
@@ -313,6 +322,29 @@ class _ContinuePayWebViewState extends State<_ContinuePayWebView> {
       body: Stack(children: [
         WebViewWidget(controller: _controller),
         if (_loading) const Center(child: CircularProgressIndicator(color: SAMsTheme.primary)),
+        if (_hasError) Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.wifi_off_rounded, size: 48, color: SAMsTheme.error),
+                const SizedBox(height: 16),
+                const Text('Network Error', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                Text(_errorMessage.isNotEmpty ? _errorMessage : 'Failed to load payment page.', textAlign: TextAlign.center, style: const TextStyle(fontSize: 13)),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() { _hasError = false; _loading = true; });
+                    _controller.loadRequest(Uri.parse(widget.url));
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ]),
     );
   }

@@ -11,26 +11,16 @@ const notificationsRoutes = require('./routes/notifications');
 const paymentGatewayRoutes = require('./routes/payment-gateway');
 
 const Payment = require('./models/Payment');
+const Fee = require('./models/Fee');
 
 const app = express();
 
-// Expire pending payments older than 10 minutes (runs every 2 min)
-setInterval(async () => {
-  try {
-    const result = await Payment.updateMany(
-      { status: 'pending', expiresAt: { $lte: new Date() } },
-      { $set: { status: 'failed' } }
-    );
-    if (result.modifiedCount > 0) {
-      console.log(`[Payment] Expired ${result.modifiedCount} pending payment(s)`);
-    }
-  } catch (err) {
-    console.error('[Payment] Expiry check error:', err.message);
-  }
-}, 2 * 60 * 1000);
-
 // Middleware
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGINS || '*').split(',');
+app.use(cors({
+  origin: allowedOrigins[0] === '*' ? true : allowedOrigins,
+  credentials: true,
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 
@@ -64,6 +54,32 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/sams';
 mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');
+
+    // Expire pending payments older than 10 minutes (runs every 2 min)
+    // Moved AFTER DB connection to avoid connection errors
+    setInterval(async () => {
+      try {
+        const result = await Payment.updateMany(
+          { status: 'pending', expiresAt: { $lte: new Date() } },
+          { $set: { status: 'failed' } }
+        );
+        if (result.modifiedCount > 0) {
+          console.log(`[Payment] Expired ${result.modifiedCount} pending payment(s)`);
+        }
+
+        // Mark overdue fees (dueDate passed and not fully paid)
+        const overdueResult = await Fee.updateMany(
+          { status: { $in: ['unpaid', 'partial'] }, dueDate: { $lte: new Date() } },
+          { $set: { status: 'overdue' } }
+        );
+        if (overdueResult.modifiedCount > 0) {
+          console.log(`[Fee] Marked ${overdueResult.modifiedCount} fee(s) as overdue`);
+        }
+      } catch (err) {
+        console.error('[Scheduler] Error:', err.message);
+      }
+    }, 2 * 60 * 1000);
+
     app.listen(PORT, () => {
       console.log(`SAMs API running on port ${PORT}`);
     });

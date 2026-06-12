@@ -87,19 +87,25 @@ router.get('/fpx/callback', async (req, res) => {
     const { billcode, status_id, transaction_id, order_id } = req.query;
     
     const payment = await Payment.findOne({ transactionId: billcode });
-    if (payment) {
+    if (payment && payment.status === 'pending') {
       // status_id: 1 = success, 2 = pending, 3 = failed
       if (status_id === '1') {
         payment.status = 'success';
         payment.receipt = `RCP-${Date.now()}`;
         await payment.save();
 
-        // Update fee
+        // Update fee atomically, cap at totalAmount
         const fee = await Fee.findById(payment.fee);
-        if (fee) {
-          fee.paidAmount += payment.amount;
-          fee.status = fee.paidAmount >= fee.totalAmount ? 'paid' : 'partial';
-          await fee.save();
+        if (fee && fee.status !== 'paid') {
+          const remaining = fee.totalAmount - fee.paidAmount;
+          const actualAmount = Math.min(payment.amount, remaining);
+          await Fee.findOneAndUpdate(
+            { _id: payment.fee },
+            {
+              $inc: { paidAmount: actualAmount },
+              $set: { status: (fee.paidAmount + actualAmount) >= fee.totalAmount ? 'paid' : 'partial' }
+            }
+          );
         }
       } else if (status_id === '3') {
         payment.status = 'failed';
@@ -114,7 +120,8 @@ router.get('/fpx/callback', async (req, res) => {
     
     res.redirect(redirectUrl);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('FPX callback error:', err.message);
+    res.redirect('samsapp://payment/failed');
   }
 });
 
@@ -131,10 +138,16 @@ router.post('/fpx/webhook', async (req, res) => {
         await payment.save();
 
         const fee = await Fee.findById(payment.fee);
-        if (fee) {
-          fee.paidAmount += payment.amount;
-          fee.status = fee.paidAmount >= fee.totalAmount ? 'paid' : 'partial';
-          await fee.save();
+        if (fee && fee.status !== 'paid') {
+          const remaining = fee.totalAmount - fee.paidAmount;
+          const actualAmount = Math.min(payment.amount, remaining);
+          await Fee.findOneAndUpdate(
+            { _id: payment.fee },
+            {
+              $inc: { paidAmount: actualAmount },
+              $set: { status: (fee.paidAmount + actualAmount) >= fee.totalAmount ? 'paid' : 'partial' }
+            }
+          );
         }
       } else if (status_id === '3') {
         payment.status = 'failed';
@@ -144,7 +157,8 @@ router.post('/fpx/webhook', async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('FPX webhook error:', err.message);
+    res.status(500).json({ error: 'Webhook processing failed' });
   }
 });
 
@@ -231,15 +245,22 @@ router.get('/card/success', async (req, res) => {
       await payment.save();
 
       const fee = await Fee.findById(payment.fee);
-      if (fee) {
-        fee.paidAmount += payment.amount;
-        fee.status = fee.paidAmount >= fee.totalAmount ? 'paid' : 'partial';
-        await fee.save();
+      if (fee && fee.status !== 'paid') {
+        const remaining = fee.totalAmount - fee.paidAmount;
+        const actualAmount = Math.min(payment.amount, remaining);
+        await Fee.findOneAndUpdate(
+          { _id: payment.fee },
+          {
+            $inc: { paidAmount: actualAmount },
+            $set: { status: (fee.paidAmount + actualAmount) >= fee.totalAmount ? 'paid' : 'partial' }
+          }
+        );
       }
     }
 
     res.redirect('samsapp://payment/success?session_id=' + session_id);
   } catch (err) {
+    console.error('Stripe success error:', err.message);
     res.redirect('samsapp://payment/failed');
   }
 });
@@ -267,10 +288,16 @@ router.post('/card/confirm', auth, async (req, res) => {
         await payment.save();
 
         const fee = await Fee.findById(payment.fee);
-        if (fee) {
-          fee.paidAmount += payment.amount;
-          fee.status = fee.paidAmount >= fee.totalAmount ? 'paid' : 'partial';
-          await fee.save();
+        if (fee && fee.status !== 'paid') {
+          const remaining = fee.totalAmount - fee.paidAmount;
+          const actualAmount = Math.min(payment.amount, remaining);
+          await Fee.findOneAndUpdate(
+            { _id: payment.fee },
+            {
+              $inc: { paidAmount: actualAmount },
+              $set: { status: (fee.paidAmount + actualAmount) >= fee.totalAmount ? 'paid' : 'partial' }
+            }
+          );
         }
       }
       res.json({ status: 'success', payment });
@@ -278,7 +305,8 @@ router.post('/card/confirm', auth, async (req, res) => {
       res.json({ status: 'pending', payment });
     }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Stripe confirm error:', err.message);
+    res.status(500).json({ error: 'Failed to confirm payment' });
   }
 });
 
