@@ -86,6 +86,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
 
   @override
   Widget build(BuildContext context) {
+    final t = Theme.of(context);
     final user = ref.watch(authProvider).user;
     final studentId = user?['studentId'] ?? 'CB23109';
 
@@ -96,18 +97,18 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
     final dueDateStr = _dueDate != null ? '${_dueDate!.day} ${_monthName(_dueDate!.month)} ${_dueDate!.year}' : 'N/A';
 
     return Scaffold(
-      backgroundColor: SAMsTheme.background,
+      backgroundColor: t.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: SAMsTheme.background,
+        backgroundColor: t.scaffoldBackgroundColor,
         elevation: 0,
-        title: const Text('Tuition Fees', style: TextStyle(color: SAMsTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: SAMsTheme.textPrimary), onPressed: () => Navigator.pop(context)),
+        title: Text('Tuition Fees', style: TextStyle(color: t.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w600)),
+        leading: IconButton(icon: Icon(Icons.arrow_back, color: t.colorScheme.onSurface), onPressed: () => Navigator.pop(context)),
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: SAMsTheme.surface,
+              color: t.cardColor,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: blocked ? SAMsTheme.error.withOpacity(0.4) : SAMsTheme.success.withOpacity(0.4)),
             ),
@@ -133,9 +134,9 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
             // --- HEADER ---
             const Text('Student', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: SAMsTheme.primary, letterSpacing: 1.2)),
             const SizedBox(height: 4),
-            Text(studentId, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: SAMsTheme.textPrimary)),
+            Text(studentId, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
             const SizedBox(height: 4),
-            Text('$_semester  ·  Week $_week', style: const TextStyle(fontSize: 12, color: SAMsTheme.textMuted)),
+            Text('$_semester  ·  Week $_week', style: TextStyle(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
 
             const SizedBox(height: 20),
 
@@ -145,7 +146,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: SAMsTheme.surface,
+                  color: t.cardColor,
                   borderRadius: BorderRadius.circular(10),
                   border: Border(left: BorderSide(color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.warning, width: 3)),
                 ),
@@ -165,7 +166,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: SAMsTheme.surface,
+                  color: t.cardColor,
                   borderRadius: BorderRadius.circular(10),
                   border: const Border(left: BorderSide(color: SAMsTheme.warning, width: 3)),
                 ),
@@ -180,9 +181,9 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: SAMsTheme.surface,
+                color: t.cardColor,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: SAMsTheme.border),
+                border: Border.all(color: t.dividerColor),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,21 +191,21 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Balance Due', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: SAMsTheme.textMuted)),
+                      Text('Balance Due', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                       Text('${(_pct * 100).toStringAsFixed(1)}% paid', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: SAMsTheme.primary)),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(_fmtRm(_balance), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: _balance > 0 ? SAMsTheme.textPrimary : SAMsTheme.success)),
+                  Text(_fmtRm(_balance), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: _balance > 0 ? t.colorScheme.onSurface : SAMsTheme.success)),
                   const SizedBox(height: 4),
-                  Text('of ${_fmtRm(_totalDue)} total fees', style: const TextStyle(fontSize: 12, color: SAMsTheme.textMuted)),
+                  Text('of ${_fmtRm(_totalDue)} total fees', style: TextStyle(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                   const SizedBox(height: 16),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(2),
                     child: LinearProgressIndicator(
                       value: _pct,
                       minHeight: 4,
-                      backgroundColor: SAMsTheme.surfaceLight,
+                      backgroundColor: t.dividerColor,
                       valueColor: AlwaysStoppedAnimation<Color>(_pct >= 1 ? SAMsTheme.success : SAMsTheme.primary),
                     ),
                   ),
@@ -212,8 +213,8 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('${_fmtRm(_totalPaid)} paid', style: const TextStyle(fontSize: 11, color: SAMsTheme.textMuted)),
-                      Text(_fmtRm(_totalDue), style: const TextStyle(fontSize: 11, color: SAMsTheme.textMuted)),
+                      Text('${_fmtRm(_totalPaid)} paid', style: TextStyle(fontSize: 11, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                      Text(_fmtRm(_totalDue), style: TextStyle(fontSize: 11, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                     ],
                   ),
                 ],
@@ -238,13 +239,13 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
             const SizedBox(height: 24),
 
             // --- FEE BREAKDOWN ---
-            const Text('Fee Breakdown', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: SAMsTheme.textPrimary)),
+            Text('Fee Breakdown', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: SAMsTheme.surface,
+                color: t.cardColor,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: SAMsTheme.border),
+                border: Border.all(color: t.dividerColor),
               ),
               child: Column(
                 children: [
@@ -261,12 +262,12 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Expanded(child: Text(item['description'] ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: SAMsTheme.textPrimary))),
-                            Text('RM ${((item['amount'] ?? 0) as num).toStringAsFixed(2)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: SAMsTheme.textPrimary)),
+                            Expanded(child: Text(item['description'] ?? '', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: t.colorScheme.onSurface))),
+                            Text('RM ${((item['amount'] ?? 0) as num).toStringAsFixed(2)}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                           ],
                         ),
                       ),
-                      if (i < total - 1) Container(height: 1, margin: const EdgeInsets.symmetric(horizontal: 16), color: SAMsTheme.border),
+                      if (i < total - 1) Container(height: 1, margin: const EdgeInsets.symmetric(horizontal: 16), color: t.dividerColor),
                     ]);
                   }),
                 ],
@@ -277,27 +278,27 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
 
             // --- LAST PAYMENT ---
             if (_lastPayment != null) ...[
-              const Text('Last Payment', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: SAMsTheme.textPrimary)),
+              Text('Last Payment', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: SAMsTheme.surface,
+                  color: t.cardColor,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: SAMsTheme.border),
+                  border: Border.all(color: t.dividerColor),
                 ),
                 child: Row(children: [
                   Container(
                     width: 36, height: 36,
                     decoration: BoxDecoration(
-                      color: SAMsTheme.surfaceLight,
+                      color: t.dividerColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.receipt_long_rounded, color: SAMsTheme.success, size: 18),
                   ),
                   const SizedBox(width: 14),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(_fmtRm(((_lastPayment!['amount'] ?? 0) as num).toDouble()), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: SAMsTheme.textPrimary)),
+                    Text(_fmtRm(((_lastPayment!['amount'] ?? 0) as num).toDouble()), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
                     const SizedBox(height: 2),
                     Text(
                       _lastPayment!['paidAt'] != null
@@ -305,13 +306,13 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
                           ? _lastPayment!['paidAt'].toString().substring(0, 10)
                           : _lastPayment!['paidAt'].toString()
                         : '',
-                      style: const TextStyle(fontSize: 11, color: SAMsTheme.textMuted),
+                      style: TextStyle(fontSize: 11, color: t.textTheme.bodySmall?.color ?? Colors.grey),
                     ),
                   ])),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: SAMsTheme.surfaceLight, borderRadius: BorderRadius.circular(6)),
-                    child: Text('via ${_lastPayment!['method']?.toUpperCase() ?? 'FPX'}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: SAMsTheme.textMuted)),
+                    decoration: BoxDecoration(color: t.dividerColor, borderRadius: BorderRadius.circular(6)),
+                    child: Text('via ${_lastPayment!['method']?.toUpperCase() ?? 'FPX'}', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                   ),
                 ]),
               ),
@@ -320,12 +321,12 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
 
             // --- PAYMENT DEADLINE ---
             if (_dueDate != null && _balance > 0) ...[
-              const Text('Deadline', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: SAMsTheme.textPrimary)),
+              Text('Deadline', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: SAMsTheme.surface,
+                  color: t.cardColor,
                   borderRadius: BorderRadius.circular(14),
                   border: Border(left: BorderSide(color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.primary, width: 3)),
                 ),
@@ -333,14 +334,14 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
                   Icon(Icons.event_rounded, color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.primary, size: 22),
                   const SizedBox(width: 14),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('Payment Due', style: TextStyle(fontSize: 11, color: SAMsTheme.textMuted)),
+                    Text('Payment Due', style: TextStyle(fontSize: 11, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                     const SizedBox(height: 2),
-                    Text(dueDateStr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: SAMsTheme.textPrimary)),
+                    Text(dueDateStr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
                   ])),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: SAMsTheme.surfaceLight,
+                      color: t.dividerColor,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text('$daysLeft days', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.primary)),
@@ -372,21 +373,22 @@ class _MetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: SAMsTheme.surface,
+        color: t.cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: SAMsTheme.border),
+        border: Border.all(color: t.dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: accent, size: 18),
           const SizedBox(height: 10),
-          Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: SAMsTheme.textPrimary)),
+          Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 11, color: SAMsTheme.textMuted)),
+          Text(label, style: TextStyle(fontSize: 11, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
         ],
       ),
     );

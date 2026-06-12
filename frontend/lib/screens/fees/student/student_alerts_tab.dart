@@ -71,30 +71,31 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab> {
       case 'payment': return SAMsTheme.success;
       case 'warning': return SAMsTheme.warning;
       case 'reminder': return SAMsTheme.primary;
-      default: return SAMsTheme.textMuted;
+      default: return Colors.grey;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = Theme.of(context);
     if (_loading) {
       return Scaffold(
-        backgroundColor: SAMsTheme.background,
+        backgroundColor: t.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: SAMsTheme.background,
+          backgroundColor: t.scaffoldBackgroundColor,
           elevation: 0,
-          title: const Text('Alerts', style: TextStyle(color: SAMsTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+          title: Text('Alerts', style: TextStyle(color: t.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w600)),
         ),
         body: const Center(child: CircularProgressIndicator(color: SAMsTheme.primary, strokeWidth: 2)),
       );
     }
 
     return Scaffold(
-      backgroundColor: SAMsTheme.background,
+      backgroundColor: t.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: SAMsTheme.background,
+        backgroundColor: t.scaffoldBackgroundColor,
         elevation: 0,
-        title: const Text('Alerts', style: TextStyle(color: SAMsTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+        title: Text('Alerts', style: TextStyle(color: t.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w600)),
       ),
       body: RefreshIndicator(
         color: SAMsTheme.primary,
@@ -106,17 +107,17 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('$_unreadCount unread', style: const TextStyle(color: SAMsTheme.textMuted, fontSize: 13)),
+                  Text('$_unreadCount unread', style: TextStyle(color: t.textTheme.bodySmall?.color ?? Colors.grey, fontSize: 13)),
                   GestureDetector(
                     onTap: _unreadCount > 0 ? _markAllRead : null,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: SAMsTheme.surface,
+                        color: t.cardColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: SAMsTheme.border),
+                        border: Border.all(color: t.dividerColor),
                       ),
-                      child: Text('Mark All Read', style: TextStyle(color: _unreadCount > 0 ? SAMsTheme.primary : SAMsTheme.textMuted, fontSize: 12, fontWeight: FontWeight.w600)),
+                      child: Text('Mark All Read', style: TextStyle(color: _unreadCount > 0 ? SAMsTheme.primary : (t.textTheme.bodySmall?.color ?? Colors.grey), fontSize: 12, fontWeight: FontWeight.w600)),
                     ),
                   ),
                 ],
@@ -125,9 +126,9 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab> {
             Expanded(
               child: _alerts.isEmpty
                   ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      const Icon(Icons.notifications_off_outlined, size: 40, color: SAMsTheme.textMuted),
+                      Icon(Icons.notifications_off_outlined, size: 40, color: t.textTheme.bodySmall?.color ?? Colors.grey),
                       const SizedBox(height: 12),
-                      const Text('No notifications yet', style: TextStyle(color: SAMsTheme.textMuted, fontSize: 13)),
+                      Text('No notifications yet', style: TextStyle(color: t.textTheme.bodySmall?.color ?? Colors.grey, fontSize: 13)),
                     ]))
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
@@ -144,9 +145,9 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab> {
                           child: Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: SAMsTheme.surface,
+                              color: t.cardColor,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: isRead ? SAMsTheme.border : color.withOpacity(0.3)),
+                              border: Border.all(color: isRead ? t.dividerColor : color.withOpacity(0.3)),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,11 +162,11 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab> {
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                  Text(a['title'] ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: SAMsTheme.textPrimary)),
+                                  Text(a['title'] ?? '', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                                   const SizedBox(height: 4),
-                                  Text(a['message'] ?? '', style: const TextStyle(fontSize: 12, color: SAMsTheme.textSecondary, height: 1.4)),
+                                  Text(a['message'] ?? '', style: TextStyle(fontSize: 12, color: t.textTheme.bodyMedium?.color ?? Colors.grey, height: 1.4)),
                                   const SizedBox(height: 6),
-                                  Text((a['createdAt'] ?? a['created_at'])?.toString().substring(0, 10) ?? '', style: const TextStyle(fontSize: 11, color: SAMsTheme.textMuted)),
+                                  Text((a['createdAt'] ?? a['created_at'])?.toString().substring(0, 10) ?? '', style: TextStyle(fontSize: 11, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                                 ])),
                                 if (!isRead)
                                   Container(width: 7, height: 7, margin: const EdgeInsets.only(top: 4), decoration: const BoxDecoration(color: SAMsTheme.primary, shape: BoxShape.circle)),
