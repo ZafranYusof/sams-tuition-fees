@@ -22,15 +22,36 @@ class DashboardScreen extends ConsumerStatefulWidget {
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerProviderStateMixin {
   String? _profileImage;
   List<dynamic> _announcements = [];
   Map<String, dynamic>? _feeSummary;
 
+  late AnimationController _staggerController;
+  late AnimationController _balancePulse;
+  late List<Animation<double>> _staggerAnims;
+
   @override
   void initState() {
     super.initState();
+    _staggerController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
+    _balancePulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000))..repeat(reverse: true);
+    
+    // 5 staggered items: header, greeting, info card, balance, quick access
+    _staggerAnims = List.generate(5, (i) => CurvedAnimation(
+      parent: _staggerController,
+      curve: Interval(i * 0.15, 0.4 + i * 0.15, curve: Curves.easeOutCubic),
+    ));
+    
     _loadAll();
+    _staggerController.forward();
+  }
+
+  @override
+  void dispose() {
+    _staggerController.dispose();
+    _balancePulse.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAll() async {
@@ -61,6 +82,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Future<void> _refresh() async {
     await _loadAll();
     ref.read(authProvider.notifier).refreshProfile();
+  }
+
+  // Stagger animation wrapper
+  Widget _fadeSlide(Animation<double> anim, {required Widget child}) {
+    return AnimatedBuilder(
+      animation: anim,
+      builder: (_, __) => Opacity(
+        opacity: anim.value,
+        child: Transform.translate(
+          offset: Offset(0, 16 * (1 - anim.value)),
+          child: child,
+        ),
+      ),
+    );
   }
 
   String get _greeting {
@@ -132,19 +167,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
 
                 // ─── GREETING (serif hero) ───
-                Padding(
+                _fadeSlide(_staggerAnims[0], child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 18, 24, 4),
                   child: Text(today.toUpperCase(),
                     style: GoogleFonts.inter(color: muted, fontSize: 10.5, letterSpacing: 2.4, fontWeight: FontWeight.w600),
                   ),
-                ),
-                Padding(
+                )),
+                _fadeSlide(_staggerAnims[1], child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 6, 24, 0),
                   child: Text(
                     '$_greeting,\n${name.split(' ').first}.',
                     style: t.textTheme.displayMedium?.copyWith(height: 1.05),
                   ),
-                ),
+                )),
 
                 // ─── STUDENT INFO STRIP ───
                 Padding(
@@ -202,16 +237,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
 
                 // ─── FEE SUMMARY: editorial composition ───
-                Padding(
+                _fadeSlide(_staggerAnims[3], child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
                   child: GestureDetector(
                     onTap: () => Navigator.push(context, SlidePageRoute(page: const FeesScreen())),
-                    child: Container(
-                      padding: const EdgeInsets.all(22),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF0F2235) : const Color(0xFFEDE5D4),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: t.dividerColor),
+                    child: AnimatedBuilder(
+                      animation: _balancePulse,
+                      builder: (_, child) => Container(
+                        padding: const EdgeInsets.all(22),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF0F2235) : const Color(0xFFEDE5D4),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: accent.withOpacity(0.15 + _balancePulse.value * 0.1)),
+                        ),
+                        child: child,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,7 +304,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                   ),
-                ),
+                )),
 
                 // ─── QUICK ACCESS ───
                 _SectionLabel(text: 'QUICK ACCESS', muted: muted, accent: accent, top: 32),
@@ -501,8 +540,8 @@ class _ModuleRowState extends State<_ModuleRow> {
   }
 }
 
-// ─── Quick access item: monochrome with hover-able border ───
-class _QuickItem extends StatelessWidget {
+// ─── Quick access item: scale bounce on tap ───
+class _QuickItem extends StatefulWidget {
   final IconData icon;
   final String label;
   final Color accent, muted;
@@ -510,30 +549,56 @@ class _QuickItem extends StatelessWidget {
   const _QuickItem({required this.icon, required this.label, required this.accent, required this.muted, required this.onTap});
 
   @override
+  State<_QuickItem> createState() => _QuickItemState();
+}
+
+class _QuickItemState extends State<_QuickItem> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
+    _scale = Tween<double>(begin: 1.0, end: 0.88).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return GestureDetector(
-      onTap: () { HapticFeedback.selectionClick(); onTap(); },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Container(
-            width: 48, height: 48,
-            decoration: BoxDecoration(
-              color: t.colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: t.dividerColor),
-            ),
-            child: Icon(icon, color: t.colorScheme.onSurface, size: 20),
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) { _ctrl.reverse(); HapticFeedback.selectionClick(); widget.onTap(); },
+      onTapCancel: () => _ctrl.reverse(),
+      child: AnimatedBuilder(
+        animation: _scale,
+        builder: (_, __) => Transform.scale(
+          scale: _scale.value,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Container(
+                width: 48, height: 48,
+                decoration: BoxDecoration(
+                  color: t.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: t.dividerColor),
+                ),
+                child: Icon(widget.icon, color: t.colorScheme.onSurface, size: 20),
+              ),
+              const SizedBox(height: 8),
+              Text(widget.label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(color: widget.muted, fontSize: 10.5, fontWeight: FontWeight.w500),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(label,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(color: muted, fontSize: 10.5, fontWeight: FontWeight.w500),
-          ),
-        ],
+        ),
       ),
     );
   }
