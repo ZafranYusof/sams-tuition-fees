@@ -78,65 +78,69 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> {
     if (_amount <= 0) return;
     setState(() => _paying = true);
     try {
-      List<Map<String, dynamic>> feesToPay = [];
+      // Determine target fee - for "full balance", use the first unpaid fee
+      // but send the TOTAL amount so gateway shows correct figure.
+      // Backend will cap at remaining per-fee, so overpayment is safe.
+      String targetFeeId = '';
+      double payAmount = _amount;
+
       if (_selFeeIndex == 0) {
+        // Full balance - pick first unpaid fee as anchor, send total amount
         for (var f in _fees) {
           final bal = ((f['totalAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble();
-          if (bal > 0) feesToPay.add({'id': f['_id'], 'amount': bal});
+          if (bal > 0) { targetFeeId = f['_id']; break; }
         }
       } else {
         final fee = _fees[_selFeeIndex - 1];
-        final bal = ((fee['totalAmount'] ?? 0) as num).toDouble() - ((fee['paidAmount'] ?? 0) as num).toDouble();
-        if (bal > 0) feesToPay.add({'id': fee['_id'], 'amount': bal});
+        targetFeeId = fee['_id'];
+        payAmount = ((fee['totalAmount'] ?? 0) as num).toDouble() - ((fee['paidAmount'] ?? 0) as num).toDouble();
       }
 
-      if (feesToPay.isEmpty) { setState(() => _paying = false); return; }
+      if (targetFeeId.isEmpty || payAmount <= 0) { setState(() => _paying = false); return; }
 
-      bool anySuccess = false;
-      String? lastTxnId;
-      
-      for (final targetFee in feesToPay) {
-        if (_selMethod == 'fpx') {
-          final result = await ApiService.post('/payment/fpx/create', {
-            'feeId': targetFee['id'],
-            'amount': targetFee['amount'],
-            'description': 'UMPSA Tuition Fee Payment',
-            'bank': _selBank,
-          });
-          final paymentUrl = result['paymentUrl'];
-          final billCode = result['billCode'];
-          if (paymentUrl != null && mounted) {
-            final success = await Navigator.push<bool>(context, MaterialPageRoute(
-              builder: (_) => _PaymentWebView(url: paymentUrl, title: 'FPX Payment'),
-            ));
-            if (success == true || success == null) {
-              final status = await ApiService.get('/payment/fpx/status/$billCode');
-              if (status['status'] == 'success') { anySuccess = true; lastTxnId = billCode; }
-              else { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Payment pending or failed'), backgroundColor: SAMsTheme.warning)); break; }
-            } else { break; }
+      String? txnId;
+      bool success = false;
+
+      if (_selMethod == 'fpx') {
+        final result = await ApiService.post('/payment/fpx/create', {
+          'feeId': targetFeeId,
+          'amount': payAmount,
+          'description': 'UMPSA Tuition Fee Payment',
+          'bank': _selBank,
+        });
+        final paymentUrl = result['paymentUrl'];
+        final billCode = result['billCode'];
+        if (paymentUrl != null && mounted) {
+          final webResult = await Navigator.push<bool>(context, MaterialPageRoute(
+            builder: (_) => _PaymentWebView(url: paymentUrl, title: 'FPX Payment'),
+          ));
+          if (webResult == true || webResult == null) {
+            final status = await ApiService.get('/payment/fpx/status/$billCode');
+            if (status['status'] == 'success') { success = true; txnId = billCode; }
+            else { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Payment pending or failed'), backgroundColor: SAMsTheme.warning)); }
           }
-        } else {
-          final result = await ApiService.post('/payment/card/create-intent', {
-            'feeId': targetFee['id'],
-            'amount': targetFee['amount'],
-          });
-          final paymentUrl = result['paymentUrl'];
-          final sessionId = result['paymentIntentId'];
-          if (paymentUrl != null && mounted) {
-            final success = await Navigator.push<bool>(context, MaterialPageRoute(
-              builder: (_) => _PaymentWebView(url: paymentUrl, title: 'Card Payment'),
-            ));
-            if (success == true || success == null) {
-              final confirm = await ApiService.post('/payment/card/confirm', {'paymentIntentId': sessionId});
-              if (confirm['status'] == 'success') { anySuccess = true; lastTxnId = sessionId; }
-              else { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Card payment pending or failed'), backgroundColor: SAMsTheme.warning)); break; }
-            } else { break; }
+        }
+      } else {
+        final result = await ApiService.post('/payment/card/create-intent', {
+          'feeId': targetFeeId,
+          'amount': payAmount,
+        });
+        final paymentUrl = result['paymentUrl'];
+        final sessionId = result['paymentIntentId'];
+        if (paymentUrl != null && mounted) {
+          final webResult = await Navigator.push<bool>(context, MaterialPageRoute(
+            builder: (_) => _PaymentWebView(url: paymentUrl, title: 'Card Payment'),
+          ));
+          if (webResult == true || webResult == null) {
+            final confirm = await ApiService.post('/payment/card/confirm', {'paymentIntentId': sessionId});
+            if (confirm['status'] == 'success') { success = true; txnId = sessionId; }
+            else { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Card payment pending or failed'), backgroundColor: SAMsTheme.warning)); }
           }
         }
       }
 
-      if (anySuccess) {
-        setState(() { _receipt = {'status': 'paid', 'amount': _amount, 'txn_id': lastTxnId ?? '', 'bank': _selMethod == 'fpx' ? _selBank : 'Card'}; });
+      if (success) {
+        setState(() { _receipt = {'status': 'paid', 'amount': payAmount, 'txn_id': txnId ?? '', 'bank': _selMethod == 'fpx' ? _selBank : 'Card'}; });
       }
       setState(() => _paying = false);
       await _load();
