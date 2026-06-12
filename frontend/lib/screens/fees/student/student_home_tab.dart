@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
+import '../../../services/cache_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/shimmer_loading.dart';
+import '../../../widgets/empty_state.dart';
 
 class StudentHomeTab extends ConsumerStatefulWidget {
   const StudentHomeTab({super.key});
@@ -16,11 +18,22 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
   List<dynamic> _fees = [];
   List<dynamic> _payments = [];
   bool _loading = true;
+  bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _loadCachedThenFresh();
+  }
+
+  Future<void> _loadCachedThenFresh() async {
+    // Show cached data instantly while fetching fresh
+    final cachedFees = await CacheService.get('my_fees', maxAgeMinutes: 60);
+    final cachedPayments = await CacheService.get('my_payments', maxAgeMinutes: 60);
+    if (cachedFees != null) {
+      setState(() { _fees = cachedFees; _payments = cachedPayments ?? []; _loading = false; });
+    }
+    await _load();
   }
 
   Future<void> _load() async {
@@ -28,9 +41,12 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> {
       final fees = await ApiService.get('/fees/my');
       List<dynamic> payments = [];
       try { payments = await ApiService.get('/fees/payments/history'); } catch (_) {}
-      setState(() { _fees = fees; _payments = payments; _loading = false; });
+      // Cache results
+      await CacheService.save('my_fees', fees);
+      await CacheService.save('my_payments', payments);
+      setState(() { _fees = fees; _payments = payments; _loading = false; _hasError = false; });
     } catch (e) {
-      setState(() => _loading = false);
+      setState(() { _loading = false; _hasError = _fees.isEmpty; });
     }
   }
 
