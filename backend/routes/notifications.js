@@ -49,4 +49,45 @@ router.put('/:studentId/read-all', auth, async (req, res) => {
   }
 });
 
+// POST /api/notifications - create notification(s)
+router.post('/', auth, async (req, res) => {
+  try {
+    const { notifications } = req.body;
+    if (Array.isArray(notifications) && notifications.length > 0) {
+      const created = await Notification.insertMany(notifications);
+      return res.status(201).json({ success: true, count: created.length });
+    }
+    // Single notification
+    const { studentId, title, message, type } = req.body;
+    if (!studentId || !title) {
+      return res.status(400).json({ error: 'studentId and title are required' });
+    }
+    const notif = await Notification.create({ studentId, title, message, type: type || 'reminder' });
+    res.status(201).json({ success: true, notification: notif });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/notifications/send-reminder - bulk send payment reminders to unpaid students
+router.post('/send-reminder', auth, async (req, res) => {
+  try {
+    const { studentIds, message } = req.body;
+    if (!Array.isArray(studentIds) || studentIds.length === 0) {
+      return res.status(400).json({ error: 'studentIds array required' });
+    }
+    const notifications = studentIds.map(sid => ({
+      studentId: sid,
+      title: 'Payment Reminder',
+      message: message || 'You have outstanding tuition fees. Please make payment before the deadline to avoid penalties.',
+      type: 'reminder',
+      read: false,
+    }));
+    const created = await Notification.insertMany(notifications);
+    res.status(201).json({ success: true, count: created.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
