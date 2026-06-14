@@ -41,6 +41,14 @@ class SAMsApp extends ConsumerWidget {
       theme: SAMsLightTheme.theme,
       darkTheme: SAMsTheme.darkTheme,
       themeMode: themeState.isDark ? ThemeMode.dark : ThemeMode.light,
+      builder: (context, child) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        if (!isDark || child == null) return child ?? const SizedBox.shrink();
+        return Container(
+          decoration: SAMsTheme.premiumBackground,
+          child: child,
+        );
+      },
       home: home,
     );
   }

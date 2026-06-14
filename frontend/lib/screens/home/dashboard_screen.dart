@@ -1,10 +1,14 @@
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -24,18 +28,35 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerProviderStateMixin {
   String? _profileImage;
-  List<dynamic> _announcements = [];
   Map<String, dynamic>? _feeSummary;
 
   late AnimationController _staggerController;
   late AnimationController _balancePulse;
+  late AnimationController _flipController;
+  late AnimationController _countController;
+  late AnimationController _pulseController;
+  late Animation<double> _flipAnim;
+  bool _isFlipped = false;
   late List<Animation<double>> _staggerAnims;
+
+  // Dynamic state
+  DateTime? _lastUpdated;
+  Timer? _lastUpdatedTimer;
+  String _statusLine = '';
+  Color _statusColor = Colors.grey;
+  bool _hasUnread = false;
 
   @override
   void initState() {
     super.initState();
     _staggerController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
     _balancePulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000))..repeat(reverse: true);
+    _flipController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _countController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
+    _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat(reverse: true);
+    _flipAnim = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _flipController, curve: Curves.easeInOutBack),
+    );
     
     // 5 staggered items: header, greeting, info card, balance, quick access
     _staggerAnims = List.generate(5, (i) => CurvedAnimation(
@@ -45,12 +66,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
     
     _loadAll();
     _staggerController.forward();
+
+    // #1 Last updated timer - refresh display every 30s
+    _lastUpdatedTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _staggerController.dispose();
     _balancePulse.dispose();
+    _flipController.dispose();
+    _countController.dispose();
+    _pulseController.dispose();
+    _lastUpdatedTimer?.cancel();
     super.dispose();
   }
 
@@ -74,9 +104,51 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
       // Skip for admin users
       if (sid.isNotEmpty && user?['role'] != 'admin') {
         final data = await ApiService.get('/fees/$sid/summary');
-        setState(() => _feeSummary = data['summary']);
+        setState(() {
+          _feeSummary = data['summary'];
+          _lastUpdated = DateTime.now();
+          _hasUnread = true; // Simulate unread for demo
+        });
+        _computeStatusLine();
+        // #3 Animated counter
+        _countController.reset();
+        _countController.forward();
       }
     } catch (_) {}
+  }
+
+  void _computeStatusLine() {
+    if (_feeSummary == null) {
+      _statusLine = 'No fees assigned yet.';
+      _statusColor = Colors.grey;
+      return;
+    }
+    final balance = ((_feeSummary!['balance'] ?? 0) as num).toDouble();
+    final overdue = (_feeSummary!['overdue'] ?? 0) as num;
+    final pending = (_feeSummary!['pendingCount'] ?? _feeSummary!['unpaidCount'] ?? 0) as num;
+    
+    if (balance <= 0) {
+      _statusLine = 'All settled. Nothing due.';
+      _statusColor = const Color(0xFF4CAF50);
+    } else if (overdue > 0) {
+      _statusLine = 'You have overdue fees.';
+      _statusColor = const Color(0xFFE53935);
+    } else if (pending > 0) {
+      _statusLine = '${pending.toInt()} fee(s) pending payment.';
+      _statusColor = Colors.grey;
+    } else {
+      _statusLine = 'RM ${balance.toStringAsFixed(0)} outstanding.';
+      _statusColor = const Color(0xFFFF9800);
+    }
+  }
+
+  String get _lastUpdatedText {
+    if (_lastUpdated == null) return '';
+    final diff = DateTime.now().difference(_lastUpdated!);
+    if (diff.inSeconds < 10) return 'Just now';
+    if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    return '${diff.inHours}h ago';
   }
 
   Future<void> _refresh() async {
@@ -95,6 +167,181 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
           child: child,
         ),
       ),
+    );
+  }
+
+  Widget _buildBalanceFront(bool isDark, Color accent, Color muted, ThemeData t) {
+    final user = ref.watch(authProvider).user;
+    final isAdmin = user?['role'] == 'admin';
+    
+    return AnimatedBuilder(
+      animation: _balancePulse,
+      builder: (_, child) => Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F2235) : const Color(0xFFEDE5D4),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: accent.withOpacity(0.15 + _balancePulse.value * 0.1)),
+        ),
+        child: child,
+      ),
+      child: isAdmin
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(width: 18, height: 1, color: accent),
+                  const SizedBox(width: 8),
+                  Text('FEE MANAGEMENT',
+                    style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
+                  ),
+                  const Spacer(),
+                  Icon(Icons.admin_panel_settings_outlined, size: 14, color: muted.withOpacity(0.5)),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Text('Treasury Portal',
+                style: GoogleFonts.fraunces(color: t.colorScheme.onSurface, fontSize: 24, fontWeight: FontWeight.w500, height: 1.2),
+              ),
+              const SizedBox(height: 8),
+              Text('Manage fees, view collection stats, and send reminders.',
+                style: t.textTheme.bodyMedium?.copyWith(fontSize: 13, color: muted),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('Tap module above to manage',
+                      style: GoogleFonts.inter(color: accent, fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward_rounded, size: 18, color: accent),
+                ],
+              ),
+            ],
+          )
+        : Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(width: 18, height: 1, color: accent),
+              const SizedBox(width: 8),
+              Text('OUTSTANDING BALANCE',
+                style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              Icon(Icons.flip_rounded, size: 14, color: muted.withOpacity(0.5)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text('RM',
+                style: GoogleFonts.fraunces(color: muted, fontSize: 18, fontWeight: FontWeight.w400, height: 1.4),
+              ),
+              const SizedBox(width: 6),
+              AnimatedBuilder(
+                animation: _countController,
+                builder: (_, __) {
+                  final val = ((_feeSummary?['balance'] ?? 0) is num
+                    ? (_feeSummary?['balance'] ?? 0) as num
+                    : 0).toDouble() * Curves.easeOutCubic.transform(_countController.value);
+                  return Text(
+                    val.toStringAsFixed(2),
+                    style: GoogleFonts.fraunces(
+                      color: t.colorScheme.onSurface,
+                      fontSize: 40,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: -1.2,
+                      height: 1,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _feeSummary != null && ((_feeSummary!['balance'] ?? 0) as num) <= 0
+                    ? 'Fully settled. Tap to see breakdown.'
+                    : 'Tap to flip. Double-tap to pay.',
+                  style: t.textTheme.bodyMedium?.copyWith(fontSize: 13),
+                ),
+              ),
+              Icon(Icons.arrow_forward_rounded, size: 18, color: accent),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceBack(bool isDark, Color accent, Color muted, ThemeData t) {
+    final totalFees = (_feeSummary?['total_due'] ?? 0) is num ? (_feeSummary?['total_due'] ?? 0) as num : 0;
+    final totalPaid = (_feeSummary?['total_paid'] ?? 0) is num ? (_feeSummary?['total_paid'] ?? 0) as num : 0;
+    final balance = (_feeSummary?['balance'] ?? 0) is num ? (_feeSummary?['balance'] ?? 0) as num : 0;
+    final paidPercent = totalFees > 0 ? (totalPaid / totalFees) : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F2235) : const Color(0xFFEDE5D4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(width: 18, height: 1, color: accent),
+              const SizedBox(width: 8),
+              Text('FEE BREAKDOWN',
+                style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              Icon(Icons.flip_rounded, size: 14, color: muted.withOpacity(0.5)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _breakdownRow('Total Fees', 'RM ${totalFees.toStringAsFixed(2)}', muted, t),
+          const SizedBox(height: 8),
+          _breakdownRow('Paid', 'RM ${totalPaid.toStringAsFixed(2)}', const Color(0xFF4CAF50), t),
+          const SizedBox(height: 8),
+          _breakdownRow('Remaining', 'RM ${balance.toStringAsFixed(2)}', balance > 0 ? const Color(0xFFE53935) : const Color(0xFF4CAF50), t),
+          const SizedBox(height: 14),
+          // Progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: paidPercent.toDouble(),
+              minHeight: 6,
+              backgroundColor: muted.withOpacity(0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(accent),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text('${(paidPercent * 100).toStringAsFixed(0)}% settled',
+            style: GoogleFonts.inter(color: muted, fontSize: 11, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _breakdownRow(String label, String value, Color valueColor, ThemeData t) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: t.textTheme.bodyMedium?.copyWith(fontSize: 13)),
+        Text(value, style: GoogleFonts.fraunces(color: valueColor, fontSize: 16, fontWeight: FontWeight.w500)),
+      ],
     );
   }
 
@@ -122,7 +369,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
           backgroundColor: t.scaffoldBackgroundColor,
           onRefresh: _refresh,
           child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -142,7 +389,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                         ],
                       ),
                       const Spacer(),
-                      _IconBtn(icon: Icons.notifications_none_rounded, onTap: () {}),
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          _IconBtn(icon: Icons.notifications_none_rounded, onTap: () {
+                            setState(() => _hasUnread = false);
+                            Navigator.pushNamed(context, '/fees', arguments: {'initialTab': 3});
+                          }),
+                          if (_hasUnread) Positioned(
+                            right: 2, top: 2,
+                            child: AnimatedBuilder(
+                              animation: _pulseController,
+                              builder: (_, __) => Transform.scale(
+                                scale: 1.0 + _pulseController.value * 0.4,
+                                child: Opacity(
+                                  opacity: 1.0 - _pulseController.value * 0.4,
+                                  child: Container(
+                                    width: 6, height: 6,
+                                    decoration: const BoxDecoration(color: Color(0xFFE53935), shape: BoxShape.circle),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(width: 6),
                       GestureDetector(
                         onTap: () => _showProfileMenu(context, ref),
@@ -175,9 +446,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                 )),
                 _fadeSlide(_staggerAnims[1], child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 6, 24, 0),
-                  child: Text(
-                    '$_greeting,\n${name.split(' ').first}.',
-                    style: t.textTheme.displayMedium?.copyWith(height: 1.05),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$_greeting,\n${name.split(' ').first}.',
+                        style: t.textTheme.displayMedium?.copyWith(height: 1.05),
+                      ),
+                    ],
                   ),
                 )),
 
@@ -240,68 +516,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                 _fadeSlide(_staggerAnims[3], child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
                   child: GestureDetector(
-                    onTap: () => Navigator.push(context, SlidePageRoute(page: const FeesScreen())),
+                    onTap: () {
+                      setState(() => _isFlipped = !_isFlipped);
+                      if (_isFlipped) {
+                        _flipController.forward();
+                      } else {
+                        _flipController.reverse();
+                      }
+                    },
+                    onDoubleTap: () => Navigator.push(context, SlidePageRoute(page: const FeesScreen())),
                     child: AnimatedBuilder(
-                      animation: _balancePulse,
-                      builder: (_, child) => Container(
-                        padding: const EdgeInsets.all(22),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF0F2235) : const Color(0xFFEDE5D4),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: accent.withOpacity(0.15 + _balancePulse.value * 0.1)),
-                        ),
-                        child: child,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(width: 18, height: 1, color: accent),
-                              const SizedBox(width: 8),
-                              Text('OUTSTANDING BALANCE',
-                                style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
+                      animation: _flipAnim,
+                      builder: (_, __) {
+                        final angle = _flipAnim.value * math.pi;
+                        final isFront = angle < math.pi / 2;
+                        return Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.001) // perspective
+                            ..rotateY(angle),
+                          child: isFront
+                            ? _buildBalanceFront(isDark, accent, muted, t)
+                            : Transform(
+                                alignment: Alignment.center,
+                                transform: Matrix4.identity()..rotateY(math.pi),
+                                child: _buildBalanceBack(isDark, accent, muted, t),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text('RM',
-                                style: GoogleFonts.fraunces(color: muted, fontSize: 18, fontWeight: FontWeight.w400, height: 1.4),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                ((_feeSummary?['balance'] ?? 0) is num
-                                  ? (_feeSummary?['balance'] ?? 0) as num
-                                  : 0).toStringAsFixed(2),
-                                style: GoogleFonts.fraunces(
-                                  color: t.colorScheme.onSurface,
-                                  fontSize: 40,
-                                  fontWeight: FontWeight.w400,
-                                  letterSpacing: -1.2,
-                                  height: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _feeSummary != null && ((_feeSummary!['balance'] ?? 0) as num) <= 0
-                                    ? 'Fully settled — no action needed.'
-                                    : 'View breakdown and make a payment.',
-                                  style: t.textTheme.bodyMedium?.copyWith(fontSize: 13),
-                                ),
-                              ),
-                              Icon(Icons.arrow_forward_rounded, size: 18, color: accent),
-                            ],
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   ),
                 )),
@@ -318,71 +560,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                     crossAxisSpacing: 4,
                     mainAxisSpacing: 14,
                     children: [
-                      _QuickItem(icon: Icons.fastfood_outlined, label: 'e-Kupon', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Icons.emergency_outlined, label: 'Emergency', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Icons.laptop_mac_outlined, label: 'EDasar', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Icons.school_outlined, label: 'Alumni', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Icons.directions_bus_outlined, label: 'Bus', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Icons.help_outline_rounded, label: 'FAQ', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Icons.cloud_outlined, label: 'Weather', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Icons.map_outlined, label: 'Map', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Icons.calendar_today_outlined, label: 'Calendar', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Icons.restaurant_outlined, label: 'Cafetaria', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Icons.article_outlined, label: 'News', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Icons.access_time_rounded, label: 'Prayer', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.ticket_discount, label: 'e-Kupon', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.hospital, label: 'Emergency', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.monitor, label: 'EDasar', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.teacher, label: 'Alumni', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.bus, label: 'Bus', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.message_question, label: 'FAQ', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.cloud, label: 'Weather', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.map, label: 'Map', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.calendar_1, label: 'Calendar', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.coffee, label: 'Cafetaria', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.document_text, label: 'News', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.moon, label: 'Prayer', accent: accent, muted: muted, onTap: () {}),
                     ],
                   ),
                 ),
 
-                // ─── ANNOUNCEMENTS ───
-                _SectionLabel(text: 'ANNOUNCEMENTS', muted: muted, accent: accent, top: 32),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: t.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: t.dividerColor),
-                    ),
-                    child: Column(
-                      children: _announcements.isEmpty
-                        ? [_AnnouncementRow(title: 'No new announcements', meta: 'Check back later.', muted: muted, isFirst: true)]
-                        : _announcements.take(3).toList().asMap().entries.map((e) =>
-                            _AnnouncementRow(
-                              title: e.value['title']?.toString() ?? '',
-                              meta: e.value['time']?.toString() ?? '',
-                              muted: muted,
-                              isFirst: e.key == 0,
-                            ),
-                          ).toList(),
-                    ),
-                  ),
-                ),
-
-                // ─── FACILITIES ───
-                _SectionLabel(text: 'FACILITIES', muted: muted, accent: accent, top: 32),
-                SizedBox(
-                  height: 38,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    children: ['Residency', 'Sport Complex', 'Library', 'Health Centre', 'Lab', 'Dewan', 'Mosque'].map((f) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: t.dividerColor),
-                        ),
-                        child: Text(f,
-                          style: GoogleFonts.inter(color: muted, fontSize: 12, fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                    )).toList(),
-                  ),
-                ),
 
                 const SizedBox(height: 36),
                 // Footer mark
@@ -622,52 +815,6 @@ class _IconBtn extends StatelessWidget {
           border: Border.all(color: t.dividerColor),
         ),
         child: Icon(icon, size: 16, color: t.textTheme.bodyMedium?.color),
-      ),
-    );
-  }
-}
-
-// ─── Announcement row in editorial style ───
-class _AnnouncementRow extends StatelessWidget {
-  final String title, meta;
-  final Color muted;
-  final bool isFirst;
-  const _AnnouncementRow({required this.title, required this.meta, required this.muted, this.isFirst = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        border: isFirst ? null : Border(top: BorderSide(color: t.dividerColor)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            width: 5, height: 5,
-            decoration: BoxDecoration(color: muted, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                  style: t.textTheme.bodyLarge?.copyWith(fontSize: 13.5, height: 1.35),
-                ),
-                if (meta.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(meta,
-                    style: GoogleFonts.inter(color: muted, fontSize: 10.5, letterSpacing: 0.4),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

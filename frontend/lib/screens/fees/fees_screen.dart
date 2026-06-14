@@ -12,10 +12,12 @@ class FeesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
     final role = user?['role'] ?? 'student';
+    final args = ModalRoute.of(context)?.settings.arguments;
+    final initialTab = (args is Map) ? (args['initialTab'] as int? ?? 0) : 0;
 
     if (role == 'admin') {
       return const TreasuryShell();
     }
-    return const StudentFeesShell();
+    return StudentFeesShell(initialTab: initialTab);
   }
 }

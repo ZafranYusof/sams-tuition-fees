@@ -1,6 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const https = require('https');
+const axios = require('axios');
 const mongoose = require('mongoose');
 const Fee = require('../models/Fee');
 const Payment = require('../models/Payment');
@@ -92,6 +93,24 @@ router.get('/fpx/callback', async (req, res) => {
       if (status_id === '1') {
         payment.status = 'success';
         payment.receipt = `RCP-${Date.now()}`;
+
+        // Fetch real bank name from ToyibPay
+        try {
+          const baseUrl = process.env.TOYYIBPAY_URL || 'https://dev.toyyibpay.com';
+          const txnResp = await axios.post(`${baseUrl}/index.php/api/getBillTransactions`, {
+            billCode: billcode,
+            billpaymentStatus: '1',
+          }, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+          if (Array.isArray(txnResp.data) && txnResp.data.length > 0) {
+            const channel = txnResp.data[0].billpaymentChannel || txnResp.data[0].billpaymentChannelName;
+            if (channel) {
+              payment.bank = mapChannelToBank(channel);
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to fetch bank info from ToyibPay:', e.message);
+        }
+
         await payment.save();
 
         // Update fee atomically, cap at totalAmount
@@ -125,6 +144,29 @@ router.get('/fpx/callback', async (req, res) => {
   }
 });
 
+// Map ToyibPay channel name to friendly bank name
+function mapChannelToBank(channel) {
+  const c = (channel || '').toLowerCase();
+  if (c.includes('maybank')) return 'Maybank';
+  if (c.includes('cimb')) return 'CIMB';
+  if (c.includes('rhb')) return 'RHB';
+  if (c.includes('public')) return 'Public Bank';
+  if (c.includes('hong leong') || c.includes('hongleong')) return 'Hong Leong';
+  if (c.includes('islam')) return 'Bank Islam';
+  if (c.includes('ambank') || c.includes('am ')) return 'AmBank';
+  if (c.includes('alliance')) return 'Alliance';
+  if (c.includes('uob')) return 'UOB';
+  if (c.includes('ocbc')) return 'OCBC';
+  if (c.includes('hsbc')) return 'HSBC';
+  if (c.includes('rakyat')) return 'Bank Rakyat';
+  if (c.includes('muamalat')) return 'Bank Muamalat';
+  if (c.includes('agro')) return 'Agrobank';
+  if (c.includes('affin')) return 'Affin Bank';
+  // Filter out generic FPX channel names (sandbox/dev returns "FPX B2C")
+  if (c.includes('fpx') || c.includes('b2c') || c.includes('b2b')) return 'Online Banking';
+  return channel || 'Online Banking'; // fallback
+}
+
 // FPX webhook (server-to-server callback)
 router.post('/fpx/webhook', async (req, res) => {
   try {
@@ -135,6 +177,22 @@ router.post('/fpx/webhook', async (req, res) => {
       if (status_id === '1') {
         payment.status = 'success';
         payment.receipt = `RCP-${Date.now()}`;
+
+        // Fetch real bank from ToyibPay
+        try {
+          const baseUrl = process.env.TOYYIBPAY_URL || 'https://dev.toyyibpay.com';
+          const txnResp = await axios.post(`${baseUrl}/index.php/api/getBillTransactions`, {
+            billCode: billcode,
+            billpaymentStatus: '1',
+          }, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+          if (Array.isArray(txnResp.data) && txnResp.data.length > 0) {
+            const channel = txnResp.data[0].billpaymentChannel || txnResp.data[0].billpaymentChannelName;
+            if (channel) payment.bank = mapChannelToBank(channel);
+          }
+        } catch (e) {
+          console.warn('Failed to fetch bank info (webhook):', e.message);
+        }
+
         await payment.save();
 
         const fee = await Fee.findById(payment.fee);

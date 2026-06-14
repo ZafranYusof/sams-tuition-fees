@@ -24,6 +24,50 @@ class SAMsTheme {
   static const Color paper = Color(0xFFF5EFE3);
   static const Color brass = Color(0xFFC9A961);
 
+  /// Premium gradient background - visible depth from darker top to lighter bottom
+  static BoxDecoration get premiumBackground => const BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        Color(0xFF030A12), // very dark at top
+        Color(0xFF0B1B2C), // base ink middle
+        Color(0xFF162D45), // noticeably lighter navy at bottom
+      ],
+      stops: [0.0, 0.45, 1.0],
+    ),
+  );
+
+  /// Gradient background widget with optional radial glow
+  static Widget gradientScaffold({required Widget child, bool showGlow = true}) {
+    return Container(
+      decoration: premiumBackground,
+      child: showGlow ? Stack(
+        children: [
+          Positioned(
+            top: -80,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 280,
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.topCenter,
+                  radius: 1.2,
+                  colors: [
+                    brass.withOpacity(0.04),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          child,
+        ],
+      ) : child,
+    );
+  }
+
   static TextTheme _buildDarkTextTheme() {
     final serif = GoogleFonts.fraunces(
       color: textPrimary,
@@ -50,7 +94,7 @@ class SAMsTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: background,
+      scaffoldBackgroundColor: Colors.transparent,
       primaryColor: primary,
       colorScheme: const ColorScheme.dark(
         primary: primary,
@@ -60,7 +104,7 @@ class SAMsTheme {
       ),
       textTheme: _buildDarkTextTheme(),
       appBarTheme: AppBarTheme(
-        backgroundColor: background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
         iconTheme: const IconThemeData(color: textPrimary),

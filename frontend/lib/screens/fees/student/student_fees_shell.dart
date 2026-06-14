@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../config/theme.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'student_home_tab.dart';
 import 'student_payment_tab.dart';
 import 'student_history_tab.dart';
 import 'student_alerts_tab.dart';
 
 class StudentFeesShell extends StatefulWidget {
-  const StudentFeesShell({super.key});
+  final int initialTab;
+  const StudentFeesShell({super.key, this.initialTab = 0});
 
   @override
   State<StudentFeesShell> createState() => _StudentFeesShellState();
 }
 
-class _StudentFeesShellState extends State<StudentFeesShell> {
+class _StudentFeesShellState extends State<StudentFeesShell>
+    with TickerProviderStateMixin {
   int _currentIndex = 0;
+  late final PageController _pageController;
+  late final AnimationController _indicatorController;
+
+  static const _inkNavy = Color(0xFF0B1B2C);
+  static const _brassGold = Color(0xFFC9A961);
 
   final _screens = const [
     StudentHomeTab(),
@@ -23,31 +34,216 @@ class _StudentFeesShellState extends State<StudentFeesShell> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialTab;
+    _pageController = PageController(initialPage: _currentIndex);
+    _indicatorController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _indicatorController.dispose();
+    super.dispose();
+  }
+
+  void _onTabTapped(int index) {
+    if (index == _currentIndex) return;
+    HapticFeedback.selectionClick();
+    setState(() => _currentIndex = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (i) => setState(() => _currentIndex = i),
-          backgroundColor: Theme.of(context).cardColor,
-          selectedItemColor: SAMsTheme.primary,
-          unselectedItemColor: Theme.of(context).textTheme.bodySmall?.color,
-          type: BottomNavigationBarType.fixed,
-          selectedFontSize: 11,
-          unselectedFontSize: 11,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.payment_outlined), activeIcon: Icon(Icons.payment), label: 'Payment'),
-            BottomNavigationBarItem(icon: Icon(Icons.history_outlined), activeIcon: Icon(Icons.history), label: 'History'),
-            BottomNavigationBarItem(icon: Icon(Icons.notifications_outlined), activeIcon: Icon(Icons.notifications), label: 'Alerts'),
-          ],
+      body: PageView(
+        controller: _pageController,
+        physics: const BouncingScrollPhysics(),
+        onPageChanged: (i) => setState(() => _currentIndex = i),
+        children: _screens,
+      ),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Page indicator dots
+          Container(
+            padding: const EdgeInsets.only(bottom: 6, top: 4),
+            color: const Color(0xFF0B1B2C),
+            child: Center(
+              child: SmoothPageIndicator(
+                controller: _pageController,
+                count: 4,
+                effect: const WormEffect(
+                  dotWidth: 6,
+                  dotHeight: 6,
+                  spacing: 8,
+                  activeDotColor: Color(0xFFC9A961),
+                  dotColor: Color(0xFF2A3A4C),
+                ),
+              ),
+            ),
+          ),
+          _EditorialBottomNav(
+            currentIndex: _currentIndex,
+            onTap: _onTabTapped,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Custom Editorial Bottom Navigation Bar ───────────────────────────────────
+
+class _EditorialBottomNav extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _EditorialBottomNav({
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  static const _inkNavy = Color(0xFF0B1B2C);
+  static const _brassGold = Color(0xFFC9A961);
+
+  static const _items = <_NavItemData>[
+    _NavItemData(icon: Iconsax.home_2, activeIcon: Iconsax.home_2_copy, label: 'Home'),
+    _NavItemData(icon: Iconsax.card, activeIcon: Iconsax.card_copy, label: 'Payment'),
+    _NavItemData(icon: Iconsax.clock, activeIcon: Iconsax.clock_copy, label: 'History'),
+    _NavItemData(icon: Iconsax.notification, activeIcon: Iconsax.notification_copy, label: 'Alerts'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final double navWidth = MediaQuery.of(context).size.width;
+    final double tabWidth = navWidth / _items.length;
+    final double indicatorWidth = 32.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: _inkNavy,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 64,
+          child: Stack(
+            children: [
+              // Sliding brass gold underline indicator
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                top: 0,
+                left: (tabWidth * currentIndex) + (tabWidth - indicatorWidth) / 2,
+                child: Container(
+                  width: indicatorWidth,
+                  height: 3,
+                  decoration: BoxDecoration(
+                    color: _brassGold,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              // Tab items row
+              Row(
+                children: List.generate(_items.length, (index) {
+                  final item = _items[index];
+                  final isActive = index == currentIndex;
+                  return Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => onTap(index),
+                      child: _NavItem(
+                        data: item,
+                        isActive: isActive,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+// ─── Single Nav Item with scale animation ─────────────────────────────────────
+
+class _NavItem extends StatelessWidget {
+  final _NavItemData data;
+  final bool isActive;
+
+  const _NavItem({
+    required this.data,
+    required this.isActive,
+  });
+
+  static const _brassGold = Color(0xFFC9A961);
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? _brassGold : Colors.white.withOpacity(0.45);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedScale(
+            scale: isActive ? 1.1 : 1.0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            child: Icon(
+              isActive ? data.activeIcon : data.icon,
+              color: color,
+              size: 22,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            data.label,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+              color: color,
+              letterSpacing: 0.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Data model ───────────────────────────────────────────────────────────────
+
+class _NavItemData {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+
+  const _NavItemData({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
 }

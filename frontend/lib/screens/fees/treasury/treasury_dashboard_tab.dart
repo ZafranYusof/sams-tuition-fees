@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
+import 'package:figma_squircle/figma_squircle.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../../providers/auth_provider.dart';
 
 class TreasuryDashboardTab extends ConsumerStatefulWidget {
@@ -133,88 +138,238 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
 
   void _showAddFeeDialog(BuildContext context) {
     final t = Theme.of(context);
+    final isDark = t.brightness == Brightness.dark;
     final studentIdCtrl = TextEditingController();
     final amountCtrl = TextEditingController();
     final descCtrl = TextEditingController(text: 'Tuition Fee');
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: t.cardColor,
-        title: Text('Add Fee', style: TextStyle(color: t.colorScheme.onSurface)),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: studentIdCtrl, style: TextStyle(color: t.colorScheme.onSurface), decoration: const InputDecoration(labelText: 'Student ID (e.g. CB23109)')),
-          const SizedBox(height: 12),
-          TextField(controller: descCtrl, style: TextStyle(color: t.colorScheme.onSurface), decoration: const InputDecoration(labelText: 'Description')),
-          const SizedBox(height: 12),
-          TextField(controller: amountCtrl, style: TextStyle(color: t.colorScheme.onSurface), keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Amount (RM)')),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: t.textTheme.bodySmall?.color ?? Colors.grey))),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await ApiService.post('/fees', {
-                  'studentId': studentIdCtrl.text.trim(),
-                  'items': [{'description': descCtrl.text.trim(), 'amount': double.tryParse(amountCtrl.text) ?? 0, 'category': 'tuition'}],
-                  'semester': 2,
-                  'academicYear': '2025/2026',
-                  'dueDate': '2026-06-30',
-                });
-                Navigator.pop(ctx);
-                _load();
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fee added successfully'), backgroundColor: SAMsTheme.success));
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: SAMsTheme.error));
-              }
-            },
-            child: const Text('Add'),
+      builder: (ctx) => Dialog(
+        backgroundColor: isDark ? const Color(0xFF0F2235) : t.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Container(width: 18, height: 1, color: SAMsTheme.accent),
+                const SizedBox(width: 8),
+                Text('ADD FEE', style: GoogleFonts.inter(color: isDark ? const Color(0xFF8A9BB5) : Colors.grey, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600)),
+              ]),
+              const SizedBox(height: 16),
+              TextField(
+                controller: studentIdCtrl,
+                style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 13),
+                decoration: InputDecoration(
+                  labelText: 'Student ID',
+                  labelStyle: GoogleFonts.inter(fontSize: 12, color: isDark ? const Color(0xFF8A9BB5) : Colors.grey),
+                  hintText: 'e.g. CB23109',
+                  hintStyle: GoogleFonts.inter(fontSize: 12, color: isDark ? const Color(0xFF8A9BB5) : Colors.grey),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descCtrl,
+                style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 13),
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  labelStyle: GoogleFonts.inter(fontSize: 12, color: isDark ? const Color(0xFF8A9BB5) : Colors.grey),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: amountCtrl,
+                style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 13),
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Amount (RM)',
+                  labelStyle: GoogleFonts.inter(fontSize: 12, color: isDark ? const Color(0xFF8A9BB5) : Colors.grey),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: Text('Cancel', style: GoogleFonts.inter(color: isDark ? const Color(0xFF8A9BB5) : Colors.grey, fontSize: 13)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final studentId = studentIdCtrl.text.trim();
+                        final amount = double.tryParse(amountCtrl.text) ?? 0;
+                        if (studentId.isEmpty || amount <= 0) {
+                          _showEditorialSnack(context, 'Fill in all fields correctly', isError: true);
+                          return;
+                        }
+                        try {
+                          Navigator.pop(ctx);
+                          _showEditorialSnack(context, 'Adding fee...', isLoading: true);
+                          await ApiService.post('/fees', {
+                            'studentId': studentId,
+                            'items': [{'description': descCtrl.text.trim(), 'amount': amount, 'category': 'tuition'}],
+                            'semester': 2,
+                            'academicYear': '2025/2026',
+                            'dueDate': '2026-06-30',
+                          });
+                          if (mounted) {
+                            _showEditorialSnack(context, 'Fee added for $studentId — RM ${amount.toStringAsFixed(2)}');
+                            _load();
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            _showEditorialSnack(context, 'Failed to add fee', isError: true);
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: SAMsTheme.accent,
+                        foregroundColor: isDark ? const Color(0xFF0B1B2C) : Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        elevation: 0,
+                      ),
+                      child: Text('Add', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
   void _sendReminder(BuildContext context) {
     final t = Theme.of(context);
+    final isDark = t.brightness == Brightness.dark;
     final unpaidFees = _fees.where((f) => f['status'] == 'unpaid' || f['status'] == 'overdue').toList();
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: t.cardColor,
-        title: Text('Send Reminder', style: TextStyle(color: t.colorScheme.onSurface)),
-        content: Text('Send payment reminder to ${unpaidFees.length} student(s) with unpaid fees?', style: TextStyle(color: t.textTheme.bodyMedium?.color ?? Colors.grey)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: t.textTheme.bodySmall?.color ?? Colors.grey))),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                // Get student IDs from unpaid fees - only use human-readable studentId
-                final studentIds = unpaidFees.map((f) {
-                  final student = f['student'];
-                  if (student is Map) return (student['studentId'] ?? '').toString();
-                  return ''; // Skip non-populated entries
-                }).where((id) => id.isNotEmpty).toSet().toList();
+      builder: (ctx) => Dialog(
+        backgroundColor: isDark ? const Color(0xFF0F2235) : t.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Container(width: 18, height: 1, color: SAMsTheme.accent),
+                const SizedBox(width: 8),
+                Text('SEND REMINDER', style: GoogleFonts.inter(color: isDark ? const Color(0xFF8A9BB5) : Colors.grey, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600)),
+              ]),
+              const SizedBox(height: 16),
+              Text('Send payment reminder to ${unpaidFees.length} student(s) with unpaid fees?', style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 13, height: 1.5)),
+              if (unpaidFees.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                ...unpaidFees.take(3).map((f) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(children: [
+                    Container(width: 6, height: 6, decoration: const BoxDecoration(color: SAMsTheme.error, shape: BoxShape.circle)),
+                    const SizedBox(width: 8),
+                    Text('${f['student']?['name'] ?? 'Student'} — RM ${((f['totalAmount'] ?? 0) as num).toStringAsFixed(0)}', style: GoogleFonts.inter(fontSize: 11, color: isDark ? const Color(0xFF8A9BB5) : Colors.grey)),
+                  ]),
+                )),
+                if (unpaidFees.length > 3) Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text('+ ${unpaidFees.length - 3} more', style: GoogleFonts.inter(fontSize: 11, color: isDark ? const Color(0xFF8A9BB5) : Colors.grey)),
+                ),
+              ],
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: Text('Cancel', style: GoogleFonts.inter(color: isDark ? const Color(0xFF8A9BB5) : Colors.grey, fontSize: 13)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        try {
+                          final studentIds = unpaidFees.map((f) {
+                            final student = f['student'];
+                            if (student is Map) return (student['studentId'] ?? '').toString();
+                            return '';
+                          }).where((id) => id.isNotEmpty).toSet().toList();
 
-                if (studentIds.isNotEmpty) {
-                  await ApiService.post('/notifications/send-reminder', {
-                    'studentIds': studentIds,
-                  });
-                }
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Reminder sent to ${studentIds.length} student(s)'), backgroundColor: SAMsTheme.success));
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: SAMsTheme.error));
-                }
-              }
-            },
-            child: const Text('Send'),
+                          if (studentIds.isEmpty) {
+                            _showEditorialSnack(context, 'No valid student IDs found', isError: true);
+                            return;
+                          }
+
+                          _showEditorialSnack(context, 'Sending reminders...', isLoading: true);
+                          await ApiService.post('/notifications/send-reminder', {
+                            'studentIds': studentIds,
+                          });
+                          if (mounted) {
+                            _showEditorialSnack(context, 'Reminder sent to ${studentIds.length} student(s)');
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            _showEditorialSnack(context, 'Failed to send reminder', isError: true);
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: SAMsTheme.accent,
+                        foregroundColor: isDark ? const Color(0xFF0B1B2C) : Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        elevation: 0,
+                      ),
+                      child: Text('Send', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
+  }
+
+  void _showEditorialSnack(BuildContext context, String message, {bool isError = false, bool isLoading = false}) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      backgroundColor: isDark ? const Color(0xFF0F2235) : const Color(0xFFEDE5D4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: isError ? SAMsTheme.error.withOpacity(0.4) : (isLoading ? SAMsTheme.accent.withOpacity(0.4) : SAMsTheme.accent.withOpacity(0.3))),
+      ),
+      duration: Duration(seconds: isLoading ? 1 : 3),
+      content: Row(children: [
+        if (isLoading) SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: SAMsTheme.accent, strokeWidth: 1.5))
+        else if (isError) Icon(Icons.error_outline_rounded, size: 16, color: SAMsTheme.error)
+        else Icon(Icons.check_circle_outline_rounded, size: 16, color: SAMsTheme.accent),
+        const SizedBox(width: 10),
+        Expanded(child: Text(message, style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 13, fontWeight: FontWeight.w500))),
+      ]),
+    ));
   }
 
   @override
@@ -232,7 +387,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
           color: SAMsTheme.primary,
           onRefresh: _load,
           child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,19 +401,25 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                     Expanded(child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Treasury', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: SAMsTheme.primary, letterSpacing: 1.2)),
-                        const SizedBox(height: 4),
-                        Text(name, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
+                        Row(children: [
+                          Container(width: 14, height: 1.5, color: SAMsTheme.accent),
+                          const SizedBox(width: 8),
+                          Text('TREASURY', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: SAMsTheme.accent, letterSpacing: 2)),
+                        ]),
+                        const SizedBox(height: 8),
+                        Text(name, style: GoogleFonts.fraunces(fontSize: 24, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                       ],
                     )),
                     Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        color: t.cardColor,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: t.dividerColor),
+                      width: 44, height: 44,
+                      decoration: ShapeDecoration(
+                        color: SAMsTheme.accent.withOpacity(0.08),
+                        shape: SmoothRectangleBorder(
+                          borderRadius: SmoothBorderRadius(cornerRadius: 12, cornerSmoothing: 0.8),
+                          side: BorderSide(color: SAMsTheme.accent.withOpacity(0.2)),
+                        ),
                       ),
-                      child: const Icon(Icons.account_balance_rounded, color: SAMsTheme.primary, size: 20),
+                      child: const Icon(Iconsax.bank, color: SAMsTheme.accent, size: 20),
                     ),
                   ],
                 )),
@@ -268,10 +429,12 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                 // --- COLLECTION OVERVIEW ---
                 _fadeSlide(_staggerAnims[1], child: Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: t.cardColor,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: t.dividerColor),
+                    shape: SmoothRectangleBorder(
+                      borderRadius: SmoothBorderRadius(cornerRadius: 16, cornerSmoothing: 0.8),
+                      side: BorderSide(color: t.dividerColor),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,7 +452,17 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                           Expanded(child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('RM ${_totalPaid.toStringAsFixed(0)}', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
+                              AnimatedTextKit(
+                              animatedTexts: [
+                                TyperAnimatedText(
+                                  'RM ${_totalPaid.toStringAsFixed(0)}',
+                                  textStyle: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface),
+                                  speed: const Duration(milliseconds: 50),
+                                ),
+                              ],
+                              isRepeatingAnimation: false,
+                              totalRepeatCount: 1,
+                            ),
                               const SizedBox(height: 2),
                               Text('of RM ${_totalDue.toStringAsFixed(0)} total', style: TextStyle(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                             ],
@@ -319,15 +492,15 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                 // --- STAT CARDS (2x2) ---
                 _fadeSlide(_staggerAnims[2], child: Column(children: [
                 Row(children: [
-                  Expanded(child: _MetricTile(icon: Icons.people_outline_rounded, label: 'Students', value: '$_totalStudents')),
+                  Expanded(child: _MetricTile(icon: Iconsax.people, label: 'Students', value: '$_totalStudents')),
                   const SizedBox(width: 12),
-                  Expanded(child: _MetricTile(icon: Icons.warning_amber_rounded, label: 'Outstanding', value: 'RM ${_outstanding.toStringAsFixed(0)}', accent: SAMsTheme.error)),
+                  Expanded(child: _MetricTile(icon: Iconsax.danger, label: 'Outstanding', value: 'RM ${_outstanding.toStringAsFixed(0)}', accent: SAMsTheme.error)),
                 ]),
                 const SizedBox(height: 12),
                 Row(children: [
-                  Expanded(child: _MetricTile(icon: Icons.check_circle_outline_rounded, label: 'Collected', value: 'RM ${_totalPaid.toStringAsFixed(0)}', accent: SAMsTheme.success)),
+                  Expanded(child: _MetricTile(icon: Iconsax.tick_circle, label: 'Collected', value: 'RM ${_totalPaid.toStringAsFixed(0)}', accent: SAMsTheme.success)),
                   const SizedBox(width: 12),
-                  Expanded(child: _MetricTile(icon: Icons.receipt_outlined, label: 'Total Fees', value: '${_fees.length}')),
+                  Expanded(child: _MetricTile(icon: Iconsax.document_text, label: 'Total Fees', value: '${_fees.length}')),
                 ]),
                 ])),
 
@@ -357,10 +530,10 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                 // --- ACTIONS ---
                 Text('Actions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                 const SizedBox(height: 12),
-                _ActionRow(icon: Icons.people_outline_rounded, label: 'View Students', onTap: () => widget.onViewStudents?.call()),
-                _ActionRow(icon: Icons.list_alt_rounded, label: 'All Payments', onTap: () => _showAllPayments(context)),
-                _ActionRow(icon: Icons.add_rounded, label: 'Add Fee', onTap: () => _showAddFeeDialog(context)),
-                _ActionRow(icon: Icons.notifications_none_rounded, label: 'Send Reminder', subtitle: '$_unpaid unpaid', onTap: () => _sendReminder(context)),
+                _ActionRow(icon: Iconsax.people, label: 'View Students', onTap: () => widget.onViewStudents?.call()),
+                _ActionRow(icon: Iconsax.receipt_2, label: 'All Payments', onTap: () => _showAllPayments(context)),
+                _ActionRow(icon: Iconsax.add_circle, label: 'Add Fee', onTap: () => _showAddFeeDialog(context)),
+                _ActionRow(icon: Iconsax.notification, label: 'Send Reminder', subtitle: '$_unpaid unpaid', onTap: () => _sendReminder(context)),
 
                 const SizedBox(height: 28),
 
@@ -424,19 +597,28 @@ class _MetricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        shape: SmoothRectangleBorder(
+          borderRadius: SmoothBorderRadius(cornerRadius: 14, cornerSmoothing: 0.8),
+          side: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: accent, size: 20),
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: accent.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: accent, size: 16),
+          ),
           const SizedBox(height: 12),
-          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
+          Text(value, style: GoogleFonts.fraunces(fontSize: 18, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
           const SizedBox(height: 2),
-          Text(label, style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color)),
+          Text(label, style: GoogleFonts.inter(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
         ],
       ),
     );
@@ -479,21 +661,37 @@ class _ActionRow extends StatelessWidget {
       onTap: () { HapticFeedback.lightImpact(); onTap(); },
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: ShapeDecoration(
           color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Theme.of(context).dividerColor),
+          shape: SmoothRectangleBorder(
+            borderRadius: SmoothBorderRadius(cornerRadius: 12, cornerSmoothing: 0.8),
+            side: BorderSide(color: Theme.of(context).dividerColor),
+          ),
         ),
         child: Row(children: [
-          Icon(icon, color: SAMsTheme.primary, size: 20),
+          Container(
+            width: 34, height: 34,
+            decoration: BoxDecoration(
+              color: SAMsTheme.accent.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: SAMsTheme.accent, size: 17),
+          ),
           const SizedBox(width: 14),
-          Expanded(child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface))),
+          Expanded(child: Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface))),
           if (subtitle != null) ...[
-            Text(subtitle!, style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: SAMsTheme.error.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(subtitle!, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: SAMsTheme.error)),
+            ),
             const SizedBox(width: 8),
           ],
-          Icon(Icons.chevron_right_rounded, color: Theme.of(context).textTheme.bodySmall?.color, size: 18),
+          Icon(Iconsax.arrow_right_3, color: Theme.of(context).textTheme.bodySmall?.color, size: 16),
         ]),
       ),
     );

@@ -17,11 +17,24 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String? _imagePath;
+  bool _isDarkMode = true;
 
   @override
   void initState() {
     super.initState();
     _loadImage();
+    _loadDarkMode();
+  }
+
+  Future<void> _loadDarkMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() => _isDarkMode = prefs.getBool('dark_mode') ?? true);
+  }
+
+  Future<void> _toggleDarkMode(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('dark_mode', value);
+    setState(() => _isDarkMode = value);
   }
 
   Future<void> _loadImage() async {
@@ -84,8 +97,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final name = user?['name'] ?? 'Student';
     final email = user?['email'] ?? '';
     final studentId = user?['studentId'] ?? '';
-    final faculty = user?['faculty'] ?? 'FKOM';
-    final program = user?['program'] ?? 'Software Engineering';
+    final faculty = user?['faculty'] ?? '—';
+    final program = user?['program'] ?? '—';
+    final semester = user?['semester']?.toString() ?? 'Not set';
     final role = user?['role'] ?? 'student';
 
     final t = Theme.of(context);
@@ -155,26 +169,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           _infoRow('Student ID', studentId.toString(), t),
           _infoRow('Faculty', faculty.toString(), t),
           _infoRow('Program', program.toString(), t),
-          _infoRow('Semester', '2 (2025/2026)', t),
+          _infoRow('Semester', semester, t),
           _infoRow('Email', email.toString(), t, isLast: true),
 
           const SizedBox(height: 32),
           _SectionHead('SETTINGS', accent: accent, muted: muted),
           const SizedBox(height: 12),
+          // Dark mode toggle
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: t.dividerColor))),
+            child: Row(children: [
+              Icon(Icons.dark_mode_outlined, color: t.textTheme.bodyMedium?.color, size: 18),
+              const SizedBox(width: 14),
+              Expanded(child: Text('Dark mode', style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 14))),
+              SizedBox(height: 28, child: Switch(
+                value: _isDarkMode,
+                onChanged: _toggleDarkMode,
+                activeColor: accent,
+              )),
+            ]),
+          ),
           _settingsItem(Icons.notifications_none_rounded, 'Notifications', () {}, t),
           _settingsItem(Icons.lock_outline_rounded, 'Change password', () {}, t),
           _settingsItem(Icons.translate_rounded, 'Language', () {}, t),
-          _settingsItem(Icons.info_outline_rounded, 'About SAMs', () {}, t, isLast: true),
+          _settingsItem(Icons.info_outline_rounded, 'About SAMs', () => _showAboutDialog(t, accent), t, isLast: true),
 
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
             height: 52,
             child: OutlinedButton.icon(
-              onPressed: () {
-                ref.read(authProvider.notifier).logout();
-                Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
-              },
+              onPressed: () => _showSignOutDialog(t),
               icon: const Icon(Icons.logout_rounded, size: 18, color: SAMsTheme.error),
               label: Text('Sign out', style: GoogleFonts.inter(color: SAMsTheme.error, fontSize: 14, fontWeight: FontWeight.w600)),
               style: OutlinedButton.styleFrom(
@@ -184,6 +210,70 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showSignOutDialog(ThemeData t) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: t.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 40, height: 2, color: SAMsTheme.accent),
+            const SizedBox(height: 12),
+            Text('SIGN OUT', style: GoogleFonts.inter(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w600, color: t.textTheme.bodySmall?.color)),
+            const SizedBox(height: 16),
+            Text('Are you sure you want to sign out?', style: GoogleFonts.inter(fontSize: 14, color: t.colorScheme.onSurface)),
+            const SizedBox(height: 24),
+            Row(children: [
+              Expanded(child: TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Cancel', style: GoogleFonts.inter(color: t.textTheme.bodyMedium?.color)),
+              )),
+              const SizedBox(width: 12),
+              Expanded(child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  ref.read(authProvider.notifier).logout();
+                  Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: SAMsTheme.error, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                child: Text('Sign out', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+              )),
+            ]),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  void _showAboutDialog(ThemeData t, Color accent) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: t.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 40, height: 2, color: accent),
+            const SizedBox(height: 16),
+            Text('SAMs', style: GoogleFonts.fraunces(fontSize: 28, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
+            const SizedBox(height: 4),
+            Text('v1.0.0', style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color)),
+            const SizedBox(height: 12),
+            Text('UMPSA Tuition Fee Management', style: GoogleFonts.inter(fontSize: 13, color: t.textTheme.bodyMedium?.color)),
+            const SizedBox(height: 20),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Close', style: GoogleFonts.inter(color: accent, fontWeight: FontWeight.w600)),
+            ),
+          ]),
+        ),
       ),
     );
   }
