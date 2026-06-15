@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -11,16 +12,17 @@ import 'package:moon_design/moon_design.dart';
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
 import '../../../widgets/app_toast.dart';
+import '../../../providers/language_provider.dart' as lp;
 import 'package:skeletonizer/skeletonizer.dart';
 
-class StudentHistoryTab extends StatefulWidget {
+class StudentHistoryTab extends ConsumerStatefulWidget {
   const StudentHistoryTab({super.key});
 
   @override
-  State<StudentHistoryTab> createState() => _StudentHistoryTabState();
+  ConsumerState<StudentHistoryTab> createState() => _StudentHistoryTabState();
 }
 
-class _StudentHistoryTabState extends State<StudentHistoryTab> with TickerProviderStateMixin {
+class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with TickerProviderStateMixin {
   List<dynamic> _payments = [];
   bool _loading = true;
   String _query = '';
@@ -243,6 +245,7 @@ class _StudentHistoryTabState extends State<StudentHistoryTab> with TickerProvid
   void _showQuickActions(Map<String, dynamic> p) {
     HapticFeedback.mediumImpact();
     final t = Theme.of(context);
+    final loc = ref.read(lp.languageProvider).locale;
     final isDark = t.brightness == Brightness.dark;
     final muted = isDark ? const Color(0xFFB0BEC5) : const Color(0xFF4A5568);
     showModalBottomSheet(
@@ -263,8 +266,8 @@ class _StudentHistoryTabState extends State<StudentHistoryTab> with TickerProvid
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(color: muted.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)),
             ),
-            _quickAction(Iconsax.eye, 'View Details', muted, () { Navigator.pop(context); _viewPaymentDetail(p); }),
-            _quickAction(Iconsax.share, 'Share Receipt', muted, () { Navigator.pop(context); _shareReceipt(p); }),
+            _quickAction(Iconsax.eye, lp.t('view_receipt', loc), muted, () { Navigator.pop(context); _viewPaymentDetail(p); }),
+            _quickAction(Iconsax.share, lp.t('share_receipt', loc), muted, () { Navigator.pop(context); _shareReceipt(p); }),
             _quickAction(Iconsax.copy, 'Copy Reference', muted, () {
               Clipboard.setData(ClipboardData(text: p['transactionId'] ?? ''));
               Navigator.pop(context);
@@ -290,6 +293,7 @@ class _StudentHistoryTabState extends State<StudentHistoryTab> with TickerProvid
 
   void _viewPaymentDetail(Map<String, dynamic> p) {
     HapticFeedback.lightImpact();
+    final loc = ref.read(lp.languageProvider).locale;
     final status = p['status'] ?? 'pending';
     final isSuccess = status == 'success';
     final isFailed = status == 'failed';
@@ -331,7 +335,7 @@ class _StudentHistoryTabState extends State<StudentHistoryTab> with TickerProvid
             Row(children: [
               Container(width: 18, height: 1, color: accent),
               const SizedBox(width: 8),
-              Text('TRANSACTION DETAIL', style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600)),
+              Text(lp.t('transaction_detail', loc), style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600)),
             ]),
             const SizedBox(height: 20),
             Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -363,7 +367,7 @@ class _StudentHistoryTabState extends State<StudentHistoryTab> with TickerProvid
               onTap: () => Navigator.pop(context),
               isFullWidth: true,
               borderColor: muted.withValues(alpha: 0.2),
-              label: Text('Close', style: GoogleFonts.inter(color: muted, fontSize: 13, fontWeight: FontWeight.w500)),
+              label: Text(lp.t('close', loc), style: GoogleFonts.inter(color: muted, fontSize: 13, fontWeight: FontWeight.w500)),
             )),
           ],
         ),
@@ -416,6 +420,7 @@ class _StudentHistoryTabState extends State<StudentHistoryTab> with TickerProvid
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final loc = ref.watch(lp.languageProvider).locale;
     final isDark = t.brightness == Brightness.dark;
     const accent = SAMsTheme.accent;
     final muted = isDark ? const Color(0xFFB0BEC5) : const Color(0xFF4A5568);
@@ -431,7 +436,7 @@ class _StudentHistoryTabState extends State<StudentHistoryTab> with TickerProvid
         title: Row(children: [
           Container(width: 14, height: 1, color: accent),
           const SizedBox(width: 8),
-          Text('HISTORY', style: GoogleFonts.inter(color: muted, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w600)),
+          Text(lp.t('history', loc).toUpperCase(), style: GoogleFonts.inter(color: muted, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w600)),
         ]),
         titleSpacing: 20,
         actions: [

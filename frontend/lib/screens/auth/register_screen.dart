@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:moon_design/moon_design.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
 import '../home/main_shell.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -126,9 +127,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final t = Theme.of(context);
+    final locale = ref.watch(languageProvider).locale;
+    final theme = Theme.of(context);
     const accent = SAMsTheme.accent;
-    final muted = t.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
+    final muted = theme.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
 
     // Navigate to home when authenticated after registration
     ref.listen<AuthState>(authProvider, (prev, next) {
@@ -146,7 +148,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           icon: const Icon(Icons.arrow_back_rounded, size: 20),
           onPressed: () { HapticFeedback.lightImpact(); Navigator.pop(context); },
         ),
-        title: const Text('Create account'),
+        title: Text(t('create_account_title', locale)),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -164,32 +166,32 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   children: [
                     Container(width: 26, height: 1, color: accent),
                     const SizedBox(width: 10),
-                    Text('NEW STUDENT',
+                    Text(t('new_student', locale),
                       style: GoogleFonts.inter(color: muted, fontSize: 11, letterSpacing: 2.4, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
                 const SizedBox(height: 28),
-                Text('Join SAMs', style: t.textTheme.displayMedium),
+                Text(t('join_sams', locale), style: theme.textTheme.displayMedium),
                 const SizedBox(height: 8),
                 Text(
-                  'A few details and you\'re in.',
-                  style: t.textTheme.bodyMedium?.copyWith(fontSize: 15),
+                  t('join_sams_subtitle', locale),
+                  style: theme.textTheme.bodyMedium?.copyWith(fontSize: 15),
                 ),
                 const SizedBox(height: 36),
 
                 // ─── Student ID ───
-                _label('STUDENT ID', muted),
+                _label(t('student_id_label', locale), muted),
                 const SizedBox(height: 8),
                 MoonFormTextInput(
                   controller: _studentIdController,
                   hintText: 'CB23000',
                   leading: Icon(Icons.badge_outlined, size: 18, color: muted),
-                  textColor: t.textTheme.bodyLarge?.color,
+                  textColor: theme.textTheme.bodyLarge?.color,
                   hintTextColor: muted,
-                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  backgroundColor: theme.inputDecorationTheme.fillColor,
                   activeBorderColor: accent,
-                  inactiveBorderColor: t.dividerColor,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Student ID is required';
                     return null;
@@ -204,11 +206,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   controller: _nameController,
                   hintText: 'Your name',
                   leading: Icon(Icons.person_outline, size: 18, color: muted),
-                  textColor: t.textTheme.bodyLarge?.color,
+                  textColor: theme.textTheme.bodyLarge?.color,
                   hintTextColor: muted,
-                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  backgroundColor: theme.inputDecorationTheme.fillColor,
                   activeBorderColor: accent,
-                  inactiveBorderColor: t.dividerColor,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Full name is required';
                     return null;
@@ -224,11 +226,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   keyboardType: TextInputType.emailAddress,
                   hintText: 'name@umpsa.edu.my',
                   leading: Icon(Icons.alternate_email_rounded, size: 18, color: muted),
-                  textColor: t.textTheme.bodyLarge?.color,
+                  textColor: theme.textTheme.bodyLarge?.color,
                   hintTextColor: muted,
-                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  backgroundColor: theme.inputDecorationTheme.fillColor,
                   activeBorderColor: accent,
-                  inactiveBorderColor: t.dividerColor,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Email is required';
                     if (!v.contains('@')) return 'Enter a valid email address';
@@ -253,11 +255,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       color: muted,
                     ),
                   ),
-                  textColor: t.textTheme.bodyLarge?.color,
+                  textColor: theme.textTheme.bodyLarge?.color,
                   hintTextColor: muted,
-                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  backgroundColor: theme.inputDecorationTheme.fillColor,
                   activeBorderColor: accent,
-                  inactiveBorderColor: t.dividerColor,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Password is required';
                     if (v.length < 6) return 'Password must be at least 6 characters';
@@ -282,11 +284,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       color: muted,
                     ),
                   ),
-                  textColor: t.textTheme.bodyLarge?.color,
+                  textColor: theme.textTheme.bodyLarge?.color,
                   hintTextColor: muted,
-                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  backgroundColor: theme.inputDecorationTheme.fillColor,
                   activeBorderColor: accent,
-                  inactiveBorderColor: t.dividerColor,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Please confirm your password';
                     if (v != _passwordController.text) return 'Passwords do not match';
@@ -300,7 +302,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedFaculty,
-                  style: GoogleFonts.inter(fontSize: 15, color: t.textTheme.bodyLarge?.color),
+                  style: GoogleFonts.inter(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
                   icon: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: muted),
                   decoration: InputDecoration(
                     hintText: 'Select faculty',
@@ -323,7 +325,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedProgram,
-                  style: GoogleFonts.inter(fontSize: 15, color: t.textTheme.bodyLarge?.color),
+                  style: GoogleFonts.inter(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
                   icon: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: muted),
                   isExpanded: true,
                   decoration: InputDecoration(
@@ -360,7 +362,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   label: authState.isLoading
                       ? SizedBox(
                           width: 18, height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 1.6, color: t.colorScheme.onPrimary),
+                          child: CircularProgressIndicator(strokeWidth: 1.6, color: theme.colorScheme.onPrimary),
                         )
                       : Text(
                           'Create account',

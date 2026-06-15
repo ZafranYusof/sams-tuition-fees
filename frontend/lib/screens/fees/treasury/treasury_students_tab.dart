@@ -1,23 +1,25 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moon_design/moon_design.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
 import '../../../widgets/empty_state.dart';
+import '../../../providers/language_provider.dart';
 import 'package:figma_squircle/figma_squircle.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-class TreasuryStudentsTab extends StatefulWidget {
+class TreasuryStudentsTab extends ConsumerStatefulWidget {
   const TreasuryStudentsTab({super.key});
 
   @override
-  State<TreasuryStudentsTab> createState() => _TreasuryStudentsTabState();
+  ConsumerState<TreasuryStudentsTab> createState() => _TreasuryStudentsTabState();
 }
 
-class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
+class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
     with TickerProviderStateMixin {
   List<dynamic> _fees = [];
   bool _loading = true;
@@ -113,6 +115,8 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(languageProvider).locale;
+    String tr(String k) => translations[locale]?[k] ?? translations['en']?[k] ?? k;
     // Inject dummy fees so Skeletonizer can render placeholder cards.
     if (_loading && _fees.isEmpty) {
       _fees = List.generate(5, (i) => {
@@ -127,7 +131,7 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
     return Skeletonizer(
       enabled: _loading,
       child: Scaffold(
-      appBar: AppBar(title: const Text('Admin Portal')),
+      appBar: AppBar(title: Text(tr('admin_portal'))),
       body: Column(children: [
         // Search
         Padding(
@@ -152,7 +156,7 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
                 });
               },
               textColor: Theme.of(context).colorScheme.onSurface,
-              hintText: 'Search by ID or Name...',
+              hintText: tr('search_id_name'),
               activeBorderColor: SAMsTheme.accent.withValues(alpha: 0.4),
               inactiveBorderColor: _query.isNotEmpty
                   ? SAMsTheme.accent.withValues(alpha: 0.4)
@@ -183,10 +187,10 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
-              _chip('All Students', 'all'),
-              _chip('Unpaid', 'unpaid'),
-              _chip('Partial Paid', 'partial'),
-              _chip('Paid', 'paid'),
+              _chip(tr('all_students'), 'all'),
+              _chip(tr('unpaid'), 'unpaid'),
+              _chip(tr('partial_paid'), 'partial'),
+              _chip(tr('paid'), 'paid'),
             ],
           ),
         ),
@@ -197,9 +201,9 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
               ? (_query.isNotEmpty
                   ? EmptyState(
                       icon: Iconsax.search_status,
-                      title: 'No students found for "$_query"',
-                      subtitle: 'Try a different name or student ID.',
-                      actionLabel: 'Clear search',
+                      title: '${tr('no_students_found')} "$_query"',
+                      subtitle: tr('try_different'),
+                      actionLabel: tr('clear_search'),
                       onAction: () {
                         HapticFeedback.selectionClick();
                         _debounce?.cancel();
@@ -220,6 +224,8 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
   }
 
   Widget _buildAnimatedList() {
+    final locale = ref.watch(languageProvider).locale;
+    String tr(String k) => translations[locale]?[k] ?? translations['en']?[k] ?? k;
     return AnimatedBuilder(
       animation: _staggerController,
       builder: (context, _) {
@@ -281,12 +287,12 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
                     const SizedBox(width: 12),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(
-                        student['name'] ?? 'Unknown',
+                        student['name'] ?? tr('unknown'),
                         style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${student['studentId'] ?? ''} \u00b7 ${student['program'] ?? ''} \u00b7 $feeCount fee(s)',
+                        '${student['studentId'] ?? ''} \u00b7 ${student['program'] ?? ''} \u00b7 $feeCount ${tr('fees').toLowerCase()}',
                         style: GoogleFonts.jetBrainsMono(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color),
                       ),
                       const SizedBox(height: 6),
@@ -297,8 +303,8 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
                           child: Text(status.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: _statusColor(status))),
                         ),
                         const SizedBox(width: 10),
-                        if (!isPaid) Text('Due: RM ${balance.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface))
-                        else Text('Cleared', style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color)),
+                        if (!isPaid) Text('${tr('balance')}: RM ${balance.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface))
+                        else Text(tr('cleared'), style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color)),
                       ]),
                     ])),
                     if (!isPaid) const Icon(Icons.notification_important, color: SAMsTheme.accent, size: 20),
@@ -316,6 +322,8 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
   // #12 Long-press preview popup
   void _showStudentPreview(BuildContext context, Map<String, dynamic> student) {
     final t = Theme.of(context);
+    final locale = ref.read(languageProvider).locale;
+    String tr(String k) => translations[locale]?[k] ?? translations['en']?[k] ?? k;
     final fees = (student['fees'] as List?) ?? [];
     final totalDue = fees.fold<double>(0, (sum, f) => sum + ((f['amount'] ?? 0) as num).toDouble());
     final totalPaid = fees.fold<double>(0, (sum, f) => sum + ((f['paidAmount'] ?? 0) as num).toDouble());
@@ -336,22 +344,22 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
               ),
               const SizedBox(width: 14),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(student['name'] ?? 'Unknown', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
+                Text(student['name'] ?? tr('unknown'), style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
                 Text(student['studentId'] ?? '', style: GoogleFonts.jetBrainsMono(fontSize: 12, color: t.textTheme.bodySmall?.color)),
               ])),
             ]),
             const SizedBox(height: 16),
             Container(width: double.infinity, height: 1, color: t.dividerColor),
             const SizedBox(height: 16),
-            _previewRow('Program', student['program'] ?? 'N/A', t),
-            _previewRow('Total Due', 'RM ${totalDue.toStringAsFixed(2)}', t),
-            _previewRow('Total Paid', 'RM ${totalPaid.toStringAsFixed(2)}', t),
-            _previewRow('Balance', 'RM ${(totalDue - totalPaid).toStringAsFixed(2)}', t),
-            _previewRow('Fees', '${fees.length} item(s)', t),
+            _previewRow(tr('program'), student['program'] ?? 'N/A', t),
+            _previewRow(tr('total_due'), 'RM ${totalDue.toStringAsFixed(2)}', t),
+            _previewRow(tr('total_paid'), 'RM ${totalPaid.toStringAsFixed(2)}', t),
+            _previewRow(tr('balance'), 'RM ${(totalDue - totalPaid).toStringAsFixed(2)}', t),
+            _previewRow(tr('fees'), '${fees.length}', t),
             const SizedBox(height: 16),
             SizedBox(width: double.infinity, child: MoonTextButton(
               onTap: () => Navigator.pop(ctx),
-              label: Text('Close', style: GoogleFonts.inter(color: SAMsTheme.accent, fontWeight: FontWeight.w600)),
+              label: Text(tr('close'), style: GoogleFonts.inter(color: SAMsTheme.accent, fontWeight: FontWeight.w600)),
             )),
           ]),
         ),

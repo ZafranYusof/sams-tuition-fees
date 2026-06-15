@@ -11,6 +11,7 @@ import '../../../widgets/premium_widgets.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../widgets/pressable_card.dart';
 import 'package:figma_squircle/figma_squircle.dart';
+import '../../../providers/language_provider.dart' as lp;
 import 'student_fees_shell.dart';
 
 class StudentHomeTab extends ConsumerStatefulWidget {
@@ -165,6 +166,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final loc = ref.watch(lp.languageProvider).locale;
     final user = ref.watch(authProvider).user;
     final studentId = user?['studentId'] ?? 'CB23109';
 
@@ -192,7 +194,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
       appBar: AppBar(
         backgroundColor: t.scaffoldBackgroundColor,
         elevation: 0,
-        title: Text('Tuition Fees', style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w600)),
+        title: Text(lp.t('tuition_fees', loc), style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w600)),
         leading: IconButton(icon: Icon(Icons.arrow_back, color: t.colorScheme.onSurface), onPressed: () => Navigator.pop(context)),
         actions: [
           Container(
@@ -208,7 +210,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
               children: [
                 Container(width: 6, height: 6, decoration: BoxDecoration(color: blocked ? SAMsTheme.error : SAMsTheme.success, shape: BoxShape.circle)),
                 const SizedBox(width: 6),
-                Text(blocked ? 'Blocked' : 'Active', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: blocked ? SAMsTheme.error : SAMsTheme.success)),
+                Text(blocked ? lp.t('blocked', loc) : lp.t('active', loc), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: blocked ? SAMsTheme.error : SAMsTheme.success)),
               ],
             ),
           ),
@@ -228,11 +230,11 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
             _fadeSlide(_staggerAnims[0], child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('STUDENT', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: SAMsTheme.accent, letterSpacing: 1.2)),
+                Text(lp.t('student', loc).toUpperCase(), style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: SAMsTheme.accent, letterSpacing: 1.2)),
                 const SizedBox(height: 4),
                 Text(studentId, style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
                 const SizedBox(height: 4),
-                Text('$_semester  ·  Week $_week', style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                Text('$_semester  ·  ${lp.t('week', loc)} $_week', style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
               ],
             )),
 
@@ -253,8 +255,8 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                   const SizedBox(width: 10),
                   Expanded(child: Text(
                     daysLeft <= 7
-                      ? 'Payment overdue in $daysLeft days. Pay now to avoid penalties.'
-                      : 'Payment due in $daysLeft days. Pay before $dueDateStr.',
+                      ? '${lp.t('payment', loc)} ${lp.t('overdue_days', loc)} $daysLeft ${lp.t('days', loc)}.'
+                      : '${lp.t('payment_due', loc)} $daysLeft ${lp.t('days', loc)}. ${lp.t('pay_before', loc)} $dueDateStr.',
                     style: TextStyle(color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.warning, fontSize: 12, fontWeight: FontWeight.w500),
                   )),
                 ]),
@@ -268,10 +270,10 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                   borderRadius: BorderRadius.circular(10),
                   border: const Border(left: BorderSide(color: SAMsTheme.warning, width: 3)),
                 ),
-                child: const Row(children: [
-                  Icon(Icons.info_outline_rounded, color: SAMsTheme.warning, size: 18),
-                  SizedBox(width: 10),
-                  Expanded(child: Text('Pay before Week 5 to maintain academic access', style: TextStyle(color: SAMsTheme.warning, fontSize: 12, fontWeight: FontWeight.w500))),
+                child: Row(children: [
+                  const Icon(Icons.info_outline_rounded, color: SAMsTheme.warning, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text('${lp.t('pay_before', loc)} ${lp.t('week', loc)} 5 ${lp.t('maintain_access', loc)}', style: const TextStyle(color: SAMsTheme.warning, fontSize: 12, fontWeight: FontWeight.w500))),
                 ]),
               )),
 
@@ -325,19 +327,19 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                       Expanded(child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Balance Due', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                          Text(lp.t('balance_due', loc), style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                           const SizedBox(height: 6),
                           FlipCurrencyText(
                             value: _balance,
                             style: GoogleFonts.inter(fontSize: 26, fontWeight: FontWeight.w700, color: _balance > 0 ? t.colorScheme.onSurface : SAMsTheme.success),
                           ),
                           const SizedBox(height: 4),
-                          Text('of ${_fmtRm(_totalDue)} total', style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                          Text('${lp.t('of', loc)} ${_fmtRm(_totalDue)} ${lp.t('total', loc)}', style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                           const SizedBox(height: 8),
                           Row(children: [
                             Container(width: 8, height: 8, decoration: BoxDecoration(color: SAMsTheme.success, borderRadius: BorderRadius.circular(2))),
                             const SizedBox(width: 6),
-                            Text('${_fmtRm(_totalPaid)} paid', style: GoogleFonts.inter(fontSize: 10, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                            Text('${_fmtRm(_totalPaid)} ${lp.t('paid', loc).toLowerCase()}', style: GoogleFonts.inter(fontSize: 10, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                           ]),
                         ],
                       )),
@@ -352,15 +354,15 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
             // --- METRIC CARDS (2x2) ---
             _fadeSlide(_staggerAnims[3], child: Column(children: [
               Row(children: [
-                Expanded(child: _MetricTile(icon: Icons.account_balance_wallet_outlined, label: 'Total Due', value: _fmtRm(_totalDue))),
+                Expanded(child: _MetricTile(icon: Icons.account_balance_wallet_outlined, label: lp.t('total_due', loc), value: _fmtRm(_totalDue))),
                 const SizedBox(width: 10),
-                Expanded(child: _MetricTile(icon: Icons.check_circle_outline_rounded, label: 'Paid', value: _fmtRm(_totalPaid), accent: SAMsTheme.success)),
+                Expanded(child: _MetricTile(icon: Icons.check_circle_outline_rounded, label: lp.t('paid', loc), value: _fmtRm(_totalPaid), accent: SAMsTheme.success)),
               ]),
               const SizedBox(height: 10),
               Row(children: [
-                Expanded(child: _MetricTile(icon: Icons.hourglass_empty_rounded, label: 'Balance', value: _fmtRm(_balance), accent: _balance > 0 ? SAMsTheme.warning : SAMsTheme.success)),
+                Expanded(child: _MetricTile(icon: Icons.hourglass_empty_rounded, label: lp.t('balance', loc), value: _fmtRm(_balance), accent: _balance > 0 ? SAMsTheme.warning : SAMsTheme.success)),
                 const SizedBox(width: 10),
-                Expanded(child: _MetricTile(icon: Icons.calendar_today_rounded, label: 'Days Left', value: '$daysLeft', accent: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.accent)),
+                Expanded(child: _MetricTile(icon: Icons.calendar_today_rounded, label: lp.t('days_left', loc), value: '$daysLeft', accent: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.accent)),
               ]),
             ])),
 
@@ -380,7 +382,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Fee Breakdown', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                    Text(lp.t('fee_breakdown', loc), style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -400,9 +402,9 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                         ),
                         const SizedBox(width: 14),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text('All settled', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                          Text(lp.t('all_settled', loc), style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                           const SizedBox(height: 2),
-                          Text('No outstanding fees right now.', style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color)),
+                          Text(lp.t('no_outstanding', loc), style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color)),
                         ])),
                       ]),
                     ),
@@ -413,7 +415,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
               return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Fee Breakdown', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                Text(lp.t('fee_breakdown', loc), style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                 const SizedBox(height: 12),
                 // Filter out fully-paid fees - only show outstanding ones.
                 ...outstanding.map((fee) {
@@ -476,7 +478,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                                       children: [
                                         Text(semLabel, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                                         const SizedBox(height: 2),
-                                        Text(isPaidFee ? 'Fully paid' : 'Tap to pay RM ${balanceAmt.toStringAsFixed(2)}',
+                                        Text(isPaidFee ? lp.t('fully_paid', loc) : '${lp.t('tap_to_pay', loc)} RM ${balanceAmt.toStringAsFixed(2)}',
                                           style: GoogleFonts.inter(fontSize: 11, color: isPaidFee ? SAMsTheme.success : t.textTheme.bodySmall?.color)),
                                       ],
                                     )),
@@ -527,7 +529,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (_lastPayment != null) ...[
-                  Text('Last Payment', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                  Text(lp.t('last_payment', loc), style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -570,7 +572,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
 
                 // --- PAYMENT DEADLINE ---
                 if (_dueDate != null && _balance > 0) ...[
-                  Text('Deadline', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                  Text(lp.t('deadline', loc), style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -583,7 +585,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                       Icon(Icons.event_rounded, color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.accent, size: 22),
                       const SizedBox(width: 14),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('Payment Due', style: GoogleFonts.inter(fontSize: 11, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                        Text(lp.t('payment_due', loc), style: GoogleFonts.inter(fontSize: 11, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                         const SizedBox(height: 2),
                         Text(dueDateStr, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
                       ])),
@@ -593,7 +595,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                           color: (daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.accent).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text('$daysLeft days', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.accent)),
+                        child: Text('$daysLeft ${lp.t('days', loc)}', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.accent)),
                       ),
                     ]),
                   ),

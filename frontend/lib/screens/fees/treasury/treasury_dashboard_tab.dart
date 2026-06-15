@@ -11,6 +11,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../../widgets/premium_widgets.dart';
 import '../../../widgets/pressable_card.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/language_provider.dart' as lp;
 import 'package:moon_design/moon_design.dart';
 
 class TreasuryDashboardTab extends ConsumerStatefulWidget {
@@ -83,6 +84,8 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
 
   void _showAllPayments(BuildContext context) {
     final t = Theme.of(context);
+    final locale = ref.read(lp.languageProvider).locale;
+    String tr(String k) => lp.translations[locale]?[k] ?? lp.translations['en']?[k] ?? k;
     showMoonModalBottomSheet(
       context: context,
       isExpanded: false,
@@ -112,7 +115,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('All Payments', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                  Text(tr('all_payments'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                   Text('${_fees.length} records', style: TextStyle(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                 ],
               ),
@@ -150,6 +153,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
 
   void _showAddFeeDialog(BuildContext context) {
     final t = Theme.of(context);
+    final locale = ref.read(lp.languageProvider).locale;
     final isDark = t.brightness == Brightness.dark;
     final studentIdCtrl = TextEditingController();
     final amountCtrl = TextEditingController();
@@ -184,7 +188,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                   Row(children: [
                     Container(width: 18, height: 1, color: SAMsTheme.accent),
                     const SizedBox(width: 8),
-                    Text('ADD FEE', style: GoogleFonts.inter(color: isDark ? const Color(0xFF94989E) : Colors.grey, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600)),
+                    Text(lp.t('add_fee', locale).toUpperCase(), style: GoogleFonts.inter(color: isDark ? const Color(0xFF94989E) : Colors.grey, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600)),
                   ]),
                   const SizedBox(height: 16),
                   MoonFormTextInput(
@@ -218,7 +222,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                             Navigator.pop(ctx);
                           },
                           isFullWidth: true,
-                          label: Text('Cancel', style: GoogleFonts.inter(color: isDark ? const Color(0xFF94989E) : Colors.grey, fontSize: 13)),
+                          label: Text(lp.t('cancel', locale), style: GoogleFonts.inter(color: isDark ? const Color(0xFF94989E) : Colors.grey, fontSize: 13)),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -254,7 +258,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                               }
                             }
                           },
-                          label: Text('Add Fee', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white)),
+                          label: Text(lp.t('add_fee', locale), style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white)),
                         ),
                       ),
                     ],
@@ -270,6 +274,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
 
   void _sendReminder(BuildContext context) {
     final t = Theme.of(context);
+    final locale = ref.read(lp.languageProvider).locale;
     final isDark = t.brightness == Brightness.dark;
     final unpaidFees = _fees.where((f) => f['status'] == 'unpaid' || f['status'] == 'overdue').toList();
     showMoonModalBottomSheet(
@@ -286,7 +291,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
               Row(children: [
                 Container(width: 18, height: 1, color: SAMsTheme.accent),
                 const SizedBox(width: 8),
-                Text('SEND REMINDER', style: GoogleFonts.inter(color: isDark ? const Color(0xFF94989E) : Colors.grey, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600)),
+                Text(lp.t('send_reminder', locale).toUpperCase(), style: GoogleFonts.inter(color: isDark ? const Color(0xFF94989E) : Colors.grey, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600)),
               ]),
               const SizedBox(height: 16),
               Text('Send payment reminder to ${unpaidFees.length} student(s) with unpaid fees?', style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 13, height: 1.5)),
@@ -312,7 +317,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                     child: MoonOutlinedButton(
                       onTap: () => Navigator.pop(ctx),
                       isFullWidth: true,
-                      label: Text('Cancel', style: GoogleFonts.inter(color: isDark ? const Color(0xFF94989E) : Colors.grey, fontSize: 13)),
+                      label: Text(lp.t('cancel', locale), style: GoogleFonts.inter(color: isDark ? const Color(0xFF94989E) : Colors.grey, fontSize: 13)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -348,7 +353,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                           }
                         }
                       },
-                      label: Text('Send', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white)),
+                      label: Text(lp.t('send_reminder', locale).split(' ').first, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white)),
                     ),
                   ),
                 ],
@@ -374,6 +379,8 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
     final t = Theme.of(context);
     final user = ref.watch(authProvider).user;
     final name = user?['name'] ?? 'Admin';
+    final locale = ref.watch(lp.languageProvider).locale;
+    String tr(String k) => lp.translations[locale]?[k] ?? lp.translations['en']?[k] ?? k;
 
     // Inject dummy fees so Skeletonizer has UI to render placeholders against.
     if (_loading && _fees.isEmpty) {
@@ -414,7 +421,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                         Row(children: [
                           Container(width: 14, height: 1.5, color: SAMsTheme.accent),
                           const SizedBox(width: 8),
-                          Text('TREASURY', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: SAMsTheme.accent, letterSpacing: 2)),
+                          Text(lp.t('treasury', locale).toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: SAMsTheme.accent, letterSpacing: 2)),
                         ]),
                         const SizedBox(height: 8),
                         Text(name, style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
@@ -464,7 +471,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Collection', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                          Text(tr('collection'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                           AnimatedIntText(
                             value: _collectionRate,
                             decimals: 1,
@@ -485,7 +492,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface),
                               ),
                               const SizedBox(height: 2),
-                              Text('of RM ${_totalDue.toStringAsFixed(0)} total', style: TextStyle(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                              Text('${tr('of')} RM ${_totalDue.toStringAsFixed(0)} ${tr('total')}', style: TextStyle(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                             ],
                           )),
                         ],
@@ -515,22 +522,22 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                 // --- STAT CARDS (2x2) ---
                 _fadeSlide(_staggerAnims[2], child: Column(children: [
                 Row(children: [
-                  Expanded(child: _MetricTile(icon: Iconsax.people, label: 'Students', value: '$_totalStudents')),
+                  Expanded(child: _MetricTile(icon: Iconsax.people, label: tr('students'), value: '$_totalStudents')),
                   const SizedBox(width: 12),
-                  Expanded(child: _MetricTile(icon: Iconsax.danger, label: 'Outstanding', value: 'RM ${_outstanding.toStringAsFixed(0)}', accent: SAMsTheme.error)),
+                  Expanded(child: _MetricTile(icon: Iconsax.danger, label: tr('outstanding'), value: 'RM ${_outstanding.toStringAsFixed(0)}', accent: SAMsTheme.error)),
                 ]),
                 const SizedBox(height: 12),
                 Row(children: [
-                  Expanded(child: _MetricTile(icon: Iconsax.tick_circle, label: 'Collected', value: 'RM ${_totalPaid.toStringAsFixed(0)}', accent: SAMsTheme.success)),
+                  Expanded(child: _MetricTile(icon: Iconsax.tick_circle, label: tr('collected'), value: 'RM ${_totalPaid.toStringAsFixed(0)}', accent: SAMsTheme.success)),
                   const SizedBox(width: 12),
-                  Expanded(child: _MetricTile(icon: Iconsax.document_text, label: 'Total Fees', value: '${_fees.length}')),
+                  Expanded(child: _MetricTile(icon: Iconsax.document_text, label: tr('total_fees'), value: '${_fees.length}')),
                 ]),
                 ])),
 
                 const SizedBox(height: 28),
 
                 // --- FEE STATUS ---
-                Text('Status', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                Text(tr('status'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -540,23 +547,23 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                     border: Border.all(color: t.dividerColor),
                   ),
                   child: Column(children: [
-                    _StatusItem(label: 'Fully Paid', count: _fullyPaid, total: _fees.length, color: SAMsTheme.success),
+                    _StatusItem(label: tr('fully_paid'), count: _fullyPaid, total: _fees.length, color: SAMsTheme.success),
                     Container(height: 1, margin: const EdgeInsets.symmetric(horizontal: 16), color: t.dividerColor),
-                    _StatusItem(label: 'Partial', count: _partialPaid, total: _fees.length, color: SAMsTheme.warning),
+                    _StatusItem(label: tr('partial'), count: _partialPaid, total: _fees.length, color: SAMsTheme.warning),
                     Container(height: 1, margin: const EdgeInsets.symmetric(horizontal: 16), color: t.dividerColor),
-                    _StatusItem(label: 'Unpaid', count: _unpaid, total: _fees.length, color: SAMsTheme.error),
+                    _StatusItem(label: tr('unpaid'), count: _unpaid, total: _fees.length, color: SAMsTheme.error),
                   ]),
                 ),
 
                 const SizedBox(height: 28),
 
                 // --- ACTIONS ---
-                Text('Actions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                Text(tr('actions'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                 const SizedBox(height: 12),
-                _ActionRow(icon: Iconsax.people, label: 'View Students', onTap: () => widget.onViewStudents?.call()),
-                _ActionRow(icon: Iconsax.receipt_2, label: 'All Payments', onTap: () => _showAllPayments(context)),
-                _ActionRow(icon: Iconsax.add_circle, label: 'Add Fee', onTap: () => _showAddFeeDialog(context)),
-                _ActionRow(icon: Iconsax.notification, label: 'Send Reminder', subtitle: '$_unpaid unpaid', onTap: () => _sendReminder(context)),
+                _ActionRow(icon: Iconsax.people, label: tr('view_students'), onTap: () => widget.onViewStudents?.call()),
+                _ActionRow(icon: Iconsax.receipt_2, label: tr('all_payments'), onTap: () => _showAllPayments(context)),
+                _ActionRow(icon: Iconsax.add_circle, label: tr('add_fee'), onTap: () => _showAddFeeDialog(context)),
+                _ActionRow(icon: Iconsax.notification, label: tr('send_reminder'), subtitle: '$_unpaid ${tr('unpaid')}', onTap: () => _sendReminder(context)),
 
                 const SizedBox(height: 28),
 
@@ -564,10 +571,10 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Recent', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                    Text(tr('recent'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                     GestureDetector(
                       onTap: () => _showAllPayments(context),
-                      child: const Text('View all', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: SAMsTheme.primary)),
+                      child: Text(tr('view_all'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: SAMsTheme.primary)),
                     ),
                   ],
                 ),

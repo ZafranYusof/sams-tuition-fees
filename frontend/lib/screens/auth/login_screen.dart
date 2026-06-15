@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:moon_design/moon_design.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
 import '../../widgets/app_toast.dart';
 import '../home/main_shell.dart';
 import 'register_screen.dart';
@@ -42,9 +43,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final t = Theme.of(context);
+    final locale = ref.watch(languageProvider).locale;
+    final theme = Theme.of(context);
     const accent = SAMsTheme.accent;
-    final muted = t.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
+    final muted = theme.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
 
     // Navigate to home when authenticated
     ref.listen<AuthState>(authProvider, (prev, next) {
@@ -82,16 +84,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 56),
-                Text('Welcome', style: t.textTheme.displayMedium),
+                Text(t('welcome', locale), style: theme.textTheme.displayMedium),
                 const SizedBox(height: 8),
                 Text(
-                  'Sign in to continue your\nacademic journey.',
-                  style: t.textTheme.bodyMedium?.copyWith(fontSize: 15, height: 1.5),
+                  t('welcome_login_subtitle', locale),
+                  style: theme.textTheme.bodyMedium?.copyWith(fontSize: 15, height: 1.5),
                 ),
                 const SizedBox(height: 44),
 
                 // ─── EMAIL ───
-                _fieldLabel('EMAIL', muted),
+                _fieldLabel(t('email_label', locale), muted),
                 const SizedBox(height: 8),
                 MoonFormTextInput(
                   controller: _emailController,
@@ -100,17 +102,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onSubmitted: (_) => _passwordFocusNode.requestFocus(),
                   hintText: 'name@umpsa.edu.my',
                   leading: Icon(Icons.alternate_email_rounded, size: 18, color: muted),
-                  textColor: t.textTheme.bodyLarge?.color,
+                  textColor: theme.textTheme.bodyLarge?.color,
                   hintTextColor: muted,
-                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  backgroundColor: theme.inputDecorationTheme.fillColor,
                   activeBorderColor: accent,
-                  inactiveBorderColor: t.dividerColor,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Email is required';
+                      return t('email_required', locale);
                     }
                     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value.trim())) {
-                      return 'Enter a valid email address';
+                      return t('email_invalid', locale);
                     }
                     return null;
                   },
@@ -118,7 +120,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 18),
 
                 // ─── PASSWORD ───
-                _fieldLabel('PASSWORD', muted),
+                _fieldLabel(t('password_label', locale), muted),
                 const SizedBox(height: 8),
                 MoonFormTextInput(
                   controller: _passwordController,
@@ -136,17 +138,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       color: muted,
                     ),
                   ),
-                  textColor: t.textTheme.bodyLarge?.color,
+                  textColor: theme.textTheme.bodyLarge?.color,
                   hintTextColor: muted,
-                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  backgroundColor: theme.inputDecorationTheme.fillColor,
                   activeBorderColor: accent,
-                  inactiveBorderColor: t.dividerColor,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Password is required';
+                      return t('password_required', locale);
                     }
                     if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return t('password_min', locale);
                     }
                     return null;
                   },
@@ -159,10 +161,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: MoonTextButton(
                     onTap: () {
                       HapticFeedback.lightImpact();
-                      AppToast.info(context, 'Contact admin to reset password');
+                      AppToast.info(context, t('contact_admin_reset', locale));
                     },
                     label: Text(
-                      'Forgot password?',
+                      t('forgot_password', locale),
                       style: GoogleFonts.inter(
                         color: accent,
                         fontSize: 12.5,
@@ -192,10 +194,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   label: authState.isLoading
                       ? SizedBox(
                           width: 18, height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 1.6, color: t.colorScheme.onPrimary),
+                          child: CircularProgressIndicator(strokeWidth: 1.6, color: theme.colorScheme.onPrimary),
                         )
                       : Text(
-                          'Sign In',
+                          t('sign_in_btn', locale),
                           style: GoogleFonts.inter(
                             fontSize: 14.5,
                             letterSpacing: 0.4,
@@ -208,12 +210,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 // ─── Hairline divider with brass tick ───
                 Row(children: [
-                  Expanded(child: Container(height: 1, color: t.dividerColor)),
+                  Expanded(child: Container(height: 1, color: theme.dividerColor)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Container(width: 4, height: 4, decoration: const BoxDecoration(color: accent, shape: BoxShape.circle)),
                   ),
-                  Expanded(child: Container(height: 1, color: t.dividerColor)),
+                  Expanded(child: Container(height: 1, color: theme.dividerColor)),
                 ]),
                 const SizedBox(height: 24),
                 Center(
@@ -221,13 +223,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     alignment: WrapAlignment.center,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text("New to SAMs?  ", style: t.textTheme.bodyMedium),
+                      Text(t('new_to_sams', locale), style: theme.textTheme.bodyMedium),
                       InkWell(
                         onTap: () { HapticFeedback.lightImpact(); Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())); },
                         borderRadius: BorderRadius.circular(4),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
-                          child: Text('Create an account',
+                          child: Text(t('create_account', locale),
                             style: GoogleFonts.inter(
                               color: accent,
                               fontWeight: FontWeight.w600,

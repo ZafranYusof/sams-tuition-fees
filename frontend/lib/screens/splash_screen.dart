@@ -1,18 +1,20 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../config/theme.dart';
+import '../providers/language_provider.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   final Widget? nextScreen;
   final VoidCallback? onFinish;
   const SplashScreen({super.key, this.nextScreen, this.onFinish});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _mainController;
   late AnimationController _dotController;
   late AnimationController _shimmerController;
@@ -112,6 +114,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(languageProvider).locale;
     return Scaffold(
       backgroundColor: SAMsTheme.ink,
       body: Stack(
@@ -242,7 +245,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           ),
                         ),
                         child: Text(
-                          'Tuition & Fee Management',
+                          t('splash_subtitle', locale),
                           style: GoogleFonts.inter(
                             color: SAMsTheme.paper.withOpacity(0.65),
                             fontSize: 11.5,
