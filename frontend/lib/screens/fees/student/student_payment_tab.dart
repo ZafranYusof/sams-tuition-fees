@@ -169,7 +169,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
   /// Step 3: Processing → triggers _pay()
   void _showPaymentConfirmation() {
     if (_amount <= 0) return;
-    HapticFeedback.mediumImpact();
+    HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -202,7 +202,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
 
   Future<bool> _pay() async {
     if (_amount <= 0) return false;
-    HapticFeedback.mediumImpact();
+    // Haptic owned by _handleConfirm in the payment sheet to avoid duplicate buzz.
     setState(() {
       _paying = true;
       _currentStep = 1; // Move to "Pay" step
@@ -573,7 +573,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
   Widget _methodToggle(String key, IconData icon, String label, ThemeData t) {
     final active = _selMethod == key;
     return Expanded(child: GestureDetector(
-      onTap: () { HapticFeedback.lightImpact(); setState(() => _selMethod = key); },
+      onTap: () { HapticFeedback.selectionClick(); setState(() => _selMethod = key); },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -723,7 +723,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
               buttonSize: MoonButtonSize.lg,
               borderColor: SAMsTheme.brass.withValues(alpha: 0.4),
               onTap: () async {
-                HapticFeedback.lightImpact();
+                HapticFeedback.mediumImpact();
                 try {
                   final dir = await getApplicationDocumentsDirectory();
                   final txnId = _receipt!['txn_id'] ?? 'unknown';
@@ -1017,7 +1017,8 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             final ok = await widget.onConfirm(_method, _bank);
             if (!mounted) return;
             if (ok) {
-            HapticFeedback.heavyImpact();
+            // Success haptic (heavyImpact) is fired inside _pay() on the parent;
+            // do not duplicate here.
             Navigator.of(context).pop(true);
             widget.onSuccessDismissed();
             } else {
@@ -1110,7 +1111,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
               final selected = b['key'] == _bank && _method == 'fpx';
               return GestureDetector(
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                   setState(() {
                     _method = 'fpx';
                     _bank = b['key']!;
@@ -1271,7 +1272,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
               if (_step == 1) ...[
                 Expanded(
                   child: MoonOutlinedButton(
-                    onTap: () => _go(0),
+                    onTap: () { HapticFeedback.selectionClick(); _go(0); },
                     label: Text(lp.t('back', locale)),
                   ),
                 ),
@@ -1282,10 +1283,11 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
                 child: MoonFilledButton(
                   backgroundColor: SAMsTheme.accent,
                   onTap: () {
-                    HapticFeedback.lightImpact();
                     if (_step == 0) {
+                      HapticFeedback.lightImpact();
                       _go(1);
                     } else if (_step == 1) {
+                      // _handleConfirm fires its own mediumImpact.
                       _handleConfirm();
                     }
                   },

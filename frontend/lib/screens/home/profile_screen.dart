@@ -55,6 +55,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _toggleDarkMode(bool value) async {
+    HapticFeedback.selectionClick();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('dark_mode', value);
     setState(() => _isDarkMode = value);
@@ -250,7 +251,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           MoonOutlinedButton(
             isFullWidth: true,
             buttonSize: MoonButtonSize.lg,
-            onTap: () { HapticFeedback.mediumImpact(); _showSignOutDialog(t); },
+            onTap: () { HapticFeedback.lightImpact(); _showSignOutDialog(t); },
             borderColor: SAMsTheme.error,
             leading: const Icon(Icons.logout_rounded, size: 18, color: SAMsTheme.error),
             label: Text(lp.t('sign_out', locale), style: GoogleFonts.inter(color: SAMsTheme.error, fontSize: 14, fontWeight: FontWeight.w600)),
@@ -286,6 +287,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 isFullWidth: true,
                 backgroundColor: SAMsTheme.error,
                 onTap: () {
+                  HapticFeedback.heavyImpact();
                   Navigator.pop(ctx);
                   ref.read(authProvider.notifier).logout();
                   Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
@@ -407,7 +409,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       Widget langTile(String code, String label) {
         final isSel = selected == code;
         return PressableCard(
-          onTap: () => setSheetState(() => selected = code),
+          onTap: () { HapticFeedback.selectionClick(); setSheetState(() => selected = code); },
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
             decoration: BoxDecoration(border: Border(bottom: BorderSide(color: t.dividerColor))),
@@ -435,6 +437,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             isFullWidth: true,
             backgroundColor: accent,
             onTap: () async {
+              HapticFeedback.mediumImpact();
               await ref.read(languageProvider.notifier).setLang(selected);
               if (ctx.mounted) Navigator.pop(ctx);
             },
@@ -456,7 +459,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Expanded(child: Text(label, style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 14, fontWeight: FontWeight.w500))),
           SizedBox(height: 28, child: MoonSwitch(
             value: value,
-            onChanged: onChanged,
+            onChanged: (v) { HapticFeedback.selectionClick(); onChanged(v); },
             activeTrackColor: accent,
           )),
         ]),

@@ -9,6 +9,7 @@ import '../../../providers/language_provider.dart';
 import '../../../widgets/shimmer_loading.dart';
 import '../../../widgets/empty_state.dart';
 import 'package:figma_squircle/figma_squircle.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class StudentAlertsTab extends ConsumerStatefulWidget {
   const StudentAlertsTab({super.key});
@@ -428,40 +429,25 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
     final icon = _typeIcon(type);
     final color = _typeColor(type);
     final anim = _itemAnimation(i);
-    final itemWidget = Dismissible(
-      key: Key(a['_id']?.toString() ?? 'alert_$i'),
-      direction:
-          isRead ? DismissDirection.none : DismissDirection.endToStart,
-      confirmDismiss: (_) async {
-        HapticFeedback.mediumImpact();
-        return true;
-      },
-      onDismissed: (_) {
-        _markRead(a['_id']?.toString() ?? '');
-      },
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: const Color(0xFF5C33CF),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.check_rounded, color: Colors.white, size: 24),
-      ),
-      child: GestureDetector(
-        onTap: !isRead
-            ? () => _markRead(a['_id']?.toString() ?? '')
-            : null,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: ShapeDecoration(
-            color: theme.cardColor,
-            shape: SmoothRectangleBorder(
-              borderRadius: SmoothBorderRadius(cornerRadius: 14, cornerSmoothing: 0.8),
-              side: BorderSide(color: isRead ? theme.dividerColor : color.withValues(alpha: 0.3)),
-            ),
+    final alertId = a['_id']?.toString() ?? '';
+
+    final card = GestureDetector(
+      onTap: !isRead
+          ? () {
+              HapticFeedback.selectionClick();
+              _markRead(alertId);
+            }
+          : null,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: ShapeDecoration(
+          color: theme.cardColor,
+          shape: SmoothRectangleBorder(
+            borderRadius: SmoothBorderRadius(cornerRadius: 14, cornerSmoothing: 0.8),
+            side: BorderSide(color: isRead ? theme.dividerColor : color.withValues(alpha: 0.3)),
           ),
-          child: Row(
+        ),
+        child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
@@ -501,8 +487,52 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
             ],
           ),
         ),
-      ),
-    );
+      );
+
+    final Widget itemWidget = isRead
+        ? card
+        : Slidable(
+            key: ValueKey(alertId.isEmpty ? 'alert_$i' : alertId),
+            endActionPane: ActionPane(
+              motion: const DrawerMotion(),
+              extentRatio: 0.28,
+              children: [
+                CustomSlidableAction(
+                  onPressed: (_) {
+                    HapticFeedback.mediumImpact();
+                    _markRead(alertId);
+                  },
+                  backgroundColor: const Color(0xFF5C33CF),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.zero,
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 6),
+                    decoration: ShapeDecoration(
+                      color: const Color(0xFF5C33CF),
+                      shape: SmoothRectangleBorder(
+                        borderRadius: SmoothBorderRadius(
+                            cornerRadius: 14, cornerSmoothing: 0.8),
+                      ),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_rounded,
+                            color: Colors.white, size: 22),
+                        SizedBox(height: 4),
+                        Text('Read',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            child: card,
+          );
 
     // Stagger entrance: fade + slide up
     return FadeTransition(

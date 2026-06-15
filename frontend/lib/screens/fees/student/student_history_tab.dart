@@ -8,6 +8,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:figma_squircle/figma_squircle.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:moon_design/moon_design.dart';
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
@@ -73,7 +74,7 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
   }
 
   Future<void> _continuePay(Map<String, dynamic> p) async {
-    HapticFeedback.lightImpact();
+    HapticFeedback.mediumImpact();
     final txnId = p['transactionId'] ?? '';
     final method = p['method'] ?? 'fpx';
     String paymentUrl;
@@ -288,6 +289,7 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
   }
 
   void _shareReceipt(Map<String, dynamic> p) {
+    HapticFeedback.mediumImpact();
     AppToast.info(context, 'Sharing receipt for ${_shortId(p['transactionId'] ?? '')}');
   }
 
@@ -768,12 +770,63 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
           child: AnimatedOpacity(
             duration: const Duration(milliseconds: 250),
             opacity: cardOpacity,
-            child: _PressableCard(
-              onTap: () => isPending ? _continuePay(p) : _viewPaymentDetail(p),
-              onLongPress: () => _showQuickActions(p),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Slidable(
+                  key: ValueKey('slidable_$txnId$i'),
+                  endActionPane: ActionPane(
+                    motion: const StretchMotion(),
+                    extentRatio: 0.55,
+                    openThreshold: 0.15,
+                    closeThreshold: 0.4,
+                    children: [
+                      CustomSlidableAction(
+                        onPressed: (_) {
+                          HapticFeedback.mediumImpact();
+                          _viewPaymentDetail(p);
+                        },
+                        backgroundColor: SAMsTheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.zero,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Iconsax.eye, size: 18),
+                            const SizedBox(height: 4),
+                            Text('View', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.3)),
+                          ],
+                        ),
+                      ),
+                      CustomSlidableAction(
+                        onPressed: (_) {
+                          HapticFeedback.mediumImpact();
+                          if (isPending) {
+                            _continuePay(p);
+                          } else {
+                            _shareReceipt(p);
+                          }
+                        },
+                        backgroundColor: isPending ? const Color(0xFF2E7D32) : SAMsTheme.accentDark,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.zero,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(isPending ? Iconsax.card : Iconsax.share, size: 18),
+                            const SizedBox(height: 4),
+                            Text(isPending ? 'Pay' : 'Share', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.3)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  child: _PressableCard(
+                    onTap: () => isPending ? _continuePay(p) : _viewPaymentDetail(p),
+                    onLongPress: () => _showQuickActions(p),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: ShapeDecoration(
                   color: cardBg.withValues(alpha: isDark ? 0.6 : 0.7),
                   shape: SmoothRectangleBorder(
@@ -887,6 +940,9 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
                 ]),
               ),
             ),
+                  ),
+                ),
+              ),
           ),
         ),
       ),
