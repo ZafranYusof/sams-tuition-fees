@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:figma_squircle/figma_squircle.dart';
+import 'package:animated_flip_counter/animated_flip_counter.dart';
 import '../config/theme.dart';
 
 /// Brand-coloured pull-to-refresh wrapper.
@@ -107,6 +108,76 @@ class AnimatedIntText extends StatelessWidget {
         '$prefix${v.toStringAsFixed(decimals)}$suffix',
         style: style,
       ),
+    );
+  }
+}
+
+/// Premium flip-style currency counter (e.g. "RM 1,234.56"). Each digit
+/// flips like an odometer when [value] changes — far more tactile than a
+/// plain tween. Uses `animated_flip_counter` under the hood with the
+/// Malaysian thousands separator.
+class FlipCurrencyText extends StatelessWidget {
+  final double value;
+  final TextStyle? style;
+  final Duration duration;
+  final Curve curve;
+  final String prefix;
+  final int fractionDigits;
+
+  const FlipCurrencyText({
+    super.key,
+    required this.value,
+    this.style,
+    this.duration = const Duration(milliseconds: 900),
+    this.curve = Curves.easeOutCubic,
+    this.prefix = 'RM ',
+    this.fractionDigits = 2,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedFlipCounter(
+      value: value,
+      duration: duration,
+      curve: curve,
+      prefix: prefix,
+      fractionDigits: fractionDigits,
+      thousandSeparator: ',',
+      textStyle: style,
+    );
+  }
+}
+
+/// Premium flip-style integer counter for stat numbers (student counts,
+/// days remaining, totals, etc).
+class FlipIntText extends StatelessWidget {
+  final int value;
+  final TextStyle? style;
+  final Duration duration;
+  final Curve curve;
+  final String prefix;
+  final String suffix;
+
+  const FlipIntText({
+    super.key,
+    required this.value,
+    this.style,
+    this.duration = const Duration(milliseconds: 900),
+    this.curve = Curves.easeOutCubic,
+    this.prefix = '',
+    this.suffix = '',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedFlipCounter(
+      value: value,
+      duration: duration,
+      curve: curve,
+      prefix: prefix,
+      suffix: suffix,
+      thousandSeparator: ',',
+      textStyle: style,
     );
   }
 }

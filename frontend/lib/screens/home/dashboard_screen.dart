@@ -186,10 +186,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
             ],
           ),
           const SizedBox(height: 14),
-          // #3 Animated counter (TweenAnimationBuilder, easeOutCubic 1.2s, RM currency)
-          AnimatedBalanceText(
+          // #3 Animated counter — premium odometer-style flip per digit
+          FlipCurrencyText(
             value: balance,
-            symbol: 'RM ',
+            prefix: 'RM ',
             style: GoogleFonts.inter(
               color: t.colorScheme.onSurface,
               fontSize: 40,

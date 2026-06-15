@@ -10,6 +10,8 @@ import 'package:figma_squircle/figma_squircle.dart';
 import 'package:moon_design/moon_design.dart';
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
+import '../../../widgets/app_toast.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class StudentHistoryTab extends StatefulWidget {
   const StudentHistoryTab({super.key});
@@ -266,11 +268,7 @@ class _StudentHistoryTabState extends State<StudentHistoryTab> with TickerProvid
             _quickAction(Iconsax.copy, 'Copy Reference', muted, () {
               Clipboard.setData(ClipboardData(text: p['transactionId'] ?? ''));
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text('Reference copied', style: GoogleFonts.inter(fontSize: 12)),
-                duration: const Duration(seconds: 1),
-                behavior: SnackBarBehavior.floating,
-              ));
+              AppToast.success(context, 'Reference copied');
             }),
           ],
         ),
@@ -287,11 +285,7 @@ class _StudentHistoryTabState extends State<StudentHistoryTab> with TickerProvid
   }
 
   void _shareReceipt(Map<String, dynamic> p) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Sharing receipt for ${_shortId(p['transactionId'] ?? '')}', style: GoogleFonts.inter(fontSize: 12)),
-      duration: const Duration(seconds: 1),
-      behavior: SnackBarBehavior.floating,
-    ));
+    AppToast.info(context, 'Sharing receipt for ${_shortId(p['transactionId'] ?? '')}');
   }
 
   void _viewPaymentDetail(Map<String, dynamic> p) {
@@ -457,8 +451,31 @@ class _StudentHistoryTabState extends State<StudentHistoryTab> with TickerProvid
           const SizedBox(width: 8),
         ],
       ),
-      body: _loading
-          ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: accent, strokeWidth: 1.5)))
+      body: _loading && _payments.isEmpty
+          ? Skeletonizer(
+              enabled: true,
+              child: Column(children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                  child: _buildSummaryFront(cardBg, muted, accent, t),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+                    itemCount: 5,
+                    itemBuilder: (_, i) => _buildPaymentCard({
+                      'transactionId': 'tx_loading_placeholder_$i',
+                      'amount': 1234.0,
+                      'status': 'success',
+                      'bank': 'Maybank',
+                      'method': 'fpx',
+                      'paidAt': DateTime.now().toIso8601String(),
+                    }, i, muted, accent, cardBg, t, isDark),
+                  ),
+                ),
+              ]),
+            )
           : Column(children: [
               // HERO SUMMARY - flippable
               Padding(

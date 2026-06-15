@@ -15,7 +15,9 @@ import 'package:moon_design/moon_design.dart';
 import 'package:intl/intl.dart';
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
-import '../../../widgets/shimmer_loading.dart';
+import '../../../widgets/app_toast.dart';
+import '../../../widgets/premium_widgets.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class StudentPaymentTab extends StatefulWidget {
   final String? targetFeeId;
@@ -244,7 +246,7 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProvid
           if (webResult == true || webResult == null) {
             final status = await ApiService.get('/payment/fpx/status/$billCode');
             if (status['status'] == 'success') { success = true; txnId = billCode; }
-            else { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment pending or failed'), backgroundColor: SAMsTheme.warning)); }
+            else { if (mounted) AppToast.warning(context, 'Payment pending or failed'); }
           }
         }
       } else {
@@ -261,7 +263,7 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProvid
           if (webResult == true || webResult == null) {
             final confirm = await ApiService.post('/payment/card/confirm', {'paymentIntentId': sessionId});
             if (confirm['status'] == 'success') { success = true; txnId = sessionId; }
-            else { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Card payment pending or failed'), backgroundColor: SAMsTheme.warning)); }
+            else { if (mounted) AppToast.warning(context, 'Card payment pending or failed'); }
           }
         }
       }
@@ -281,7 +283,7 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProvid
       return success;
     } catch (e) {
       setState(() { _paying = false; _currentStep = 0; });
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: SAMsTheme.error));
+      if (mounted) AppToast.error(context, e.toString());
       return false;
     }
   }
@@ -290,8 +292,21 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProvid
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
-    if (_loading) return const ShimmerPayment();
     if (_receipt != null) return _buildReceipt(t);
+
+    // Inject dummy fees so Skeletonizer has UI to placeholder against.
+    if (_loading && _fees.isEmpty) {
+      _fees = List.generate(2, (i) => {
+        '_id': 'skeleton_$i',
+        'status': 'unpaid',
+        'items': [{'description': 'Loading fee item', 'amount': 1234.0}],
+        'totalAmount': 1234.0,
+        'paidAmount': 0.0,
+        'semester': 1,
+        'academicYear': '2025/2026',
+        'dueDate': DateTime.now().add(const Duration(days: 30)).toIso8601String(),
+      });
+    }
 
     final daysLeft = _daysLeft;
     final isUrgent = daysLeft <= 14;
@@ -311,7 +326,9 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProvid
           ),
         ],
       ),
-      body: ListView(
+      body: Skeletonizer(
+        enabled: _loading,
+        child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
         children: [
           // Step indicator
@@ -379,6 +396,7 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProvid
           ])),
         ],
       ),
+      ),
     );
   }
 
@@ -439,7 +457,11 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProvid
         Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
           Text('RM', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
           const SizedBox(width: 4),
-          Text(_amount.toStringAsFixed(2), style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.w800, color: t.colorScheme.onSurface, letterSpacing: -1.5, height: 1)),
+          FlipCurrencyText(
+            value: _amount,
+            prefix: '',
+            style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.w800, color: t.colorScheme.onSurface, letterSpacing: -1.5, height: 1),
+          ),
         ]),
 
         if (_fees.length > 1) ...[
@@ -717,23 +739,11 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProvid
                   final file = File('${dir.path}/receipt_$txnId.txt');
                   await file.writeAsString(receiptText);
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Receipt saved to ${file.path}', style: GoogleFonts.inter(fontSize: 12)),
-                        backgroundColor: SAMsTheme.success,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
+                    AppToast.success(context, 'Receipt saved', desc: file.path);
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to save receipt', style: GoogleFonts.inter()),
-                        backgroundColor: SAMsTheme.error,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
+                    AppToast.error(context, 'Failed to save receipt');
                   }
                 }
               },

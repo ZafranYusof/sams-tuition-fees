@@ -5,7 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
+import '../../../widgets/app_toast.dart';
 import 'package:figma_squircle/figma_squircle.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../../../widgets/premium_widgets.dart';
 import '../../../widgets/pressable_card.dart';
 import '../../../providers/auth_provider.dart';
@@ -358,26 +360,13 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
   }
 
   void _showEditorialSnack(BuildContext context, String message, {bool isError = false, bool isLoading = false}) {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      backgroundColor: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF6F6F8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: isError ? SAMsTheme.error.withValues(alpha: 0.4) : (isLoading ? SAMsTheme.accent.withValues(alpha: 0.4) : SAMsTheme.accent.withValues(alpha: 0.3))),
-      ),
-      duration: Duration(seconds: isLoading ? 1 : 3),
-      content: Row(children: [
-        if (isLoading) const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: SAMsTheme.accent, strokeWidth: 1.5))
-        else if (isError) const Icon(Icons.error_outline_rounded, size: 16, color: SAMsTheme.error)
-        else const Icon(Icons.check_circle_outline_rounded, size: 16, color: SAMsTheme.accent),
-        const SizedBox(width: 10),
-        Expanded(child: Text(message, style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 13, fontWeight: FontWeight.w500))),
-      ]),
-    ));
+    if (isError) {
+      AppToast.error(context, message);
+    } else if (isLoading) {
+      AppToast.info(context, message);
+    } else {
+      AppToast.success(context, message);
+    }
   }
 
   @override
@@ -386,14 +375,28 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
     final user = ref.watch(authProvider).user;
     final name = user?['name'] ?? 'Admin';
 
-    if (_loading) return Scaffold(backgroundColor: t.scaffoldBackgroundColor, body: const Center(child: CircularProgressIndicator(color: SAMsTheme.primary, strokeWidth: 2)));
+    // Inject dummy fees so Skeletonizer has UI to render placeholders against.
+    if (_loading && _fees.isEmpty) {
+      _fees = List.generate(4, (i) => {
+        '_id': 'skeleton_$i',
+        'status': i.isEven ? 'paid' : 'unpaid',
+        'student': {'_id': 'stu_$i', 'name': 'Loading Student', 'studentId': 'CB00000'},
+        'items': [{'description': 'Loading fee', 'amount': 1234.0}],
+        'totalAmount': 1234.0,
+        'paidAmount': i.isEven ? 1234.0 : 0.0,
+        'semester': 1,
+        'academicYear': '2025/2026',
+      });
+    }
 
     return Scaffold(
       backgroundColor: t.scaffoldBackgroundColor,
       body: SafeArea(
         child: PremiumRefreshIndicator(
           onRefresh: _load,
-          child: SingleChildScrollView(
+          child: Skeletonizer(
+            enabled: _loading,
+            child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
@@ -476,9 +479,9 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                           Expanded(child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              AnimatedBalanceText(
+                              FlipCurrencyText(
                                 value: _totalPaid,
-                                decimals: 0,
+                                fractionDigits: 0,
                                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface),
                               ),
                               const SizedBox(height: 2),
@@ -606,6 +609,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                 }),
                 const SizedBox(height: 32),
               ],
+            ),
             ),
           ),
         ),

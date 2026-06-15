@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart';
+import '../../widgets/app_toast.dart';
 import '../../widgets/pressable_card.dart';
 import '../auth/login_screen.dart';
 
@@ -234,7 +235,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           _settingsRow(t, accent, Iconsax.message_question, 'Help & FAQ', () => _showHelpSheet(t, accent)),
           _settingsRow(t, accent, Iconsax.call, 'Contact us', () => _showContactSheet(t, accent)),
           _settingsRow(t, accent, Iconsax.star, 'Rate app', () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon')));
+            AppToast.info(context, 'Coming soon');
           }, isLast: true),
 
           const SizedBox(height: 24),
@@ -243,7 +244,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           const SizedBox(height: 12),
           _settingsRow(t, accent, Iconsax.info_circle, 'About SAMs', () => _showAboutDialog(t, accent)),
           _settingsRow(t, accent, Iconsax.code, 'Version info', () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('SAMs v1.0.0')));
+            AppToast.info(context, 'SAMs v1.0.0');
           }, isLast: true),
 
           const SizedBox(height: 32),
@@ -528,13 +529,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             isFullWidth: true,
             backgroundColor: accent,
             onTap: () {
-              final messenger = ScaffoldMessenger.of(ctx);
               if (newCtrl.text.isEmpty || newCtrl.text != confirmCtrl.text) {
-                messenger.showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+                AppToast.error(ctx, 'Passwords do not match');
                 return;
               }
               Navigator.pop(ctx);
-              messenger.showSnackBar(const SnackBar(content: Text('Password updated')));
+              if (mounted) AppToast.success(context, 'Password updated');
             },
             label: Text('Update', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
           )),

@@ -6,9 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
-import '../../../widgets/shimmer_loading.dart';
 import '../../../widgets/empty_state.dart';
 import 'package:figma_squircle/figma_squircle.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class TreasuryStudentsTab extends StatefulWidget {
   const TreasuryStudentsTab({super.key});
@@ -113,9 +113,20 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const ShimmerFeeList(count: 5);
+    // Inject dummy fees so Skeletonizer can render placeholder cards.
+    if (_loading && _fees.isEmpty) {
+      _fees = List.generate(5, (i) => {
+        '_id': 'skeleton_$i',
+        'status': 'unpaid',
+        'student': {'_id': 'stu_$i', 'name': 'Loading Student', 'studentId': 'CB00000', 'program': 'Computer Science'},
+        'totalAmount': 1234.0,
+        'paidAmount': 0.0,
+      });
+    }
 
-    return Scaffold(
+    return Skeletonizer(
+      enabled: _loading,
+      child: Scaffold(
       appBar: AppBar(title: const Text('Admin Portal')),
       body: Column(children: [
         // Search
@@ -204,6 +215,7 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
               : _buildAnimatedList(),
         ),
       ]),
+    ),
     );
   }
 

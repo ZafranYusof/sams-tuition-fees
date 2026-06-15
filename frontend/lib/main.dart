@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:toastification/toastification.dart';
 import 'config/moon_theme.dart';
 import 'providers/theme_provider.dart';
 import 'screens/splash_screen.dart';
@@ -47,13 +48,15 @@ class _SAMsAppState extends ConsumerState<SAMsApp> {
       home = authState.isAuthenticated ? const MainShell() : const LoginScreen();
     }
 
-    return MaterialApp(
-      title: 'SAMs - Tuition Fees',
-      debugShowCheckedModeBanner: false,
-      theme: SAMsMoonTheme.lightTheme,
-      darkTheme: SAMsMoonTheme.darkTheme,
-      themeMode: themeState.isDark ? ThemeMode.dark : ThemeMode.light,
-      home: home,
+    return ToastificationWrapper(
+      child: MaterialApp(
+        title: 'SAMs - Tuition Fees',
+        debugShowCheckedModeBanner: false,
+        theme: SAMsMoonTheme.lightTheme,
+        darkTheme: SAMsMoonTheme.darkTheme,
+        themeMode: themeState.isDark ? ThemeMode.dark : ThemeMode.light,
+        home: home,
+      ),
     );
   }
 }

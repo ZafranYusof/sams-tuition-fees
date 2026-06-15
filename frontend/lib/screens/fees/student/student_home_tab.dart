@@ -7,8 +7,8 @@ import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
 import '../../../services/cache_service.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../widgets/shimmer_loading.dart';
 import '../../../widgets/premium_widgets.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../../../widgets/pressable_card.dart';
 import 'package:figma_squircle/figma_squircle.dart';
 import 'student_fees_shell.dart';
@@ -168,46 +168,19 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
     final user = ref.watch(authProvider).user;
     final studentId = user?['studentId'] ?? 'CB23109';
 
-    if (_loading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Tuition Fees')),
-        body: ListView(
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          children: const [
-            // Header strip
-            ShimmerLoading(width: 80, height: 11, borderRadius: 4),
-            SizedBox(height: 8),
-            ShimmerLoading(width: 140, height: 22, borderRadius: 6),
-            SizedBox(height: 6),
-            ShimmerLoading(width: 180, height: 12, borderRadius: 4),
-            SizedBox(height: 20),
-            // Balance card
-            ShimmerLoading(height: 120, borderRadius: 16),
-            SizedBox(height: 12),
-            // 2x2 stat grid
-            Row(children: [
-              Expanded(child: SkeletonStatCard()),
-              SizedBox(width: 10),
-              Expanded(child: SkeletonStatCard()),
-            ]),
-            SizedBox(height: 10),
-            Row(children: [
-              Expanded(child: SkeletonStatCard()),
-              SizedBox(width: 10),
-              Expanded(child: SkeletonStatCard()),
-            ]),
-            SizedBox(height: 24),
-            ShimmerLoading(width: 120, height: 14, borderRadius: 4),
-            SizedBox(height: 12),
-            SkeletonFeeCard(),
-            SizedBox(height: 10),
-            SkeletonFeeCard(),
-            SizedBox(height: 10),
-            SkeletonFeeCard(),
-          ],
-        ),
-      );
+    // While loading with no cached data, inject dummy fees so Skeletonizer has
+    // a realistic UI tree to render placeholders against.
+    if (_loading && _fees.isEmpty) {
+      _fees = List.generate(3, (i) => {
+        '_id': 'skeleton_$i',
+        'status': 'unpaid',
+        'items': [{'description': 'Loading fee item', 'amount': 1234.0}],
+        'totalAmount': 1234.0,
+        'paidAmount': 0.0,
+        'semester': 1,
+        'academicYear': '2025/2026',
+        'dueDate': DateTime.now().add(const Duration(days: 30)).toIso8601String(),
+      });
     }
 
     final daysLeft = _daysLeft;
@@ -243,7 +216,9 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
       ),
       body: PremiumRefreshIndicator(
         onRefresh: _load,
-        child: ListView(
+        child: Skeletonizer(
+          enabled: _loading,
+          child: ListView(
           physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           padding: const EdgeInsets.symmetric(horizontal: 20),
           children: [
@@ -352,7 +327,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                         children: [
                           Text('Balance Due', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                           const SizedBox(height: 6),
-                          AnimatedBalanceText(
+                          FlipCurrencyText(
                             value: _balance,
                             style: GoogleFonts.inter(fontSize: 26, fontWeight: FontWeight.w700, color: _balance > 0 ? t.colorScheme.onSurface : SAMsTheme.success),
                           ),
@@ -629,6 +604,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
 
             const SizedBox(height: 16),
           ],
+        ),
         ),
       ),
     );

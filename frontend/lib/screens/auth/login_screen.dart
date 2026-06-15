@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:moon_design/moon_design.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/app_toast.dart';
 import '../home/main_shell.dart';
 import 'register_screen.dart';
 
@@ -158,15 +159,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: MoonTextButton(
                     onTap: () {
                       HapticFeedback.lightImpact();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Contact admin to reset password',
-                            style: GoogleFonts.inter(fontSize: 13),
-                          ),
-                          backgroundColor: const Color(0xFF000000),
-                        ),
-                      );
+                      AppToast.info(context, 'Contact admin to reset password');
                     },
                     label: Text(
                       'Forgot password?',
