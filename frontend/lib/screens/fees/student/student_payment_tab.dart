@@ -1085,9 +1085,9 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             controller: sc,
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
             children: [
-            Text('Pilih bank', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: fg)),
+            Text('Select bank', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: fg)),
             const SizedBox(height: 4),
-            Text('Pilih bank FPX anda untuk meneruskan pembayaran.', style: TextStyle(fontSize: 13, color: subFg)),
+            Text('Choose your FPX bank to continue payment.', style: TextStyle(fontSize: 13, color: subFg)),
             const SizedBox(height: 18),
             GridView.builder(
             shrinkWrap: true,
@@ -1161,9 +1161,9 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             controller: sc,
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
             children: [
-            Text('Sahkan pembayaran', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: fg)),
+            Text('Confirm payment', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: fg)),
             const SizedBox(height: 4),
-            Text('Sila semak butiran sebelum meneruskan.', style: TextStyle(fontSize: 13, color: subFg)),
+            Text('Please review the details before continuing.', style: TextStyle(fontSize: 13, color: subFg)),
             const SizedBox(height: 24),
             Center(
             child: TweenAnimationBuilder<double>(
@@ -1196,11 +1196,11 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _kv(ctx, 'Kaedah', _method == 'fpx' ? 'FPX Online Banking' : 'Kad Kredit/Debit', fg, subFg),
+                _kv(ctx, 'Method', _method == 'fpx' ? 'FPX Online Banking' : 'Credit/Debit Card', fg, subFg),
                 const SizedBox(height: 10),
                 if (_method == 'fpx') _kv(ctx, 'Bank', selectedBank['name']!, fg, subFg),
                 if (_method == 'fpx') const SizedBox(height: 10),
-                _kv(ctx, 'Tarikh akhir', widget.deadline, fg, subFg),
+                _kv(ctx, 'Due date', widget.deadline, fg, subFg),
               ],
             ),
             ),
@@ -1239,12 +1239,12 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Memproses pembayaran...',
+              'Processing payment...',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: fg),
             ),
             const SizedBox(height: 6),
             Text(
-              'Jangan tutup tetingkap ini.',
+              'Please do not close this window.',
               style: TextStyle(fontSize: 12, color: subFg),
             ),
             ],
@@ -1263,7 +1263,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
                 Expanded(
                   child: MoonOutlinedButton(
                     onTap: () => _go(0),
-                    label: const Text('Kembali'),
+                    label: const Text('Back'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1281,7 +1281,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
                     }
                   },
                   label: Text(
-                    _step == 1 ? 'Sahkan & Bayar' : 'Seterusnya',
+                    _step == 1 ? 'Confirm & Pay' : 'Next',
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
                   ),
                 ),
