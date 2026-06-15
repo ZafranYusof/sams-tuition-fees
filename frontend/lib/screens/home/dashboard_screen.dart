@@ -12,6 +12,7 @@ import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/language_provider.dart';
+import '../../providers/language_provider.dart' as lp;
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
 import '../fees/fees_screen.dart';
@@ -598,12 +599,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.person_outline),
-              title: const Text('Profile'),
+              title: Text(lp.t('profile', lang)),
               onTap: () async { Navigator.pop(ctx); await Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())); _loadProfileImage(); },
             ),
             ListTile(
               leading: Icon(isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
-              title: Text(isDark ? 'Light mode' : 'Dark mode'),
+              title: Text(isDark ? lp.t('light_mode', lang) : lp.t('dark_mode', lang)),
               onTap: () { Navigator.pop(ctx); ref.read(themeProvider.notifier).toggle(); },
             ),
             ListTile(
@@ -613,7 +614,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
             ),
             ListTile(
               leading: const Icon(Icons.logout_rounded, color: SAMsTheme.error),
-              title: const Text('Logout', style: TextStyle(color: SAMsTheme.error)),
+              title: Text(lp.t('logout', lang), style: const TextStyle(color: SAMsTheme.error)),
               onTap: () { Navigator.pop(ctx); ref.read(authProvider.notifier).logout(); Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false); },
             ),
           ]),

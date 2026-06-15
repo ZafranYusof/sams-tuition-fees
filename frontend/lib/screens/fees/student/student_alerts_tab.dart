@@ -5,6 +5,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/language_provider.dart';
 import '../../../widgets/shimmer_loading.dart';
 import '../../../widgets/empty_state.dart';
 import 'package:figma_squircle/figma_squircle.dart';
@@ -81,17 +82,28 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
     } catch (_) {}
   }
 
-  int get _unreadCount => _alerts.where((a) => a['read'] == false).length;
+  /// Alerts visible after applying user's Notification preference toggles.
+  /// Runs BEFORE the tab filter (_AlertFilter).
+  List<dynamic> get _prefVisibleAlerts {
+    final notifPrefs = ref.read(notificationPrefsProvider);
+    return _alerts
+        .where((a) => notifPrefs.isTypeEnabled(a['type']?.toString()))
+        .toList();
+  }
+
+  int get _unreadCount =>
+      _prefVisibleAlerts.where((a) => a['read'] == false).length;
 
   List<dynamic> get _filteredAlerts {
-    if (_activeFilter == _AlertFilter.all) return _alerts;
+    final visible = _prefVisibleAlerts;
+    if (_activeFilter == _AlertFilter.all) return visible;
     final typeStr = switch (_activeFilter) {
       _AlertFilter.payments => 'payment',
       _AlertFilter.reminders => 'reminder',
       _AlertFilter.warnings => 'warning',
       _ => '',
     };
-    return _alerts.where((a) => a['type'] == typeStr).toList();
+    return visible.where((a) => a['type'] == typeStr).toList();
   }
 
   IconData _typeIcon(String type) {
@@ -123,18 +135,20 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
 
 
   // --- Date section grouping ---
-  String _dateSection(String? dateStr) {
-    if (dateStr == null || dateStr.isEmpty) return 'Earlier';
+  /// Returns a section KEY ('today' | 'yesterday' | 'earlier').
+  /// Translation happens at render time so locale switches re-render correctly.
+  String _dateSectionKey(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return 'earlier';
     final date = DateTime.tryParse(dateStr);
-    if (date == null) return 'Earlier';
+    if (date == null) return 'earlier';
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final alertDay = DateTime(date.year, date.month, date.day);
 
-    if (alertDay == today) return 'Today';
-    if (alertDay == today.subtract(const Duration(days: 1))) return 'Yesterday';
-    return 'Earlier';
+    if (alertDay == today) return 'today';
+    if (alertDay == today.subtract(const Duration(days: 1))) return 'yesterday';
+    return 'earlier';
   }
 
   /// Staggered interval for item at index i
@@ -150,17 +164,20 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context);
+    final theme = Theme.of(context);
+    final locale = ref.watch(languageProvider).locale;
+    // Watch so toggles in Profile > Notifications instantly re-filter the list.
+    ref.watch(notificationPrefsProvider);
 
     if (_loading) {
       return Scaffold(
-        backgroundColor: t.scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: t.scaffoldBackgroundColor,
+          backgroundColor: theme.scaffoldBackgroundColor,
           elevation: 0,
-          title: Text('Alerts',
+          title: Text(t('alerts', locale),
               style: TextStyle(
-                  color: t.colorScheme.onSurface,
+                  color: theme.colorScheme.onSurface,
                   fontSize: 16,
                   fontWeight: FontWeight.w600)),
         ),
@@ -169,13 +186,13 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
     }
 
     return Scaffold(
-      backgroundColor: t.scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: t.scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
-        title: Text('Alerts',
+        title: Text(t('alerts', locale),
             style: TextStyle(
-                color: t.colorScheme.onSurface,
+                color: theme.colorScheme.onSurface,
                 fontSize: 16,
                 fontWeight: FontWeight.w600)),
         actions: [
@@ -185,8 +202,8 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
               child: TextButton.icon(
                 onPressed: _markAllRead,
                 icon: const Icon(Icons.done_all_rounded, size: 18, color: SAMsTheme.primary),
-                label: const Text('Mark all',
-                    style: TextStyle(
+                label: Text(t('mark_all', locale),
+                    style: const TextStyle(
                         color: SAMsTheme.primary,
                         fontSize: 13,
                         fontWeight: FontWeight.w600)),
@@ -205,13 +222,13 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
         child: Column(
           children: [
             // Filter chips row
-            _buildFilterChips(t),
+            _buildFilterChips(theme),
             Expanded(
-              child: _alerts.isEmpty
+              child: _prefVisibleAlerts.isEmpty
                   ? EmptyState.noNotifications()
                   : AnimatedBuilder(
                       animation: _staggerController,
-                      builder: (context, _) => _buildGroupedList(t),
+                      builder: (context, _) => _buildGroupedList(theme, locale),
                     ),
             ),
           ],
@@ -220,7 +237,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
     );
   }
 
-  Widget _buildFilterChips(ThemeData t) {
+  Widget _buildFilterChips(ThemeData theme) {
     final filters = [
       (_AlertFilter.all, 'All', Iconsax.sms),
       (_AlertFilter.payments, 'Payments', Iconsax.tick_circle),
@@ -250,12 +267,12 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
               decoration: BoxDecoration(
                 color: isActive
                     ? SAMsTheme.primary.withValues(alpha: 0.1)
-                    : t.cardColor,
+                    : theme.cardColor,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isActive
                       ? SAMsTheme.primary.withValues(alpha: 0.4)
-                      : t.dividerColor,
+                      : theme.dividerColor,
                 ),
               ),
               child: Row(
@@ -265,7 +282,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
                       size: 14,
                       color: isActive
                           ? SAMsTheme.primary
-                          : (t.textTheme.bodySmall?.color ?? Colors.grey)),
+                          : (theme.textTheme.bodySmall?.color ?? Colors.grey)),
                   const SizedBox(width: 5),
                   Text(label,
                       style: TextStyle(
@@ -274,7 +291,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
                               isActive ? FontWeight.w600 : FontWeight.w500,
                           color: isActive
                               ? SAMsTheme.primary
-                              : (t.textTheme.bodySmall?.color ?? Colors.grey))),
+                              : (theme.textTheme.bodySmall?.color ?? Colors.grey))),
                 ],
               ),
             ),
@@ -285,14 +302,14 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
   }
 
 
-  Widget _buildGroupedList(ThemeData t) {
+  Widget _buildGroupedList(ThemeData theme, String locale) {
     final filtered = _filteredAlerts;
     if (filtered.isEmpty) {
       return Center(
-        child: Text('No alerts in this category',
+        child: Text(t('no_alerts_category', locale),
             style: TextStyle(
                 fontSize: 13,
-                color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                color: theme.textTheme.bodySmall?.color ?? Colors.grey)),
       );
     }
 
@@ -300,7 +317,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
     final List<dynamic> items = [];
 
     // Insert "All caught up" banner only when truly empty after filter
-    if (filtered.isEmpty && _alerts.isNotEmpty) {
+    if (filtered.isEmpty && _prefVisibleAlerts.isNotEmpty) {
       items.add({'_caughtUp': true});
     }
 
@@ -310,10 +327,10 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
     for (final alert in filtered) {
       final dateStr = alert['createdAt']?.toString() ??
           alert['created_at']?.toString();
-      final section = _dateSection(dateStr);
-      if (section != lastSection) {
-        items.add({'_section': section});
-        lastSection = section;
+      final sectionKey = _dateSectionKey(dateStr);
+      if (sectionKey != lastSection) {
+        items.add({'_section': sectionKey});
+        lastSection = sectionKey;
       }
       items.add({'_alert': alert, '_animIndex': animIndex});
       animIndex++;
@@ -325,21 +342,22 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
       itemBuilder: (_, i) {
         final item = items[i];
         if (item.containsKey('_caughtUp')) {
-          return _buildAllCaughtUpBanner(t);
+          return _buildAllCaughtUpBanner(theme, locale);
         }
         if (item.containsKey('_section')) {
-          return _buildSectionHeader(item['_section'], t);
+          return _buildSectionHeader(
+              t(item['_section'] as String, locale), theme);
         }
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: _buildAlertItem(
-              item['_alert'], item['_animIndex'] as int, t),
+              item['_alert'], item['_animIndex'] as int, theme),
         );
       },
     );
   }
 
-  Widget _buildAllCaughtUpBanner(ThemeData t) {
+  Widget _buildAllCaughtUpBanner(ThemeData theme, String locale) {
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 16),
       child: Container(
@@ -363,23 +381,23 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
                   color: SAMsTheme.success, size: 26),
             ),
             const SizedBox(height: 10),
-            Text('All caught up!',
+            Text(t('all_caught_up', locale),
                 style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: t.colorScheme.onSurface)),
+                    color: theme.colorScheme.onSurface)),
             const SizedBox(height: 4),
-            Text('No unread alerts remaining',
+            Text(t('no_unread', locale),
                 style: TextStyle(
                     fontSize: 12,
-                    color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                    color: theme.textTheme.bodySmall?.color ?? Colors.grey)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title, ThemeData t) {
+  Widget _buildSectionHeader(String title, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 8),
       child: Row(
@@ -398,13 +416,13 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
                     letterSpacing: 0.5)),
           ),
           const SizedBox(width: 10),
-          Expanded(child: Divider(color: t.dividerColor, height: 1)),
+          Expanded(child: Divider(color: theme.dividerColor, height: 1)),
         ],
       ),
     );
   }
 
-  Widget _buildAlertItem(dynamic a, int i, ThemeData t) {
+  Widget _buildAlertItem(dynamic a, int i, ThemeData theme) {
     final isRead = a['read'] == true;
     final type = a['type'] ?? 'info';
     final icon = _typeIcon(type);
@@ -437,10 +455,10 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: ShapeDecoration(
-            color: t.cardColor,
+            color: theme.cardColor,
             shape: SmoothRectangleBorder(
               borderRadius: SmoothBorderRadius(cornerRadius: 14, cornerSmoothing: 0.8),
-              side: BorderSide(color: isRead ? t.dividerColor : color.withValues(alpha: 0.3)),
+              side: BorderSide(color: isRead ? theme.dividerColor : color.withValues(alpha: 0.3)),
             ),
           ),
           child: Row(
@@ -464,13 +482,13 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
                         style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: t.colorScheme.onSurface)),
+                            color: theme.colorScheme.onSurface)),
                     const SizedBox(height: 4),
                     Text(a['message'] ?? '',
                         style: TextStyle(
                             fontSize: 12,
                             color:
-                                t.textTheme.bodyMedium?.color ?? Colors.grey,
+                                theme.textTheme.bodyMedium?.color ?? Colors.grey,
                             height: 1.4)),
                   ])),
               if (!isRead)

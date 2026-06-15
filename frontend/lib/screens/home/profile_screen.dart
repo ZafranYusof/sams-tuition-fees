@@ -9,6 +9,7 @@ import 'package:moon_design/moon_design.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart' as lp;
 import '../../providers/language_provider.dart';
 import '../../widgets/app_toast.dart';
 import '../../widgets/pressable_card.dart';
@@ -46,11 +47,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _notifReceipt = prefs.getBool('notif_receipt') ?? true;
       _notifSystem = prefs.getBool('notif_system') ?? false;
     });
-  }
-
-  Future<void> _saveNotifPref(String key, bool v) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(key, v);
   }
 
   Future<void> _loadDarkMode() async {
@@ -126,18 +122,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final studentId = user?['studentId'] ?? '';
     final faculty = user?['faculty'] ?? '—';
     final program = user?['program'] ?? '—';
-    final semester = user?['semester']?.toString() ?? 'Not set';
+    final locale = ref.watch(languageProvider).locale;
+    final semester = user?['semester']?.toString() ?? lp.t('not_set', locale);
     final role = user?['role'] ?? 'student';
 
-    final t = Theme.of(context);
-    final isDark = t.brightness == Brightness.dark;
+    final th = Theme.of(context);
+    final isDark = th.brightness == Brightness.dark;
     const accent = SAMsTheme.accent;
-    final muted = t.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
+    final muted = th.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
+    // local alias kept to minimize churn in code below
+    final t = th;
 
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded, size: 20), onPressed: () { HapticFeedback.lightImpact(); Navigator.pop(context); }),
-        title: const Text('Profile'),
+        title: Text(lp.t('profile', locale)),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -185,23 +184,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Center(child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(border: Border.all(color: accent.withValues(alpha: 0.5)), borderRadius: BorderRadius.circular(20)),
-            child: Text(role.toUpperCase(),
+            child: Text(lp.t(role.toString(), locale).toUpperCase(),
               style: GoogleFonts.inter(color: accent, fontSize: 10, letterSpacing: 1.6, fontWeight: FontWeight.w600),
             ),
           )),
 
           const SizedBox(height: 36),
-          _SectionHead('PERSONAL', accent: accent, muted: muted),
+          _SectionHead(lp.t('personal', locale), accent: accent, muted: muted),
           const SizedBox(height: 12),
-          _infoRow('Student ID', studentId.toString(), t),
-          _infoRow('Faculty', faculty.toString(), t),
-          _infoRow('Program', program.toString(), t),
-          _infoRow('Semester', semester, t),
-          _infoRow('Email', email.toString(), t, isLast: true),
+          _infoRow(lp.t('student_id', locale), studentId.toString(), t),
+          _infoRow(lp.t('faculty', locale), faculty.toString(), t),
+          _infoRow(lp.t('program', locale), program.toString(), t),
+          _infoRow(lp.t('semester', locale), semester, t),
+          _infoRow(lp.t('email', locale), email.toString(), t, isLast: true),
 
           const SizedBox(height: 32),
           // ─── PREFERENCES ───
-          _SectionHead('PREFERENCES', accent: accent, muted: muted),
+          _SectionHead(lp.t('preferences', locale), accent: accent, muted: muted),
           const SizedBox(height: 12),
           // Dark mode toggle (kept as-is, with Iconsax icon)
           Container(
@@ -210,7 +209,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Row(children: [
               Icon(Iconsax.moon, color: accent.withValues(alpha: 0.7), size: 18),
               const SizedBox(width: 14),
-              Expanded(child: Text('Dark mode', style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 14, fontWeight: FontWeight.w500))),
+              Expanded(child: Text(lp.t('dark_mode', locale), style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 14, fontWeight: FontWeight.w500))),
               SizedBox(height: 28, child: MoonSwitch(
                 value: _isDarkMode,
                 onChanged: _toggleDarkMode,
@@ -218,32 +217,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               )),
             ]),
           ),
-          _settingsRow(t, accent, Iconsax.translate, 'Language', () => _showLanguageSheet(t, accent)),
-          _settingsRow(t, accent, Iconsax.notification, 'Notifications', () => _showNotificationsSheet(t, accent), isLast: true),
+          _settingsRow(t, accent, Iconsax.translate, lp.t('language', locale), () => _showLanguageSheet(t, accent)),
+          _settingsRow(t, accent, Iconsax.notification, lp.t('notifications', locale), () => _showNotificationsSheet(t, accent), isLast: true),
 
           const SizedBox(height: 24),
           // ─── ACCOUNT ───
-          _SectionHead('ACCOUNT', accent: accent, muted: muted),
+          _SectionHead(lp.t('account', locale), accent: accent, muted: muted),
           const SizedBox(height: 12),
-          _settingsRow(t, accent, Iconsax.lock, 'Change password', () => _showChangePasswordSheet(t, accent)),
-          _settingsRow(t, accent, Iconsax.shield_tick, 'Privacy & data', () => _showPrivacySheet(t, accent), isLast: true),
+          _settingsRow(t, accent, Iconsax.lock, lp.t('change_password', locale), () => _showChangePasswordSheet(t, accent)),
+          _settingsRow(t, accent, Iconsax.shield_tick, lp.t('privacy_data', locale), () => _showPrivacySheet(t, accent), isLast: true),
 
           const SizedBox(height: 24),
           // ─── SUPPORT ───
-          _SectionHead('SUPPORT', accent: accent, muted: muted),
+          _SectionHead(lp.t('support', locale), accent: accent, muted: muted),
           const SizedBox(height: 12),
-          _settingsRow(t, accent, Iconsax.message_question, 'Help & FAQ', () => _showHelpSheet(t, accent)),
-          _settingsRow(t, accent, Iconsax.call, 'Contact us', () => _showContactSheet(t, accent)),
-          _settingsRow(t, accent, Iconsax.star, 'Rate app', () {
-            AppToast.info(context, 'Coming soon');
+          _settingsRow(t, accent, Iconsax.message_question, lp.t('help_faq', locale), () => _showHelpSheet(t, accent)),
+          _settingsRow(t, accent, Iconsax.call, lp.t('contact_us', locale), () => _showContactSheet(t, accent)),
+          _settingsRow(t, accent, Iconsax.star, lp.t('rate_app', locale), () {
+            AppToast.info(context, lp.t('coming_soon', locale));
           }, isLast: true),
 
           const SizedBox(height: 24),
           // ─── ABOUT ───
-          _SectionHead('ABOUT', accent: accent, muted: muted),
+          _SectionHead(lp.t('about', locale), accent: accent, muted: muted),
           const SizedBox(height: 12),
-          _settingsRow(t, accent, Iconsax.info_circle, 'About SAMs', () => _showAboutDialog(t, accent)),
-          _settingsRow(t, accent, Iconsax.code, 'Version info', () {
+          _settingsRow(t, accent, Iconsax.info_circle, lp.t('about_sams', locale), () => _showAboutDialog(t, accent)),
+          _settingsRow(t, accent, Iconsax.code, lp.t('version_info', locale), () {
             AppToast.info(context, 'SAMs v1.0.0');
           }, isLast: true),
 
@@ -254,7 +253,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onTap: () { HapticFeedback.mediumImpact(); _showSignOutDialog(t); },
             borderColor: SAMsTheme.error,
             leading: const Icon(Icons.logout_rounded, size: 18, color: SAMsTheme.error),
-            label: Text('Sign out', style: GoogleFonts.inter(color: SAMsTheme.error, fontSize: 14, fontWeight: FontWeight.w600)),
+            label: Text(lp.t('sign_out', locale), style: GoogleFonts.inter(color: SAMsTheme.error, fontSize: 14, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -262,6 +261,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _showSignOutDialog(ThemeData t) {
+    final locale = ref.read(languageProvider).locale;
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -272,14 +272,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 40, height: 2, color: SAMsTheme.accent),
             const SizedBox(height: 12),
-            Text('SIGN OUT', style: GoogleFonts.inter(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w600, color: t.textTheme.bodySmall?.color)),
+            Text(lp.t('sign_out', locale).toUpperCase(), style: GoogleFonts.inter(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w600, color: t.textTheme.bodySmall?.color)),
             const SizedBox(height: 16),
-            Text('Are you sure you want to sign out?', style: GoogleFonts.inter(fontSize: 14, color: t.colorScheme.onSurface)),
+            Text(lp.t('sign_out_confirm', locale), style: GoogleFonts.inter(fontSize: 14, color: t.colorScheme.onSurface)),
             const SizedBox(height: 24),
             Row(children: [
               Expanded(child: MoonTextButton(
                 onTap: () => Navigator.pop(ctx),
-                label: Text('Cancel', style: GoogleFonts.inter(color: t.textTheme.bodyMedium?.color)),
+                label: Text(lp.t('cancel', locale), style: GoogleFonts.inter(color: t.textTheme.bodyMedium?.color)),
               )),
               const SizedBox(width: 12),
               Expanded(child: MoonFilledButton(
@@ -290,7 +290,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ref.read(authProvider.notifier).logout();
                   Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
                 },
-                label: Text('Sign out', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+                label: Text(lp.t('sign_out', locale), style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
               )),
             ]),
           ]),
@@ -403,6 +403,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final current = ref.read(languageProvider).locale;
     String selected = current;
     _openSheet(t, (ctx, setSheetState) {
+      final locale = selected; // for save/cancel labels reflecting selection
       Widget langTile(String code, String label) {
         final isSel = selected == code;
         return PressableCard(
@@ -419,7 +420,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
       return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         _sheetHandle(t),
-        _sheetTitle(t, 'Language'),
+        _sheetTitle(t, lp.t('language', locale)),
         langTile('en', 'English'),
         langTile('ms', 'Bahasa Melayu'),
         const SizedBox(height: 20),
@@ -427,7 +428,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Expanded(child: MoonOutlinedButton(
             isFullWidth: true,
             onTap: () => Navigator.pop(ctx),
-            label: Text('Cancel', style: GoogleFonts.inter(color: t.textTheme.bodyMedium?.color, fontWeight: FontWeight.w600)),
+            label: Text(lp.t('cancel', locale), style: GoogleFonts.inter(color: t.textTheme.bodyMedium?.color, fontWeight: FontWeight.w600)),
           )),
           const SizedBox(width: 12),
           Expanded(child: MoonFilledButton(
@@ -437,7 +438,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               await ref.read(languageProvider.notifier).setLang(selected);
               if (ctx.mounted) Navigator.pop(ctx);
             },
-            label: Text('Save', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+            label: Text(lp.t('save', locale), style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
           )),
         ]),
       ]);
@@ -446,6 +447,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   // ─── Notifications sheet ───
   void _showNotificationsSheet(ThemeData t, Color accent) {
+    final locale = ref.read(languageProvider).locale;
     _openSheet(t, (ctx, setSheetState) {
       Widget toggleRow(String label, bool value, ValueChanged<bool> onChanged) => Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
@@ -461,33 +463,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
       return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         _sheetHandle(t),
-        _sheetTitle(t, 'Notifications'),
-        toggleRow('Payment reminders', _notifPaymentReminders, (v) {
+        _sheetTitle(t, lp.t('notifications', locale)),
+        toggleRow(lp.t('payment_reminders', locale), _notifPaymentReminders, (v) {
           setSheetState(() => _notifPaymentReminders = v);
           setState(() => _notifPaymentReminders = v);
-          _saveNotifPref('notif_payment_reminders', v);
+          ref.read(notificationPrefsProvider.notifier).setPref('notif_payment_reminders', v);
         }),
-        toggleRow('New fee added', _notifNewFee, (v) {
+        toggleRow(lp.t('new_fee_added', locale), _notifNewFee, (v) {
           setSheetState(() => _notifNewFee = v);
           setState(() => _notifNewFee = v);
-          _saveNotifPref('notif_new_fee', v);
+          ref.read(notificationPrefsProvider.notifier).setPref('notif_new_fee', v);
         }),
-        toggleRow('Receipt generated', _notifReceipt, (v) {
+        toggleRow(lp.t('receipt_generated', locale), _notifReceipt, (v) {
           setSheetState(() => _notifReceipt = v);
           setState(() => _notifReceipt = v);
-          _saveNotifPref('notif_receipt', v);
+          ref.read(notificationPrefsProvider.notifier).setPref('notif_receipt', v);
         }),
-        toggleRow('System announcements', _notifSystem, (v) {
+        toggleRow(lp.t('system_announcements', locale), _notifSystem, (v) {
           setSheetState(() => _notifSystem = v);
           setState(() => _notifSystem = v);
-          _saveNotifPref('notif_system', v);
+          ref.read(notificationPrefsProvider.notifier).setPref('notif_system', v);
         }),
         const SizedBox(height: 20),
         MoonFilledButton(
           isFullWidth: true,
           backgroundColor: accent,
           onTap: () => Navigator.pop(ctx),
-          label: Text('Done', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+          label: Text(lp.t('done', locale), style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
         ),
       ]);
     });
@@ -495,6 +497,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   // ─── Change password sheet ───
   void _showChangePasswordSheet(ThemeData t, Color accent) {
+    final locale = ref.read(languageProvider).locale;
     final currentCtrl = TextEditingController();
     final newCtrl = TextEditingController();
     final confirmCtrl = TextEditingController();
@@ -511,18 +514,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
       return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         _sheetHandle(t),
-        _sheetTitle(t, 'Change password'),
-        TextField(controller: currentCtrl, obscureText: true, style: GoogleFonts.inter(fontSize: 14, color: t.colorScheme.onSurface), decoration: deco('Current password')),
+        _sheetTitle(t, lp.t('change_password', locale)),
+        TextField(controller: currentCtrl, obscureText: true, style: GoogleFonts.inter(fontSize: 14, color: t.colorScheme.onSurface), decoration: deco(lp.t('current_password', locale))),
         const SizedBox(height: 12),
-        TextField(controller: newCtrl, obscureText: true, style: GoogleFonts.inter(fontSize: 14, color: t.colorScheme.onSurface), decoration: deco('New password')),
+        TextField(controller: newCtrl, obscureText: true, style: GoogleFonts.inter(fontSize: 14, color: t.colorScheme.onSurface), decoration: deco(lp.t('new_password', locale))),
         const SizedBox(height: 12),
-        TextField(controller: confirmCtrl, obscureText: true, style: GoogleFonts.inter(fontSize: 14, color: t.colorScheme.onSurface), decoration: deco('Confirm new password')),
+        TextField(controller: confirmCtrl, obscureText: true, style: GoogleFonts.inter(fontSize: 14, color: t.colorScheme.onSurface), decoration: deco(lp.t('confirm_password', locale))),
         const SizedBox(height: 20),
         Row(children: [
           Expanded(child: MoonOutlinedButton(
             isFullWidth: true,
             onTap: () => Navigator.pop(ctx),
-            label: Text('Cancel', style: GoogleFonts.inter(color: t.textTheme.bodyMedium?.color, fontWeight: FontWeight.w600)),
+            label: Text(lp.t('cancel', locale), style: GoogleFonts.inter(color: t.textTheme.bodyMedium?.color, fontWeight: FontWeight.w600)),
           )),
           const SizedBox(width: 12),
           Expanded(child: MoonFilledButton(
@@ -530,13 +533,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             backgroundColor: accent,
             onTap: () {
               if (newCtrl.text.isEmpty || newCtrl.text != confirmCtrl.text) {
-                AppToast.error(ctx, 'Passwords do not match');
+                AppToast.error(ctx, lp.t('passwords_dont_match', locale));
                 return;
               }
               Navigator.pop(ctx);
-              if (mounted) AppToast.success(context, 'Password updated');
+              if (mounted) AppToast.success(context, lp.t('password_updated', locale));
             },
-            label: Text('Update', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+            label: Text(lp.t('save', locale), style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
           )),
         ]),
       ]);

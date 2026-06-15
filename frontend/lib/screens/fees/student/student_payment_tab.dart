@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdf/pdf.dart';
@@ -14,20 +15,22 @@ import 'package:lottie/lottie.dart';
 import 'package:moon_design/moon_design.dart';
 import 'package:intl/intl.dart';
 import '../../../config/theme.dart';
+import '../../../providers/language_provider.dart' as lp;
+import '../../../providers/language_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../widgets/app_toast.dart';
 import '../../../widgets/premium_widgets.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-class StudentPaymentTab extends StatefulWidget {
+class StudentPaymentTab extends ConsumerStatefulWidget {
   final String? targetFeeId;
   const StudentPaymentTab({super.key, this.targetFeeId});
 
   @override
-  State<StudentPaymentTab> createState() => _StudentPaymentTabState();
+  ConsumerState<StudentPaymentTab> createState() => _StudentPaymentTabState();
 }
 
-class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProviderStateMixin {
+class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with TickerProviderStateMixin {
   List<dynamic> _fees = [];
   bool _loading = true;
   int _selFeeIndex = 0;
@@ -292,6 +295,7 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProvid
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
+    final locale = ref.watch(languageProvider).locale;
     if (_receipt != null) return _buildReceipt(t);
 
     // Inject dummy fees so Skeletonizer has UI to placeholder against.
@@ -314,14 +318,14 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProvid
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Make Payment'),
+        title: Text(lp.t('make_payment', locale)),
         actions: [
           if (unpaidCount > 0) Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Center(child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(color: SAMsTheme.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-              child: Text('$unpaidCount unpaid', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: SAMsTheme.error)),
+              child: Text('$unpaidCount ${lp.t('unpaid', locale)}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: SAMsTheme.error)),
             )),
           ),
         ],
@@ -332,7 +336,7 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProvid
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
         children: [
           // Step indicator
-          _buildStepIndicator(t),
+          _buildStepIndicator(t, locale),
           const SizedBox(height: 20),
 
           // Amount hero - shared element transition from home tab fee card
@@ -400,13 +404,13 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProvid
     );
   }
 
-  Widget _buildStepIndicator(ThemeData t) {
+  Widget _buildStepIndicator(ThemeData t, String locale) {
     return Row(children: [
-      _stepDot(t, 'Select', 0),
+      _stepDot(t, lp.t('select', locale), 0),
       Expanded(child: Container(height: 1, color: _currentStep >= 1 ? SAMsTheme.brass : t.dividerColor)),
-      _stepDot(t, 'Pay', 1),
+      _stepDot(t, lp.t('pay', locale), 1),
       Expanded(child: Container(height: 1, color: _currentStep >= 2 ? SAMsTheme.brass : t.dividerColor)),
-      _stepDot(t, 'Done', 2),
+      _stepDot(t, lp.t('done', locale), 2),
     ]);
   }
 
@@ -638,8 +642,9 @@ class _StudentPaymentTabState extends State<StudentPaymentTab> with TickerProvid
   }
 
   Widget _buildReceipt(ThemeData t) {
+    final locale = ref.read(languageProvider).locale;
     return Scaffold(
-      appBar: AppBar(title: const Text('Receipt')),
+      appBar: AppBar(title: Text(lp.t('receipt', locale))),
       body: Stack(children: [
         SingleChildScrollView(padding: const EdgeInsets.all(20), child: Column(children: [
         const SizedBox(height: 16),
@@ -944,7 +949,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             // Step 3: Processing
             // =====================================================================
 
-            class _PaymentSheet extends StatefulWidget {
+            class _PaymentSheet extends ConsumerStatefulWidget {
             final double amount;
             final String deadline;
             final String feeLabel;
@@ -964,10 +969,10 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             });
 
             @override
-            State<_PaymentSheet> createState() => _PaymentSheetState();
+            ConsumerState<_PaymentSheet> createState() => _PaymentSheetState();
             }
 
-            class _PaymentSheetState extends State<_PaymentSheet> {
+            class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
             final PageController _pc = PageController();
             int _step = 0;
             late String _method;
@@ -1081,13 +1086,14 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             }
 
             Widget _buildStep1(BuildContext ctx, ScrollController sc, Color fg, Color subFg, bool isDark) {
+            final locale = ref.watch(languageProvider).locale;
             return ListView(
             controller: sc,
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
             children: [
-            Text('Select bank', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: fg)),
+            Text(lp.t('select_bank', locale), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: fg)),
             const SizedBox(height: 4),
-            Text('Choose your FPX bank to continue payment.', style: TextStyle(fontSize: 13, color: subFg)),
+            Text(lp.t('select_bank_desc', locale), style: TextStyle(fontSize: 13, color: subFg)),
             const SizedBox(height: 18),
             GridView.builder(
             shrinkWrap: true,
@@ -1152,6 +1158,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             }
 
             Widget _buildStep2(BuildContext ctx, ScrollController sc, Color fg, Color subFg, bool isDark) {
+            final locale = ref.watch(languageProvider).locale;
             final fmt = NumberFormat.currency(symbol: 'RM', locale: 'en_MY');
             final selectedBank = _banks.firstWhere(
             (b) => b['key'] == _bank,
@@ -1161,9 +1168,9 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             controller: sc,
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
             children: [
-            Text('Confirm payment', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: fg)),
+            Text(lp.t('confirm_payment', locale), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: fg)),
             const SizedBox(height: 4),
-            Text('Please review the details before continuing.', style: TextStyle(fontSize: 13, color: subFg)),
+            Text(lp.t('review_details', locale), style: TextStyle(fontSize: 13, color: subFg)),
             const SizedBox(height: 24),
             Center(
             child: TweenAnimationBuilder<double>(
@@ -1196,11 +1203,11 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _kv(ctx, 'Method', _method == 'fpx' ? 'FPX Online Banking' : 'Credit/Debit Card', fg, subFg),
+                _kv(ctx, lp.t('method', locale), _method == 'fpx' ? 'FPX Online Banking' : 'Credit/Debit Card', fg, subFg),
                 const SizedBox(height: 10),
-                if (_method == 'fpx') _kv(ctx, 'Bank', selectedBank['name']!, fg, subFg),
+                if (_method == 'fpx') _kv(ctx, lp.t('bank', locale), selectedBank['name']!, fg, subFg),
                 if (_method == 'fpx') const SizedBox(height: 10),
-                _kv(ctx, 'Due date', widget.deadline, fg, subFg),
+                _kv(ctx, lp.t('due_date', locale), widget.deadline, fg, subFg),
               ],
             ),
             ),
@@ -1225,6 +1232,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             }
 
             Widget _buildStep3(BuildContext ctx, Color fg, Color subFg) {
+            final locale = ref.watch(languageProvider).locale;
             return Center(
             child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1239,12 +1247,12 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Processing payment...',
+              lp.t('processing_payment', locale),
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: fg),
             ),
             const SizedBox(height: 6),
             Text(
-              'Please do not close this window.',
+              lp.t('dont_close', locale),
               style: TextStyle(fontSize: 12, color: subFg),
             ),
             ],
@@ -1253,6 +1261,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             }
 
             Widget _buildBottomBar(BuildContext ctx, bool isDark) {
+            final locale = ref.watch(languageProvider).locale;
             return SafeArea(
             top: false,
             child: Padding(
@@ -1263,7 +1272,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
                 Expanded(
                   child: MoonOutlinedButton(
                     onTap: () => _go(0),
-                    label: const Text('Back'),
+                    label: Text(lp.t('back', locale)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1281,7 +1290,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
                     }
                   },
                   label: Text(
-                    _step == 1 ? 'Confirm & Pay' : 'Next',
+                    _step == 1 ? lp.t('confirm_pay', locale) : lp.t('next', locale),
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
                   ),
                 ),
