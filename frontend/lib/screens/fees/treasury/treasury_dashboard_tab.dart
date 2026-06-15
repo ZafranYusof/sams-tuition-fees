@@ -7,6 +7,7 @@ import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
 import '../../../widgets/app_toast.dart';
 import 'package:figma_squircle/figma_squircle.dart';
+import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../widgets/premium_widgets.dart';
 import '../../../widgets/pressable_card.dart';
@@ -444,7 +445,9 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                 const SizedBox(height: 28),
 
                 // --- COLLECTION OVERVIEW (glassmorphism) ---
-                _fadeSlide(_staggerAnims[1], child: Stack(
+                _fadeSlide(_staggerAnims[1], child: Tilt(
+                  tiltConfig: const TiltConfig(angle: 8, leaveDuration: Duration(milliseconds: 600), leaveCurve: Curves.easeOutCubic),
+                  child: Stack(
                   children: [
                     Positioned.fill(child: Container(
                       decoration: ShapeDecoration(
@@ -515,7 +518,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                   ),
                     ),
                   ],
-                )),
+                ))),
 
                 const SizedBox(height: 16),
 

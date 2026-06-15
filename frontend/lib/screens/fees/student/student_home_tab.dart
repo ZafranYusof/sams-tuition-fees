@@ -11,6 +11,7 @@ import '../../../widgets/premium_widgets.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../widgets/pressable_card.dart';
 import 'package:figma_squircle/figma_squircle.dart';
+import 'package:flutter_tilt/flutter_tilt.dart';
 import '../../../providers/language_provider.dart' as lp;
 import 'student_fees_shell.dart';
 
@@ -278,7 +279,9 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
               )),
 
             // --- BALANCE OVERVIEW (glassmorphism) ---
-            _fadeSlide(_staggerAnims[2], child: Stack(
+            _fadeSlide(_staggerAnims[2], child: Tilt(
+              tiltConfig: const TiltConfig(angle: 8, leaveDuration: Duration(milliseconds: 600), leaveCurve: Curves.easeOutCubic),
+              child: Stack(
               children: [
                 // Gradient backdrop so the blur has something to read through
                 Positioned.fill(child: Container(
@@ -347,7 +350,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                   ),
                 ),
               ],
-            )),
+            ))),
 
             const SizedBox(height: 12),
 

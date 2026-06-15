@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:confetti/confetti.dart';
 import 'package:figma_squircle/figma_squircle.dart';
+import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:lottie/lottie.dart';
 import 'package:moon_design/moon_design.dart';
 import 'package:intl/intl.dart';
@@ -1174,7 +1175,9 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
             Text(lp.t('review_details', locale), style: TextStyle(fontSize: 13, color: subFg)),
             const SizedBox(height: 24),
             Center(
-            child: TweenAnimationBuilder<double>(
+            child: Tilt(
+              tiltConfig: const TiltConfig(angle: 12, leaveDuration: Duration(milliseconds: 500), leaveCurve: Curves.easeOutCubic),
+              child: TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: widget.amount),
               duration: const Duration(milliseconds: 700),
               curve: Curves.easeOutCubic,
@@ -1187,6 +1190,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
                   letterSpacing: -1,
                 ),
               ),
+            ),
             ),
             ),
             const SizedBox(height: 6),
