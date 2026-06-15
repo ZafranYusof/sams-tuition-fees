@@ -1,164 +1,63 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+/// SAMs theme shim — uses Moon's color palette (hex hardcoded for const-access).
+/// Reference: moon_tokens-0.0.6 MoonColors.dark/light
 class SAMsTheme {
-  // ─── Colors (refined editorial palette) ───
-  // Ink navy base, with a warm brass accent — UMPSA-inspired but contemporary.
-  static const Color background = Color(0xFF0B1B2C);
-  static const Color surface = Color(0xFF12263A);
-  static const Color surfaceLight = Color(0xFF1B324A);
-  static const Color primary = Color(0xFFC9A961); // brass / muted gold
-  static const Color primaryLight = Color(0xFFE3C589);
-  static const Color accent = Color(0xFFC9A961);
-  static const Color accentDark = Color(0xFFA98742);
-  static const Color textPrimary = Color(0xFFF5EFE3); // warm paper
-  static const Color textSecondary = Color(0xFFB7C2CD);
-  static const Color textMuted = Color(0xFF7A8A9A);
-  static const Color border = Color(0x1AF5EFE3);
-  static const Color success = Color(0xFF6FB58A);
-  static const Color error = Color(0xFFE08584);
-  static const Color warning = Color(0xFFE0B470);
+  // ─── Moon color palette (dark theme) ───
+  // Backgrounds
+  static const Color background = Color(0xFF000000); // goku
+  static const Color surface = Color(0xFF1F1F1F); // gohan
+  static const Color surfaceLight = Color(0xFF292929); // beerus
+  // Primary brand (Moon piccolo - purple)
+  static const Color primary = Color(0xFF5C33CF);
+  static const Color primaryLight = Color(0xFF8B5FFF);
+  static const Color accent = Color(0xFF5C33CF);
+  static const Color accentDark = Color(0xFF4423A0);
+  // Text
+  static const Color textPrimary = Color(0xFFFFFFFF); // bulma
+  static const Color textSecondary = Color(0xFF94989E); // trunks
+  static const Color textMuted = Color(0xFF94989E);
+  // Borders
+  static const Color border = Color(0xFF292929); // beerus
+  // Status
+  static const Color success = Color(0xFF49B356); // roshi
+  static const Color error = Color(0xFFFF4E64); // chichi
+  static const Color warning = Color(0xFFFFB319); // krillin
 
-  // Convenience for editorial accents (do not break old API)
-  static const Color ink = Color(0xFF0B1B2C);
-  static const Color paper = Color(0xFFF5EFE3);
-  static const Color brass = Color(0xFFC9A961);
+  // Editorial accents → Moon
+  static const Color ink = Color(0xFF000000);
+  static const Color paper = Color(0xFFFFFFFF);
+  static const Color brass = Color(0xFF5C33CF); // Now piccolo purple
 
-  /// Premium gradient background - visible depth from darker top to lighter bottom
-  static BoxDecoration get premiumBackground => const BoxDecoration(
-    gradient: LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        Color(0xFF030A12), // very dark at top
-        Color(0xFF0B1B2C), // base ink middle
-        Color(0xFF162D45), // noticeably lighter navy at bottom
-      ],
-      stops: [0.0, 0.45, 1.0],
-    ),
+  /// Background — flat Moon black
+  static const BoxDecoration premiumBackground = BoxDecoration(
+    color: Color(0xFF000000),
   );
 
-  /// Gradient background widget with optional radial glow
+  /// Background widget
   static Widget gradientScaffold({required Widget child, bool showGlow = true}) {
     return Container(
-      decoration: premiumBackground,
-      child: showGlow ? Stack(
-        children: [
-          Positioned(
-            top: -80,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 280,
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.topCenter,
-                  radius: 1.2,
-                  colors: [
-                    brass.withOpacity(0.04),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          child,
-        ],
-      ) : child,
+      color: const Color(0xFF000000),
+      child: child,
     );
   }
+}
 
-  static TextTheme _buildDarkTextTheme() {
-    final serif = GoogleFonts.fraunces(
-      color: textPrimary,
-      fontWeight: FontWeight.w500,
-      letterSpacing: -0.5,
-    );
-    final sans = GoogleFonts.inter(color: textPrimary);
-    return TextTheme(
-      displayLarge: serif.copyWith(fontSize: 40, height: 1.05),
-      displayMedium: serif.copyWith(fontSize: 32, height: 1.1),
-      headlineLarge: serif.copyWith(fontSize: 28, fontWeight: FontWeight.w500, height: 1.15),
-      headlineMedium: serif.copyWith(fontSize: 22, fontWeight: FontWeight.w500),
-      headlineSmall: sans.copyWith(fontWeight: FontWeight.w600, fontSize: 17),
-      titleLarge: sans.copyWith(fontWeight: FontWeight.w600, fontSize: 16),
-      bodyLarge: sans.copyWith(fontSize: 15.5, height: 1.45),
-      bodyMedium: sans.copyWith(color: textSecondary, fontSize: 14, height: 1.5),
-      bodySmall: sans.copyWith(color: textMuted, fontSize: 12, height: 1.4),
-      labelLarge: sans.copyWith(fontWeight: FontWeight.w600, fontSize: 13.5, letterSpacing: 0.2),
-      labelMedium: sans.copyWith(color: textMuted, fontSize: 11.5, letterSpacing: 0.6),
-      labelSmall: sans.copyWith(color: textMuted, fontSize: 10.5, letterSpacing: 1.4),
-    );
-  }
-
-  static ThemeData get darkTheme {
+/// Light theme — Moon defaults
+class SAMsLightTheme {
+  static ThemeData get theme {
     return ThemeData(
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: Colors.transparent,
-      primaryColor: primary,
-      colorScheme: const ColorScheme.dark(
-        primary: primary,
-        secondary: accent,
-        surface: surface,
-        error: error,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: const Color(0xFFFFFFFF), // light goku
+      primaryColor: const Color(0xFF4D31CC), // light piccolo
+      colorScheme: const ColorScheme.light(
+        primary: Color(0xFF4D31CC),
+        secondary: Color(0xFF4D31CC),
+        surface: Color(0xFFF6F6F8), // light gohan
+        error: Color(0xFFFF4E64),
+        onPrimary: Color(0xFFFFFFFF),
+        onSurface: Color(0xFF000000),
       ),
-      textTheme: _buildDarkTextTheme(),
-      appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: false,
-        iconTheme: const IconThemeData(color: textPrimary),
-        titleTextStyle: GoogleFonts.fraunces(
-          color: textPrimary,
-          fontSize: 20,
-          fontWeight: FontWeight.w500,
-          letterSpacing: -0.3,
-        ),
-      ),
-      cardTheme: CardThemeData(
-        color: surface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: border, width: 1),
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: primary,
-          foregroundColor: ink,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14.5, letterSpacing: 0.2),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: primary, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        hintStyle: const TextStyle(color: textMuted),
-      ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: surface,
-        selectedItemColor: primary,
-        unselectedItemColor: textMuted,
-        type: BottomNavigationBarType.fixed,
-        elevation: 0,
-      ),
-      dividerColor: border,
     );
   }
 }

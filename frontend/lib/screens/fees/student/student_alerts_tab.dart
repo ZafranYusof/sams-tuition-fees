@@ -4,11 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
-import '../../../services/cache_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/shimmer_loading.dart';
 import '../../../widgets/empty_state.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:figma_squircle/figma_squircle.dart';
 
 class StudentAlertsTab extends ConsumerStatefulWidget {
@@ -122,24 +120,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
     }
   }
 
-  // --- Relative time formatting ---
-  String _relativeTime(String? dateStr) {
-    if (dateStr == null || dateStr.isEmpty) return '';
-    final date = DateTime.tryParse(dateStr);
-    if (date == null) return dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
 
-    final now = DateTime.now();
-    final diff = now.difference(date);
-
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24 && now.day == date.day) return '${diff.inHours}h ago';
-    if (diff.inDays == 0 && now.day != date.day) return 'Yesterday';
-    if (diff.inDays == 1) return 'Yesterday';
-    if (diff.inDays < 7) return '${diff.inDays} days ago';
-    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
-    return '${date.day}/${date.month}/${date.year}';
-  }
 
   // --- Date section grouping ---
   String _dateSection(String? dateStr) {
@@ -197,45 +178,32 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
                 color: t.colorScheme.onSurface,
                 fontSize: 16,
                 fontWeight: FontWeight.w600)),
+        actions: [
+          if (_unreadCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton.icon(
+                onPressed: _markAllRead,
+                icon: const Icon(Icons.done_all_rounded, size: 18, color: SAMsTheme.primary),
+                label: const Text('Mark all',
+                    style: TextStyle(
+                        color: SAMsTheme.primary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
+        ],
       ),
       body: RefreshIndicator(
         color: SAMsTheme.primary,
         onRefresh: _load,
         child: Column(
           children: [
-            // Unread count + Mark All Read
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('$_unreadCount unread',
-                      style: TextStyle(
-                          color: t.textTheme.bodySmall?.color ?? Colors.grey,
-                          fontSize: 13)),
-                  GestureDetector(
-                    onTap: _unreadCount > 0 ? _markAllRead : null,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: t.cardColor,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: t.dividerColor),
-                      ),
-                      child: Text('Mark All Read',
-                          style: TextStyle(
-                              color: _unreadCount > 0
-                                  ? SAMsTheme.primary
-                                  : (t.textTheme.bodySmall?.color ??
-                                      Colors.grey),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
             // Filter chips row
             _buildFilterChips(t),
             Expanded(
@@ -281,12 +249,12 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: isActive
-                    ? SAMsTheme.primary.withOpacity(0.1)
+                    ? SAMsTheme.primary.withValues(alpha: 0.1)
                     : t.cardColor,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isActive
-                      ? SAMsTheme.primary.withOpacity(0.4)
+                      ? SAMsTheme.primary.withValues(alpha: 0.4)
                       : t.dividerColor,
                 ),
               ),
@@ -377,9 +345,9 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: SAMsTheme.success.withOpacity(0.05),
+          color: SAMsTheme.success.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: SAMsTheme.success.withOpacity(0.15)),
+          border: Border.all(color: SAMsTheme.success.withValues(alpha: 0.15)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -388,7 +356,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: SAMsTheme.success.withOpacity(0.12),
+                color: SAMsTheme.success.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.check_rounded,
@@ -419,14 +387,14 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFC9A961).withOpacity(0.1),
+              color: const Color(0xFF5C33CF).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(title,
                 style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFFC9A961),
+                    color: Color(0xFF5C33CF),
                     letterSpacing: 0.5)),
           ),
           const SizedBox(width: 10),
@@ -442,9 +410,6 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
     final icon = _typeIcon(type);
     final color = _typeColor(type);
     final anim = _itemAnimation(i);
-    final dateStr =
-        a['createdAt']?.toString() ?? a['created_at']?.toString();
-
     final itemWidget = Dismissible(
       key: Key(a['_id']?.toString() ?? 'alert_$i'),
       direction:
@@ -460,7 +425,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFFC9A961),
+          color: const Color(0xFF5C33CF),
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Icon(Icons.check_rounded, color: Colors.white, size: 24),
@@ -475,7 +440,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
             color: t.cardColor,
             shape: SmoothRectangleBorder(
               borderRadius: SmoothBorderRadius(cornerRadius: 14, cornerSmoothing: 0.8),
-              side: BorderSide(color: isRead ? t.dividerColor : color.withOpacity(0.3)),
+              side: BorderSide(color: isRead ? t.dividerColor : color.withValues(alpha: 0.3)),
             ),
           ),
           child: Row(
@@ -485,7 +450,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 18),

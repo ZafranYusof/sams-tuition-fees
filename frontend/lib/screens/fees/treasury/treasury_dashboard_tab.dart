@@ -6,9 +6,10 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
 import 'package:figma_squircle/figma_squircle.dart';
-import 'package:animated_text_kit/animated_text_kit.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import '../../../widgets/premium_widgets.dart';
+import '../../../widgets/pressable_card.dart';
 import '../../../providers/auth_provider.dart';
+import 'package:moon_design/moon_design.dart';
 
 class TreasuryDashboardTab extends ConsumerStatefulWidget {
   final VoidCallback? onViewStudents;
@@ -80,58 +81,67 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
 
   void _showAllPayments(BuildContext context) {
     final t = Theme.of(context);
-    showModalBottomSheet(
+    showMoonModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: t.cardColor,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.9,
-        minChildSize: 0.4,
-        expand: false,
-        builder: (_, controller) => Column(children: [
-          Container(
-            margin: const EdgeInsets.only(top: 12, bottom: 8),
-            width: 36, height: 4,
-            decoration: BoxDecoration(color: t.dividerColor, borderRadius: BorderRadius.circular(2)),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('All Payments', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
-                Text('${_fees.length} records', style: TextStyle(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
-              ],
+      isExpanded: false,
+      builder: (ctx) => Container(
+        decoration: ShapeDecoration(
+          color: t.cardColor,
+          shape: const SmoothRectangleBorder(
+            borderRadius: SmoothBorderRadius.only(
+              topLeft: SmoothRadius(cornerRadius: 28, cornerSmoothing: 0.8),
+              topRight: SmoothRadius(cornerRadius: 28, cornerSmoothing: 0.8),
             ),
           ),
-          Container(height: 1, color: t.dividerColor),
-          Expanded(child: ListView.separated(
-            controller: controller,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            itemCount: _fees.length,
-            separatorBuilder: (_, __) => Container(height: 1, margin: const EdgeInsets.symmetric(vertical: 8), color: t.dividerColor),
-            itemBuilder: (_, i) {
-              final f = _fees[i];
-              final status = f['status'] ?? 'unpaid';
-              final studentName = f['student']?['name'] ?? f['student']?['studentId'] ?? 'Student';
-              final amount = ((f['totalAmount'] ?? 0) as num).toDouble();
-              final paid = ((f['paidAmount'] ?? 0) as num).toDouble();
-              final col = status == 'paid' ? SAMsTheme.success : (status == 'partial' ? SAMsTheme.warning : SAMsTheme.error);
-              return Row(children: [
-                Container(width: 8, height: 8, decoration: BoxDecoration(color: col, shape: BoxShape.circle)),
-                const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(studentName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
-                  const SizedBox(height: 2),
-                  Text('RM ${paid.toStringAsFixed(0)} / RM ${amount.toStringAsFixed(0)}', style: TextStyle(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
-                ])),
-                Text(status[0].toUpperCase() + status.substring(1), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: col)),
-              ]);
-            },
-          )),
-        ]),
+        ),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          maxChildSize: 0.9,
+          minChildSize: 0.4,
+          expand: false,
+          builder: (_, controller) => Column(children: [
+            Container(
+              margin: const EdgeInsets.only(top: 8, bottom: 8),
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: t.dividerColor, borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('All Payments', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                  Text('${_fees.length} records', style: TextStyle(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                ],
+              ),
+            ),
+            Container(height: 1, color: t.dividerColor),
+            Expanded(child: ListView.separated(
+              controller: controller,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              itemCount: _fees.length,
+              separatorBuilder: (_, __) => Container(height: 1, margin: const EdgeInsets.symmetric(vertical: 8), color: t.dividerColor),
+              itemBuilder: (_, i) {
+                final f = _fees[i];
+                final status = f['status'] ?? 'unpaid';
+                final studentName = f['student']?['name'] ?? f['student']?['studentId'] ?? 'Student';
+                final amount = ((f['totalAmount'] ?? 0) as num).toDouble();
+                final paid = ((f['paidAmount'] ?? 0) as num).toDouble();
+                final col = status == 'paid' ? SAMsTheme.success : (status == 'partial' ? SAMsTheme.warning : SAMsTheme.error);
+                return Row(children: [
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: col, shape: BoxShape.circle)),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(studentName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                    const SizedBox(height: 2),
+                    Text('RM ${paid.toStringAsFixed(0)} / RM ${amount.toStringAsFixed(0)}', style: TextStyle(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                  ])),
+                  Text(status[0].toUpperCase() + status.substring(1), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: col)),
+                ]);
+              },
+            )),
+          ]),
+        ),
       ),
     );
   }
@@ -142,109 +152,115 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
     final studentIdCtrl = TextEditingController();
     final amountCtrl = TextEditingController();
     final descCtrl = TextEditingController(text: 'Tuition Fee');
-    showDialog(
+    showMoonModalBottomSheet(
       context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: isDark ? const Color(0xFF0F2235) : t.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                Container(width: 18, height: 1, color: SAMsTheme.accent),
-                const SizedBox(width: 8),
-                Text('ADD FEE', style: GoogleFonts.inter(color: isDark ? const Color(0xFF8A9BB5) : Colors.grey, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600)),
-              ]),
-              const SizedBox(height: 16),
-              TextField(
-                controller: studentIdCtrl,
-                style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 13),
-                decoration: InputDecoration(
-                  labelText: 'Student ID',
-                  labelStyle: GoogleFonts.inter(fontSize: 12, color: isDark ? const Color(0xFF8A9BB5) : Colors.grey),
-                  hintText: 'e.g. CB23109',
-                  hintStyle: GoogleFonts.inter(fontSize: 12, color: isDark ? const Color(0xFF8A9BB5) : Colors.grey),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descCtrl,
-                style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 13),
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  labelStyle: GoogleFonts.inter(fontSize: 12, color: isDark ? const Color(0xFF8A9BB5) : Colors.grey),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: amountCtrl,
-                style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 13),
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Amount (RM)',
-                  labelStyle: GoogleFonts.inter(fontSize: 12, color: isDark ? const Color(0xFF8A9BB5) : Colors.grey),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
+      isExpanded: false,
+      builder: (ctx) => Container(
+        decoration: ShapeDecoration(
+          color: t.cardColor,
+          shape: const SmoothRectangleBorder(
+            borderRadius: SmoothBorderRadius.only(
+              topLeft: SmoothRadius(cornerRadius: 28, cornerSmoothing: 0.8),
+              topRight: SmoothRadius(cornerRadius: 28, cornerSmoothing: 0.8),
+            ),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 8, bottom: 8),
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: t.dividerColor, borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.of(ctx).viewInsets.bottom + 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: Text('Cancel', style: GoogleFonts.inter(color: isDark ? const Color(0xFF8A9BB5) : Colors.grey, fontSize: 13)),
-                    ),
+                  Row(children: [
+                    Container(width: 18, height: 1, color: SAMsTheme.accent),
+                    const SizedBox(width: 8),
+                    Text('ADD FEE', style: GoogleFonts.inter(color: isDark ? const Color(0xFF94989E) : Colors.grey, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600)),
+                  ]),
+                  const SizedBox(height: 16),
+                  MoonFormTextInput(
+                    controller: studentIdCtrl,
+                    style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 13),
+                    hintText: 'e.g. CB23109',
+                    hintTextColor: isDark ? const Color(0xFF94989E) : Colors.grey,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final studentId = studentIdCtrl.text.trim();
-                        final amount = double.tryParse(amountCtrl.text) ?? 0;
-                        if (studentId.isEmpty || amount <= 0) {
-                          _showEditorialSnack(context, 'Fill in all fields correctly', isError: true);
-                          return;
-                        }
-                        try {
-                          Navigator.pop(ctx);
-                          _showEditorialSnack(context, 'Adding fee...', isLoading: true);
-                          await ApiService.post('/fees', {
-                            'studentId': studentId,
-                            'items': [{'description': descCtrl.text.trim(), 'amount': amount, 'category': 'tuition'}],
-                            'semester': 2,
-                            'academicYear': '2025/2026',
-                            'dueDate': '2026-06-30',
-                          });
-                          if (mounted) {
-                            _showEditorialSnack(context, 'Fee added for $studentId — RM ${amount.toStringAsFixed(2)}');
-                            _load();
-                          }
-                        } catch (e) {
-                          if (mounted) {
-                            _showEditorialSnack(context, 'Failed to add fee', isError: true);
-                          }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: SAMsTheme.accent,
-                        foregroundColor: isDark ? const Color(0xFF0B1B2C) : Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        elevation: 0,
+                  const SizedBox(height: 12),
+                  MoonFormTextInput(
+                    controller: descCtrl,
+                    style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 13),
+                    hintText: 'Description',
+                    hintTextColor: isDark ? const Color(0xFF94989E) : Colors.grey,
+                  ),
+                  const SizedBox(height: 12),
+                  MoonFormTextInput(
+                    controller: amountCtrl,
+                    style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 13),
+                    keyboardType: TextInputType.number,
+                    hintText: 'Amount (RM)',
+                    hintTextColor: isDark ? const Color(0xFF94989E) : Colors.grey,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: MoonOutlinedButton(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.pop(ctx);
+                          },
+                          isFullWidth: true,
+                          label: Text('Cancel', style: GoogleFonts.inter(color: isDark ? const Color(0xFF94989E) : Colors.grey, fontSize: 13)),
+                        ),
                       ),
-                      child: Text('Add', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: MoonFilledButton(
+                          isFullWidth: true,
+                          backgroundColor: SAMsTheme.accent,
+                          onTap: () async {
+                            HapticFeedback.lightImpact();
+                            final studentId = studentIdCtrl.text.trim();
+                            final amount = double.tryParse(amountCtrl.text) ?? 0;
+                            if (studentId.isEmpty || amount <= 0) {
+                              _showEditorialSnack(context, 'Fill in all fields correctly', isError: true);
+                              return;
+                            }
+                            try {
+                              Navigator.pop(ctx);
+                              _showEditorialSnack(context, 'Adding fee...', isLoading: true);
+                              await ApiService.post('/fees', {
+                                'studentId': studentId,
+                                'items': [{'description': descCtrl.text.trim(), 'amount': amount, 'category': 'tuition'}],
+                                'semester': 2,
+                                'academicYear': '2025/2026',
+                                'dueDate': '2026-06-30',
+                              });
+                              if (mounted) {
+                                _showEditorialSnack(this.context, 'Fee added for $studentId — RM ${amount.toStringAsFixed(2)}');
+                                _load();
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                _showEditorialSnack(this.context, 'Failed to add fee', isError: true);
+                              }
+                            }
+                          },
+                          label: Text('Add Fee', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white)),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -254,21 +270,21 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
     final unpaidFees = _fees.where((f) => f['status'] == 'unpaid' || f['status'] == 'overdue').toList();
-    showDialog(
+    showMoonModalBottomSheet(
       context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: isDark ? const Color(0xFF0F2235) : t.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-          child: Column(
+      backgroundColor: isDark ? const Color(0xFF1F1F1F) : t.cardColor,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.of(ctx).viewInsets.bottom + 24),
+        child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: t.dividerColor, borderRadius: BorderRadius.circular(2)))),
               Row(children: [
                 Container(width: 18, height: 1, color: SAMsTheme.accent),
                 const SizedBox(width: 8),
-                Text('SEND REMINDER', style: GoogleFonts.inter(color: isDark ? const Color(0xFF8A9BB5) : Colors.grey, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600)),
+                Text('SEND REMINDER', style: GoogleFonts.inter(color: isDark ? const Color(0xFF94989E) : Colors.grey, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600)),
               ]),
               const SizedBox(height: 16),
               Text('Send payment reminder to ${unpaidFees.length} student(s) with unpaid fees?', style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 13, height: 1.5)),
@@ -279,31 +295,31 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                   child: Row(children: [
                     Container(width: 6, height: 6, decoration: const BoxDecoration(color: SAMsTheme.error, shape: BoxShape.circle)),
                     const SizedBox(width: 8),
-                    Text('${f['student']?['name'] ?? 'Student'} — RM ${((f['totalAmount'] ?? 0) as num).toStringAsFixed(0)}', style: GoogleFonts.inter(fontSize: 11, color: isDark ? const Color(0xFF8A9BB5) : Colors.grey)),
+                    Text('${f['student']?['name'] ?? 'Student'} — RM ${((f['totalAmount'] ?? 0) as num).toStringAsFixed(0)}', style: GoogleFonts.inter(fontSize: 11, color: isDark ? const Color(0xFF94989E) : Colors.grey)),
                   ]),
                 )),
                 if (unpaidFees.length > 3) Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text('+ ${unpaidFees.length - 3} more', style: GoogleFonts.inter(fontSize: 11, color: isDark ? const Color(0xFF8A9BB5) : Colors.grey)),
+                  child: Text('+ ${unpaidFees.length - 3} more', style: GoogleFonts.inter(fontSize: 11, color: isDark ? const Color(0xFF94989E) : Colors.grey)),
                 ),
               ],
               const SizedBox(height: 20),
               Row(
                 children: [
                   Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: Text('Cancel', style: GoogleFonts.inter(color: isDark ? const Color(0xFF8A9BB5) : Colors.grey, fontSize: 13)),
+                    child: MoonOutlinedButton(
+                      onTap: () => Navigator.pop(ctx),
+                      isFullWidth: true,
+                      label: Text('Cancel', style: GoogleFonts.inter(color: isDark ? const Color(0xFF94989E) : Colors.grey, fontSize: 13)),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
+                    child: MoonFilledButton(
+                      isFullWidth: true,
+                      backgroundColor: SAMsTheme.accent,
+                      onTap: () async {
+                        HapticFeedback.lightImpact();
                         Navigator.pop(ctx);
                         try {
                           final studentIds = unpaidFees.map((f) {
@@ -322,29 +338,21 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                             'studentIds': studentIds,
                           });
                           if (mounted) {
-                            _showEditorialSnack(context, 'Reminder sent to ${studentIds.length} student(s)');
+                            _showEditorialSnack(this.context, 'Reminder sent to ${studentIds.length} student(s)');
                           }
                         } catch (e) {
                           if (mounted) {
-                            _showEditorialSnack(context, 'Failed to send reminder', isError: true);
+                            _showEditorialSnack(this.context, 'Failed to send reminder', isError: true);
                           }
                         }
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: SAMsTheme.accent,
-                        foregroundColor: isDark ? const Color(0xFF0B1B2C) : Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        elevation: 0,
-                      ),
-                      child: Text('Send', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                      label: Text('Send', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white)),
                     ),
                   ),
                 ],
               ),
             ],
           ),
-        ),
       ),
     );
   }
@@ -356,16 +364,16 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
       behavior: SnackBarBehavior.floating,
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      backgroundColor: isDark ? const Color(0xFF0F2235) : const Color(0xFFEDE5D4),
+      backgroundColor: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF6F6F8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: isError ? SAMsTheme.error.withOpacity(0.4) : (isLoading ? SAMsTheme.accent.withOpacity(0.4) : SAMsTheme.accent.withOpacity(0.3))),
+        side: BorderSide(color: isError ? SAMsTheme.error.withValues(alpha: 0.4) : (isLoading ? SAMsTheme.accent.withValues(alpha: 0.4) : SAMsTheme.accent.withValues(alpha: 0.3))),
       ),
       duration: Duration(seconds: isLoading ? 1 : 3),
       content: Row(children: [
-        if (isLoading) SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: SAMsTheme.accent, strokeWidth: 1.5))
-        else if (isError) Icon(Icons.error_outline_rounded, size: 16, color: SAMsTheme.error)
-        else Icon(Icons.check_circle_outline_rounded, size: 16, color: SAMsTheme.accent),
+        if (isLoading) const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: SAMsTheme.accent, strokeWidth: 1.5))
+        else if (isError) const Icon(Icons.error_outline_rounded, size: 16, color: SAMsTheme.error)
+        else const Icon(Icons.check_circle_outline_rounded, size: 16, color: SAMsTheme.accent),
         const SizedBox(width: 10),
         Expanded(child: Text(message, style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 13, fontWeight: FontWeight.w500))),
       ]),
@@ -383,8 +391,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
     return Scaffold(
       backgroundColor: t.scaffoldBackgroundColor,
       body: SafeArea(
-        child: RefreshIndicator(
-          color: SAMsTheme.primary,
+        child: PremiumRefreshIndicator(
           onRefresh: _load,
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
@@ -407,16 +414,16 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                           Text('TREASURY', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: SAMsTheme.accent, letterSpacing: 2)),
                         ]),
                         const SizedBox(height: 8),
-                        Text(name, style: GoogleFonts.fraunces(fontSize: 24, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                        Text(name, style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                       ],
                     )),
                     Container(
                       width: 44, height: 44,
                       decoration: ShapeDecoration(
-                        color: SAMsTheme.accent.withOpacity(0.08),
+                        color: SAMsTheme.accent.withValues(alpha: 0.08),
                         shape: SmoothRectangleBorder(
                           borderRadius: SmoothBorderRadius(cornerRadius: 12, cornerSmoothing: 0.8),
-                          side: BorderSide(color: SAMsTheme.accent.withOpacity(0.2)),
+                          side: BorderSide(color: SAMsTheme.accent.withValues(alpha: 0.2)),
                         ),
                       ),
                       child: const Icon(Iconsax.bank, color: SAMsTheme.accent, size: 20),
@@ -426,24 +433,41 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
 
                 const SizedBox(height: 28),
 
-                // --- COLLECTION OVERVIEW ---
-                _fadeSlide(_staggerAnims[1], child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: ShapeDecoration(
-                    color: t.cardColor,
-                    shape: SmoothRectangleBorder(
-                      borderRadius: SmoothBorderRadius(cornerRadius: 16, cornerSmoothing: 0.8),
-                      side: BorderSide(color: t.dividerColor),
-                    ),
-                  ),
-                  child: Column(
+                // --- COLLECTION OVERVIEW (glassmorphism) ---
+                _fadeSlide(_staggerAnims[1], child: Stack(
+                  children: [
+                    Positioned.fill(child: Container(
+                      decoration: ShapeDecoration(
+                        shape: SmoothRectangleBorder(
+                          borderRadius: SmoothBorderRadius(cornerRadius: 16, cornerSmoothing: 0.8),
+                        ),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            SAMsTheme.accent.withValues(alpha: 0.28),
+                            SAMsTheme.accent.withValues(alpha: 0.08),
+                          ],
+                        ),
+                      ),
+                    )),
+                    GlassmorphicCard(
+                      padding: const EdgeInsets.all(20),
+                      cornerRadius: 16,
+                      blurSigma: 20,
+                      child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text('Collection', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
-                          Text('${_collectionRate.toStringAsFixed(1)}%', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: SAMsTheme.primary)),
+                          AnimatedIntText(
+                            value: _collectionRate,
+                            decimals: 1,
+                            suffix: '%',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: SAMsTheme.primary),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -452,17 +476,11 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                           Expanded(child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              AnimatedTextKit(
-                              animatedTexts: [
-                                TyperAnimatedText(
-                                  'RM ${_totalPaid.toStringAsFixed(0)}',
-                                  textStyle: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface),
-                                  speed: const Duration(milliseconds: 50),
-                                ),
-                              ],
-                              isRepeatingAnimation: false,
-                              totalRepeatCount: 1,
-                            ),
+                              AnimatedBalanceText(
+                                value: _totalPaid,
+                                decimals: 0,
+                                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface),
+                              ),
                               const SizedBox(height: 2),
                               Text('of RM ${_totalDue.toStringAsFixed(0)} total', style: TextStyle(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                             ],
@@ -478,13 +496,15 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                           child: LinearProgressIndicator(
                             value: _pct * _progressController.value,
                             minHeight: 4,
-                            backgroundColor: t.dividerColor,
+                            backgroundColor: SAMsTheme.surfaceLight,
                             valueColor: const AlwaysStoppedAnimation<Color>(SAMsTheme.primary),
                           ),
                         ),
                       ),
                     ],
                   ),
+                    ),
+                  ],
                 )),
 
                 const SizedBox(height: 16),
@@ -555,6 +575,9 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                   final amount = ((f['totalAmount'] ?? 0) as num).toDouble();
                   final paid = ((f['paidAmount'] ?? 0) as num).toDouble();
                   final col = status == 'paid' ? SAMsTheme.success : (status == 'partial' ? SAMsTheme.warning : SAMsTheme.error);
+                  // Use updatedAt for paid/partial (last activity), createdAt for unpaid (when fee was created)
+                  final tsRaw = (status == 'unpaid' ? f['createdAt'] : (f['updatedAt'] ?? f['createdAt']))?.toString();
+                  final ts = _smartTimestamp(tsRaw);
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -571,7 +594,13 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                         const SizedBox(height: 2),
                         Text('RM ${paid.toStringAsFixed(0)} / RM ${amount.toStringAsFixed(0)}', style: TextStyle(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                       ])),
-                      Text(status[0].toUpperCase() + status.substring(1), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: col)),
+                      Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                        Text(status[0].toUpperCase() + status.substring(1), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: col)),
+                        if (ts.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(ts, style: TextStyle(fontSize: 10, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                        ],
+                      ]),
                     ]),
                   );
                 }),
@@ -582,6 +611,23 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
         ),
       ),
     );
+  }
+
+  /// Smart relative timestamp: "Just now", "5m ago", "2h ago", "Yesterday", "3d ago", or date string.
+  String _smartTimestamp(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    final dt = DateTime.tryParse(raw)?.toLocal();
+    if (dt == null) return '';
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inSeconds < 60) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
+    // Older: show date
+    return '${dt.day}/${dt.month}/${dt.year.toString().substring(2)}';
   }
 }
 
@@ -610,13 +656,13 @@ class _MetricTile extends StatelessWidget {
           Container(
             width: 32, height: 32,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.1),
+              color: accent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: accent, size: 16),
           ),
           const SizedBox(height: 12),
-          Text(value, style: GoogleFonts.fraunces(fontSize: 18, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
+          Text(value, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
           const SizedBox(height: 2),
           Text(label, style: GoogleFonts.inter(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
         ],
@@ -657,8 +703,8 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () { HapticFeedback.lightImpact(); onTap(); },
+    return PressableCard(
+      onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
@@ -673,7 +719,7 @@ class _ActionRow extends StatelessWidget {
           Container(
             width: 34, height: 34,
             decoration: BoxDecoration(
-              color: SAMsTheme.accent.withOpacity(0.08),
+              color: SAMsTheme.accent.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: SAMsTheme.accent, size: 17),
@@ -684,7 +730,7 @@ class _ActionRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: SAMsTheme.error.withOpacity(0.1),
+                color: SAMsTheme.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(subtitle!, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: SAMsTheme.error)),

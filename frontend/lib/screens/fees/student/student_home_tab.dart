@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../config/theme.dart';
@@ -7,9 +8,9 @@ import '../../../services/api_service.dart';
 import '../../../services/cache_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/shimmer_loading.dart';
-import '../../../widgets/empty_state.dart';
+import '../../../widgets/premium_widgets.dart';
+import '../../../widgets/pressable_card.dart';
 import 'package:figma_squircle/figma_squircle.dart';
-import 'package:animated_text_kit/animated_text_kit.dart';
 import 'student_fees_shell.dart';
 
 class StudentHomeTab extends ConsumerStatefulWidget {
@@ -23,7 +24,6 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
   List<dynamic> _fees = [];
   List<dynamic> _payments = [];
   bool _loading = true;
-  bool _hasError = false;
   Timer? _pollTimer;
 
   late AnimationController _staggerController;
@@ -88,14 +88,14 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
       // Cache results
       await CacheService.save('my_fees', fees);
       await CacheService.save('my_payments', payments);
-      setState(() { _fees = fees; _payments = payments; _loading = false; _hasError = false; });
+      setState(() { _fees = fees; _payments = payments; _loading = false; });
       _ringController.reset();
       _ringController.forward();
       if (!_staggerController.isAnimating && _staggerController.value == 0) {
         _staggerController.forward();
       }
     } catch (e) {
-      setState(() { _loading = false; _hasError = _fees.isEmpty; });
+      setState(() { _loading = false; });
       if (!_staggerController.isAnimating && _staggerController.value == 0 && _fees.isNotEmpty) {
         _staggerController.forward();
       }
@@ -168,7 +168,47 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
     final user = ref.watch(authProvider).user;
     final studentId = user?['studentId'] ?? 'CB23109';
 
-    if (_loading) return Scaffold(appBar: AppBar(title: const Text('Tuition Fees')), body: const ShimmerCards());
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Tuition Fees')),
+        body: ListView(
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          children: const [
+            // Header strip
+            ShimmerLoading(width: 80, height: 11, borderRadius: 4),
+            SizedBox(height: 8),
+            ShimmerLoading(width: 140, height: 22, borderRadius: 6),
+            SizedBox(height: 6),
+            ShimmerLoading(width: 180, height: 12, borderRadius: 4),
+            SizedBox(height: 20),
+            // Balance card
+            ShimmerLoading(height: 120, borderRadius: 16),
+            SizedBox(height: 12),
+            // 2x2 stat grid
+            Row(children: [
+              Expanded(child: SkeletonStatCard()),
+              SizedBox(width: 10),
+              Expanded(child: SkeletonStatCard()),
+            ]),
+            SizedBox(height: 10),
+            Row(children: [
+              Expanded(child: SkeletonStatCard()),
+              SizedBox(width: 10),
+              Expanded(child: SkeletonStatCard()),
+            ]),
+            SizedBox(height: 24),
+            ShimmerLoading(width: 120, height: 14, borderRadius: 4),
+            SizedBox(height: 12),
+            SkeletonFeeCard(),
+            SizedBox(height: 10),
+            SkeletonFeeCard(),
+            SizedBox(height: 10),
+            SkeletonFeeCard(),
+          ],
+        ),
+      );
+    }
 
     final daysLeft = _daysLeft;
     final blocked = _week >= 5 && _balance > 0;
@@ -179,7 +219,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
       appBar: AppBar(
         backgroundColor: t.scaffoldBackgroundColor,
         elevation: 0,
-        title: Text('Tuition Fees', style: GoogleFonts.fraunces(color: t.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w600)),
+        title: Text('Tuition Fees', style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w600)),
         leading: IconButton(icon: Icon(Icons.arrow_back, color: t.colorScheme.onSurface), onPressed: () => Navigator.pop(context)),
         actions: [
           Container(
@@ -188,7 +228,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
             decoration: BoxDecoration(
               color: t.cardColor,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: blocked ? SAMsTheme.error.withOpacity(0.4) : SAMsTheme.success.withOpacity(0.4)),
+              border: Border.all(color: blocked ? SAMsTheme.error.withValues(alpha: 0.4) : SAMsTheme.success.withValues(alpha: 0.4)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -201,8 +241,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
           ),
         ],
       ),
-      body: RefreshIndicator(
-        color: SAMsTheme.primary,
+      body: PremiumRefreshIndicator(
         onRefresh: _load,
         child: ListView(
           physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
@@ -216,7 +255,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
               children: [
                 Text('STUDENT', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: SAMsTheme.accent, letterSpacing: 1.2)),
                 const SizedBox(height: 4),
-                Text(studentId, style: GoogleFonts.fraunces(fontSize: 22, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
+                Text(studentId, style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
                 const SizedBox(height: 4),
                 Text('$_semester  ·  Week $_week', style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
               ],
@@ -254,75 +293,83 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                   borderRadius: BorderRadius.circular(10),
                   border: const Border(left: BorderSide(color: SAMsTheme.warning, width: 3)),
                 ),
-                child: Row(children: [
-                  const Icon(Icons.info_outline_rounded, color: SAMsTheme.warning, size: 18),
-                  const SizedBox(width: 10),
-                  const Expanded(child: Text('Pay before Week 5 to maintain academic access', style: TextStyle(color: SAMsTheme.warning, fontSize: 12, fontWeight: FontWeight.w500))),
+                child: const Row(children: [
+                  Icon(Icons.info_outline_rounded, color: SAMsTheme.warning, size: 18),
+                  SizedBox(width: 10),
+                  Expanded(child: Text('Pay before Week 5 to maintain academic access', style: TextStyle(color: SAMsTheme.warning, fontSize: 12, fontWeight: FontWeight.w500))),
                 ]),
               )),
 
-            // --- BALANCE OVERVIEW ---
-            _fadeSlide(_staggerAnims[2], child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: ShapeDecoration(
-                color: t.cardColor,
-                shape: SmoothRectangleBorder(
-                  borderRadius: SmoothBorderRadius(cornerRadius: 16, cornerSmoothing: 0.8),
-                  side: BorderSide(color: t.dividerColor),
-                ),
-              ),
-              child: Row(
-                children: [
-                  // #5 Progress ring
-                  SizedBox(
-                    width: 80, height: 80,
-                    child: AnimatedBuilder(
-                      animation: _ringController,
-                      builder: (_, __) => CustomPaint(
-                        painter: _ProgressRingPainter(
-                          progress: _pct * Curves.easeOutCubic.transform(_ringController.value),
-                          bgColor: t.dividerColor,
-                          fgColor: _pct >= 1 ? SAMsTheme.success : SAMsTheme.accent,
-                          strokeWidth: 6,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${(_pct * 100 * Curves.easeOutCubic.transform(_ringController.value)).toStringAsFixed(0)}%',
-                            style: GoogleFonts.fraunces(fontSize: 16, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface),
-                          ),
-                        ),
-                      ),
+            // --- BALANCE OVERVIEW (glassmorphism) ---
+            _fadeSlide(_staggerAnims[2], child: Stack(
+              children: [
+                // Gradient backdrop so the blur has something to read through
+                Positioned.fill(child: Container(
+                  decoration: ShapeDecoration(
+                    shape: SmoothRectangleBorder(
+                      borderRadius: SmoothBorderRadius(cornerRadius: 16, cornerSmoothing: 0.8),
+                    ),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        SAMsTheme.accent.withValues(alpha: 0.28),
+                        SAMsTheme.accent.withValues(alpha: 0.08),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 20),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                )),
+                GlassmorphicCard(
+                  padding: const EdgeInsets.all(20),
+                  cornerRadius: 16,
+                  blurSigma: 20,
+                  child: Row(
                     children: [
-                      Text('Balance Due', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
-                      const SizedBox(height: 6),
-                      AnimatedTextKit(
-                        animatedTexts: [
-                          TyperAnimatedText(
-                            _fmtRm(_balance),
-                            textStyle: GoogleFonts.fraunces(fontSize: 26, fontWeight: FontWeight.w700, color: _balance > 0 ? t.colorScheme.onSurface : SAMsTheme.success),
-                            speed: const Duration(milliseconds: 60),
+                      // #5 Progress ring
+                      SizedBox(
+                        width: 80, height: 80,
+                        child: AnimatedBuilder(
+                          animation: _ringController,
+                          builder: (_, __) => CustomPaint(
+                            painter: _ProgressRingPainter(
+                              progress: _pct * Curves.easeOutCubic.transform(_ringController.value),
+                              bgColor: SAMsTheme.surfaceLight,
+                              fgColor: _pct >= 1 ? SAMsTheme.success : SAMsTheme.accent,
+                              strokeWidth: 6,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${(_pct * 100 * Curves.easeOutCubic.transform(_ringController.value)).toStringAsFixed(0)}%',
+                                style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface),
+                              ),
+                            ),
                           ),
-                        ],
-                        isRepeatingAnimation: false,
-                        totalRepeatCount: 1,
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Text('of ${_fmtRm(_totalDue)} total', style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
-                      const SizedBox(height: 8),
-                      Row(children: [
-                        Container(width: 8, height: 8, decoration: BoxDecoration(color: SAMsTheme.success, borderRadius: BorderRadius.circular(2))),
-                        const SizedBox(width: 6),
-                        Text('${_fmtRm(_totalPaid)} paid', style: GoogleFonts.inter(fontSize: 10, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
-                      ]),
+                      const SizedBox(width: 20),
+                      Expanded(child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Balance Due', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                          const SizedBox(height: 6),
+                          AnimatedBalanceText(
+                            value: _balance,
+                            style: GoogleFonts.inter(fontSize: 26, fontWeight: FontWeight.w700, color: _balance > 0 ? t.colorScheme.onSurface : SAMsTheme.success),
+                          ),
+                          const SizedBox(height: 4),
+                          Text('of ${_fmtRm(_totalDue)} total', style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                          const SizedBox(height: 8),
+                          Row(children: [
+                            Container(width: 8, height: 8, decoration: BoxDecoration(color: SAMsTheme.success, borderRadius: BorderRadius.circular(2))),
+                            const SizedBox(width: 6),
+                            Text('${_fmtRm(_totalPaid)} paid', style: GoogleFonts.inter(fontSize: 10, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                          ]),
+                        ],
+                      )),
                     ],
-                  )),
-                ],
-              ),
+                  ),
+                ),
+              ],
             )),
 
             const SizedBox(height: 12),
@@ -345,86 +392,158 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
             const SizedBox(height: 24),
 
             // --- FEE BREAKDOWN ---
-            _fadeSlide(_staggerAnims[4], child: Column(
+            _fadeSlide(_staggerAnims[4], child: Builder(builder: (context) {
+              // Compute outstanding fees once for both header and empty state.
+              final outstanding = _fees.where((fee) {
+                final feeStatus = fee['status']?.toString() ?? '';
+                final totalAmt = ((fee['totalAmount'] ?? 0) as num).toDouble();
+                final paidAmt = ((fee['paidAmount'] ?? 0) as num).toDouble();
+                return feeStatus != 'paid' && (totalAmt - paidAmt) > 0.01;
+              }).toList();
+
+              if (outstanding.isEmpty) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Fee Breakdown', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: t.cardColor,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: t.dividerColor),
+                      ),
+                      child: Row(children: [
+                        Container(
+                          width: 40, height: 40,
+                          decoration: BoxDecoration(
+                            color: SAMsTheme.success.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(Icons.check_circle_rounded, color: SAMsTheme.success, size: 22),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('All settled', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                          const SizedBox(height: 2),
+                          Text('No outstanding fees right now.', style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color)),
+                        ])),
+                      ]),
+                    ),
+                  ],
+                );
+              }
+
+              return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Fee Breakdown', style: GoogleFonts.fraunces(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                Text('Fee Breakdown', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                 const SizedBox(height: 12),
-                Container(
-                  decoration: BoxDecoration(
-                    color: t.cardColor,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: t.dividerColor),
-                  ),
-                  child: Column(
-                    children: [
-                      // #8 Dynamic reordering: unpaid first, then paid
-                      ..._sortedFeeItems().where((item) => item['paid'] != true).toList().asMap().entries.map((entry) {
-                        final i = entry.key;
-                        final item = entry.value;
-                        final total = _sortedFeeItems().where((item) => item['paid'] != true).length;
-                        final isPaid = item['paid'] == true;
-                        return Column(children: [
-                          // #6 Swipe-to-pay
-                          Dismissible(
-                            key: Key('fee_${item['description']}_$i'),
-                            direction: isPaid ? DismissDirection.none : DismissDirection.startToEnd,
-                            background: Container(
-                              alignment: Alignment.centerLeft,
-                              padding: const EdgeInsets.only(left: 20),
-                              decoration: BoxDecoration(
-                                color: SAMsTheme.accent.withOpacity(0.15),
-                                borderRadius: i == 0 ? const BorderRadius.vertical(top: Radius.circular(14)) : null,
-                              ),
-                              child: Row(children: [
-                                Icon(Icons.payment_rounded, color: SAMsTheme.accent, size: 18),
-                                const SizedBox(width: 8),
-                                Text('Pay now', style: GoogleFonts.inter(color: SAMsTheme.accent, fontSize: 12, fontWeight: FontWeight.w600)),
-                              ]),
+                // Filter out fully-paid fees - only show outstanding ones.
+                ...outstanding.map((fee) {
+                  final feeId = fee['_id']?.toString() ?? '';
+                  final feeStatus = fee['status']?.toString() ?? '';
+                  final isPaidFee = feeStatus == 'paid';
+                  final items = (fee['items'] as List?) ?? [];
+                  final totalAmt = ((fee['totalAmount'] ?? 0) as num).toDouble();
+                  final paidAmt = ((fee['paidAmount'] ?? 0) as num).toDouble();
+                  final balanceAmt = totalAmt - paidAmt;
+                  final semLabel = 'Sem ${fee['semester'] ?? '-'}, ${fee['academicYear'] ?? ''}';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Hero(
+                      tag: 'fee_$feeId',
+                      flightShuttleBuilder: (_, __, ___, ____, _____) => Material(
+                        color: Colors.transparent,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: t.cardColor,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: t.dividerColor),
+                          ),
+                        ),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: PressableCard(
+                          onTap: isPaidFee ? null : () {
+                            HapticFeedback.lightImpact();
+                            Navigator.pushReplacement(context, PageRouteBuilder(
+                              transitionDuration: const Duration(milliseconds: 450),
+                              reverseTransitionDuration: const Duration(milliseconds: 350),
+                              pageBuilder: (_, __, ___) => StudentFeesShell(initialTab: 1, targetFeeId: feeId),
+                              transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
+                            ));
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: t.cardColor,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: t.dividerColor),
                             ),
-                            confirmDismiss: (_) async {
-                              // Navigate to Payment tab (index 1)
-                              Navigator.pop(context);
-                              Navigator.push(context, MaterialPageRoute(
-                                builder: (_) => const StudentFeesShell(initialTab: 1),
-                              ));
-                              return false;
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 4, height: 28,
-                                    decoration: BoxDecoration(
-                                      color: isPaid ? SAMsTheme.success : SAMsTheme.warning,
-                                      borderRadius: BorderRadius.circular(2),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                                  child: Row(children: [
+                                    Container(
+                                      width: 4, height: 32,
+                                      decoration: BoxDecoration(
+                                        color: isPaidFee ? SAMsTheme.success : SAMsTheme.accent,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(item['description'] ?? '', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: t.colorScheme.onSurface)),
-                                      if (!isPaid) Text('Swipe right to pay', style: GoogleFonts.inter(fontSize: 10, color: t.textTheme.bodySmall?.color?.withOpacity(0.5))),
-                                    ],
-                                  )),
-                                  Text('RM ${((item['amount'] ?? 0) as num).toStringAsFixed(2)}',
-                                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600,
-                                      color: isPaid ? SAMsTheme.success : t.colorScheme.onSurface,
-                                      decoration: isPaid ? TextDecoration.lineThrough : null)),
-                                ],
-                              ),
+                                    const SizedBox(width: 12),
+                                    Expanded(child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(semLabel, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                                        const SizedBox(height: 2),
+                                        Text(isPaidFee ? 'Fully paid' : 'Tap to pay RM ${balanceAmt.toStringAsFixed(2)}',
+                                          style: GoogleFonts.inter(fontSize: 11, color: isPaidFee ? SAMsTheme.success : t.textTheme.bodySmall?.color)),
+                                      ],
+                                    )),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: (isPaidFee ? SAMsTheme.success : SAMsTheme.accent).withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text('RM ${totalAmt.toStringAsFixed(0)}',
+                                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700,
+                                          color: isPaidFee ? SAMsTheme.success : SAMsTheme.accent)),
+                                    ),
+                                  ]),
+                                ),
+                                Container(height: 1, margin: const EdgeInsets.symmetric(horizontal: 16), color: t.dividerColor),
+                                ...items.asMap().entries.map((entry) {
+                                  final item = entry.value as Map;
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                    child: Row(children: [
+                                      Expanded(child: Text(item['description']?.toString() ?? '',
+                                        style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color))),
+                                      Text('RM ${((item['amount'] ?? 0) as num).toStringAsFixed(2)}',
+                                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500,
+                                          color: isPaidFee ? SAMsTheme.success : t.colorScheme.onSurface,
+                                          decoration: isPaidFee ? TextDecoration.lineThrough : null)),
+                                    ]),
+                                  );
+                                }),
+                                const SizedBox(height: 6),
+                              ],
                             ),
                           ),
-                          if (i < total - 1) Container(height: 1, margin: const EdgeInsets.symmetric(horizontal: 16), color: t.dividerColor),
-                        ]);
-                      }),
-                    ],
-                  ),
-                ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
               ],
-            )),
+            );
+            })),
 
             const SizedBox(height: 24),
 
@@ -433,7 +552,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (_lastPayment != null) ...[
-                  Text('Last Payment', style: GoogleFonts.fraunces(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                  Text('Last Payment', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -446,14 +565,14 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                       Container(
                         width: 36, height: 36,
                         decoration: BoxDecoration(
-                          color: t.dividerColor,
+                          color: SAMsTheme.success.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(Icons.receipt_long_rounded, color: SAMsTheme.success, size: 18),
                       ),
                       const SizedBox(width: 14),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(_fmtRm(((_lastPayment!['amount'] ?? 0) as num).toDouble()), style: GoogleFonts.fraunces(fontSize: 15, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
+                        Text(_fmtRm(((_lastPayment!['amount'] ?? 0) as num).toDouble()), style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
                         const SizedBox(height: 2),
                         Text(
                           _lastPayment!['paidAt'] != null
@@ -466,8 +585,8 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                       ])),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: t.dividerColor, borderRadius: BorderRadius.circular(6)),
-                        child: Text('via ${_lastPayment!['method']?.toUpperCase() ?? 'FPX'}', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
+                        decoration: BoxDecoration(color: SAMsTheme.accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+                        child: Text('via ${_lastPayment!['method']?.toUpperCase() ?? 'FPX'}', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: SAMsTheme.accent)),
                       ),
                     ]),
                   ),
@@ -476,7 +595,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
 
                 // --- PAYMENT DEADLINE ---
                 if (_dueDate != null && _balance > 0) ...[
-                  Text('Deadline', style: GoogleFonts.fraunces(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
+                  Text('Deadline', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -491,12 +610,12 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text('Payment Due', style: GoogleFonts.inter(fontSize: 11, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
                         const SizedBox(height: 2),
-                        Text(dueDateStr, style: GoogleFonts.fraunces(fontSize: 16, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
+                        Text(dueDateStr, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
                       ])),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: t.dividerColor,
+                          color: (daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.accent).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text('$daysLeft days', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: daysLeft <= 7 ? SAMsTheme.error : SAMsTheme.accent)),
@@ -518,26 +637,6 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
   String _fmtRm(double n) => 'RM ${n.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
   String _monthName(int m) => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m];
 
-  // #8 Dynamic reordering: unpaid items first, paid items last
-  List<Map<String, dynamic>> _sortedFeeItems() {
-    final allItems = <Map<String, dynamic>>[];
-    for (var fee in _fees) {
-      final items = (fee['items'] as List?) ?? [];
-      final feeStatus = fee['status']?.toString() ?? '';
-      for (var item in items) {
-        final map = Map<String, dynamic>.from(item as Map);
-        map['paid'] = feeStatus == 'paid' || map['paid'] == true;
-        allItems.add(map);
-      }
-    }
-    // Sort: unpaid first
-    allItems.sort((a, b) {
-      if (a['paid'] == true && b['paid'] != true) return 1;
-      if (a['paid'] != true && b['paid'] == true) return -1;
-      return 0;
-    });
-    return allItems;
-  }
 }
 
 // --- METRIC TILE ---
@@ -565,7 +664,7 @@ class _MetricTile extends StatelessWidget {
         children: [
           Icon(icon, color: accent, size: 18),
           const SizedBox(height: 10),
-          Text(value, style: GoogleFonts.fraunces(fontSize: 15, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
+          Text(value, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
           const SizedBox(height: 2),
           Text(label, style: GoogleFonts.inter(fontSize: 11, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
         ],

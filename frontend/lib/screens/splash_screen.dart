@@ -5,7 +5,8 @@ import '../config/theme.dart';
 
 class SplashScreen extends StatefulWidget {
   final Widget? nextScreen;
-  const SplashScreen({super.key, this.nextScreen});
+  final VoidCallback? onFinish;
+  const SplashScreen({super.key, this.nextScreen, this.onFinish});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -85,17 +86,18 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     });
 
     // Navigate after splash
-    if (widget.nextScreen != null) {
-      Future.delayed(const Duration(milliseconds: 2200), () {
-        if (mounted) {
-          Navigator.pushReplacement(context, PageRouteBuilder(
-            pageBuilder: (_, __, ___) => widget.nextScreen!,
-            transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
-            transitionDuration: const Duration(milliseconds: 600),
-          ));
-        }
-      });
-    }
+    Future.delayed(const Duration(milliseconds: 2200), () {
+      if (!mounted) return;
+      if (widget.onFinish != null) {
+        widget.onFinish!();
+      } else if (widget.nextScreen != null) {
+        Navigator.pushReplacement(context, PageRouteBuilder(
+          pageBuilder: (_, __, ___) => widget.nextScreen!,
+          transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
+          transitionDuration: const Duration(milliseconds: 600),
+        ));
+      }
+    });
   }
 
   @override
@@ -124,7 +126,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     center: Alignment(-0.3, -0.4),
                     radius: 1.0 + (_pulseController.value * 0.3),
                     colors: [
-                      Color.lerp(const Color(0x22C9A961), const Color(0x44C9A961), _pulseController.value)!,
+                      Color.lerp(const Color(0x225C33CF), const Color(0x445C33CF), _pulseController.value)!,
                       const Color(0x000B1B2C),
                     ],
                   ),
@@ -206,7 +208,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               end: Alignment(_shimmerAnim.value, 0),
                               colors: const [
                                 Color(0xFFF5ECD7),
-                                Color(0xFFC9A961),
+                                Color(0xFF5C33CF),
                                 Color(0xFFF5ECD7),
                               ],
                               stops: const [0.0, 0.5, 1.0],
@@ -349,7 +351,7 @@ class _ParticlePainter extends CustomPainter {
       final y = (p.y - progress * p.speed) % 1.0;
       final x = p.x + sin(progress * 2 * pi + p.y * 6) * 0.02;
       final paint = Paint()
-        ..color = const Color(0xFFC9A961).withOpacity(p.opacity)
+        ..color = const Color(0xFF5C33CF).withOpacity(p.opacity)
         ..style = PaintingStyle.fill;
       canvas.drawCircle(
         Offset(x * size.width, y * size.height),

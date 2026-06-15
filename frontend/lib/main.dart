@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'config/theme.dart';
+import 'config/moon_theme.dart';
 import 'providers/theme_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -17,20 +17,32 @@ void main() {
   runApp(const ProviderScope(child: SAMsApp()));
 }
 
-class SAMsApp extends ConsumerWidget {
+class SAMsApp extends ConsumerStatefulWidget {
   const SAMsApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SAMsApp> createState() => _SAMsAppState();
+}
+
+class _SAMsAppState extends ConsumerState<SAMsApp> {
+  bool _splashShown = false;
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final themeState = ref.watch(themeProvider);
 
-    // Wire up 401 logout handler - removed, handled in ApiService directly
-
-    // Show splash while auth is initializing
+    // Splash always shown first 2.2s, regardless of auth speed
     Widget home;
-    if (authState.isInitializing) {
-      home = const SplashScreen();
+    if (!_splashShown) {
+      home = SplashScreen(
+        onFinish: () {
+          if (mounted) setState(() => _splashShown = true);
+        },
+      );
+    } else if (authState.isInitializing) {
+      // Edge case: auth still loading after splash duration
+      home = SplashScreen(onFinish: () {});
     } else {
       home = authState.isAuthenticated ? const MainShell() : const LoginScreen();
     }
@@ -38,17 +50,9 @@ class SAMsApp extends ConsumerWidget {
     return MaterialApp(
       title: 'SAMs - Tuition Fees',
       debugShowCheckedModeBanner: false,
-      theme: SAMsLightTheme.theme,
-      darkTheme: SAMsTheme.darkTheme,
+      theme: SAMsMoonTheme.lightTheme,
+      darkTheme: SAMsMoonTheme.darkTheme,
       themeMode: themeState.isDark ? ThemeMode.dark : ThemeMode.light,
-      builder: (context, child) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        if (!isDark || child == null) return child ?? const SizedBox.shrink();
-        return Container(
-          decoration: SAMsTheme.premiumBackground,
-          child: child,
-        );
-      },
       home: home,
     );
   }

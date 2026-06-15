@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:moon_design/moon_design.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
 import '../../../widgets/shimmer_loading.dart';
 import '../../../widgets/empty_state.dart';
 import 'package:figma_squircle/figma_squircle.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class TreasuryStudentsTab extends StatefulWidget {
   const TreasuryStudentsTab({super.key});
@@ -20,6 +23,7 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
   bool _loading = true;
   String _query = '';
   String _filter = 'all';
+  Timer? _debounce;
 
   // Stagger animation
   late AnimationController _staggerController;
@@ -37,6 +41,7 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _staggerController.dispose();
     super.dispose();
   }
@@ -116,19 +121,47 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
         // Search
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: TextField(
-            onChanged: (v) => setState(() {
-              _query = v;
-              // Replay stagger on filter change
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                final count = _filtered.length;
-                if (count != _prevFilteredCount) _playStagger(count);
-              });
-            }),
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-            decoration: InputDecoration(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: MoonFormTextInput(
+              onChanged: (v) {
+                _debounce?.cancel();
+                _debounce = Timer(const Duration(milliseconds: 280), () {
+                  if (!mounted) return;
+                  setState(() {
+                    _query = v;
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      final count = _filtered.length;
+                      if (count != _prevFilteredCount) _playStagger(count);
+                    });
+                  });
+                });
+              },
+              textColor: Theme.of(context).colorScheme.onSurface,
               hintText: 'Search by ID or Name...',
-              prefixIcon: Icon(Icons.search_rounded, size: 16, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
+              activeBorderColor: SAMsTheme.accent.withValues(alpha: 0.4),
+              inactiveBorderColor: _query.isNotEmpty
+                  ? SAMsTheme.accent.withValues(alpha: 0.4)
+                  : Theme.of(context).dividerColor,
+              leading: Icon(Iconsax.search_normal, size: 16, color: _query.isNotEmpty ? SAMsTheme.accent : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)),
+              trailing: _query.isNotEmpty
+                  ? GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        _debounce?.cancel();
+                        setState(() {
+                          _query = '';
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _playStagger(_filtered.length);
+                          });
+                        });
+                      },
+                      child: Icon(Iconsax.close_circle, size: 14, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                    )
+                  : null,
             ),
           ),
         ),
@@ -150,7 +183,24 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
         // Student list
         Expanded(
           child: _filtered.isEmpty
-              ? EmptyState.noStudents()
+              ? (_query.isNotEmpty
+                  ? EmptyState(
+                      icon: Iconsax.search_status,
+                      title: 'No students found for "$_query"',
+                      subtitle: 'Try a different name or student ID.',
+                      actionLabel: 'Clear search',
+                      onAction: () {
+                        HapticFeedback.selectionClick();
+                        _debounce?.cancel();
+                        setState(() {
+                          _query = '';
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _playStagger(_filtered.length);
+                          });
+                        });
+                      },
+                    )
+                  : EmptyState.noStudents())
               : _buildAnimatedList(),
         ),
       ]),
@@ -197,7 +247,8 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
                   end: Offset.zero,
                 ).animate(slideAnim),
                 // #12 Long-press preview
-                child: GestureDetector(
+                child: _PressableScale(
+                  onTap: () => _showStudentPreview(context, student),
                   onLongPress: () => _showStudentPreview(context, student),
                   child: Container(
                                       padding: const EdgeInsets.all(14),
@@ -212,7 +263,7 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
                     // Avatar
                     Container(
                       width: 42, height: 42,
-                      decoration: BoxDecoration(color: SAMsTheme.primary.withOpacity(0.15), shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: SAMsTheme.primary.withValues(alpha: 0.15), shape: BoxShape.circle),
                       child: Center(child: Text(((student['name'] ?? 'S') as String).isNotEmpty ? (student['name'] as String)[0].toUpperCase() : 'S', style: const TextStyle(color: SAMsTheme.primary, fontWeight: FontWeight.w700, fontSize: 16))),
                     ),
                     const SizedBox(width: 12),
@@ -230,7 +281,7 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
                       Row(children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(color: _statusColor(status).withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
+                          decoration: BoxDecoration(color: _statusColor(status).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
                           child: Text(status.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: _statusColor(status))),
                         ),
                         const SizedBox(width: 10),
@@ -268,12 +319,12 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
             Row(children: [
               Container(
                 width: 48, height: 48,
-                decoration: BoxDecoration(color: SAMsTheme.primary.withOpacity(0.15), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: SAMsTheme.primary.withValues(alpha: 0.15), shape: BoxShape.circle),
                 child: Center(child: Text(((student['name'] ?? 'S') as String).isNotEmpty ? (student['name'] as String)[0].toUpperCase() : 'S', style: const TextStyle(color: SAMsTheme.primary, fontWeight: FontWeight.w700, fontSize: 20))),
               ),
               const SizedBox(width: 14),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(student['name'] ?? 'Unknown', style: GoogleFonts.fraunces(fontSize: 18, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
+                Text(student['name'] ?? 'Unknown', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
                 Text(student['studentId'] ?? '', style: GoogleFonts.jetBrainsMono(fontSize: 12, color: t.textTheme.bodySmall?.color)),
               ])),
             ]),
@@ -286,9 +337,9 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
             _previewRow('Balance', 'RM ${(totalDue - totalPaid).toStringAsFixed(2)}', t),
             _previewRow('Fees', '${fees.length} item(s)', t),
             const SizedBox(height: 16),
-            SizedBox(width: double.infinity, child: TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Close', style: GoogleFonts.inter(color: SAMsTheme.accent, fontWeight: FontWeight.w600)),
+            SizedBox(width: double.infinity, child: MoonTextButton(
+              onTap: () => Navigator.pop(ctx),
+              label: Text('Close', style: GoogleFonts.inter(color: SAMsTheme.accent, fontWeight: FontWeight.w600)),
             )),
           ]),
         ),
@@ -309,19 +360,22 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
   Widget _chip(String label, String value) {
     final active = _filter == value;
     return GestureDetector(
-      onTap: () => setState(() {
-        _filter = value;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _playStagger(_filtered.length);
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() {
+          _filter = value;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _playStagger(_filtered.length);
+          });
         });
-      }),
+      },
       child: Container(
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: active ? SAMsTheme.primary.withOpacity(0.15) : Theme.of(context).cardColor,
+          color: active ? SAMsTheme.primary.withValues(alpha: 0.15) : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: active ? SAMsTheme.primary.withOpacity(0.5) : Theme.of(context).dividerColor),
+          border: Border.all(color: active ? SAMsTheme.primary.withValues(alpha: 0.5) : Theme.of(context).dividerColor),
         ),
         child: Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: active ? SAMsTheme.primary : Theme.of(context).textTheme.bodyMedium?.color)),
       ),
@@ -334,5 +388,43 @@ class _TreasuryStudentsTabState extends State<TreasuryStudentsTab>
       case 'partial': return SAMsTheme.accent;
       default: return SAMsTheme.error;
     }
+  }
+}
+
+// ─── Pressable scale wrapper: 1.0 -> 0.96 with haptic ───
+class _PressableScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  const _PressableScale({required this.child, this.onTap, this.onLongPress});
+
+  @override
+  State<_PressableScale> createState() => _PressableScaleState();
+}
+
+class _PressableScaleState extends State<_PressableScale> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        HapticFeedback.lightImpact();
+        widget.onTap?.call();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      onLongPress: widget.onLongPress == null ? null : () {
+        HapticFeedback.mediumImpact();
+        widget.onLongPress!();
+      },
+      child: AnimatedScale(
+        scale: _pressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
   }
 }

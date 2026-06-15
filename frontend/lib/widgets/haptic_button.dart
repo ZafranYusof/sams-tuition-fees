@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moon_design/moon_design.dart';
 
 class HapticButton extends StatelessWidget {
   final VoidCallback? onPressed;
@@ -22,16 +23,13 @@ class HapticButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: height,
-      child: ElevatedButton(
-        onPressed: onPressed != null ? () {
+      child: MoonFilledButton(
+        onTap: onPressed != null ? () {
           HapticFeedback.lightImpact();
           onPressed!();
         } : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(borderRadius)),
-        ),
-        child: child,
+        backgroundColor: backgroundColor,
+        label: child,
       ),
     );
   }

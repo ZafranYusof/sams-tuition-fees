@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:moon_design/moon_design.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../home/main_shell.dart';
@@ -102,6 +104,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void _register() {
     setState(() => _autoValidate = true);
     if (!_formKey.currentState!.validate()) return;
+    HapticFeedback.mediumImpact();
 
     final studentId = _studentIdController.text.trim();
     final name = _nameController.text.trim();
@@ -124,8 +127,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final t = Theme.of(context);
-    final isDark = t.brightness == Brightness.dark;
-    final accent = isDark ? SAMsTheme.brass : const Color(0xFFB28A3E);
+    const accent = SAMsTheme.accent;
     final muted = t.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
 
     // Navigate to home when authenticated after registration
@@ -142,7 +144,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () { HapticFeedback.lightImpact(); Navigator.pop(context); },
         ),
         title: const Text('Create account'),
       ),
@@ -179,13 +181,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // ─── Student ID ───
                 _label('STUDENT ID', muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _studentIdController,
-                  style: GoogleFonts.inter(fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: 'CB23000',
-                    prefixIcon: Icon(Icons.badge_outlined, size: 18, color: muted),
-                  ),
+                  hintText: 'CB23000',
+                  leading: Icon(Icons.badge_outlined, size: 18, color: muted),
+                  textColor: t.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  activeBorderColor: accent,
+                  inactiveBorderColor: t.dividerColor,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Student ID is required';
                     return null;
@@ -196,13 +200,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // ─── Full Name ───
                 _label('FULL NAME', muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _nameController,
-                  style: GoogleFonts.inter(fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: 'Your name',
-                    prefixIcon: Icon(Icons.person_outline, size: 18, color: muted),
-                  ),
+                  hintText: 'Your name',
+                  leading: Icon(Icons.person_outline, size: 18, color: muted),
+                  textColor: t.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  activeBorderColor: accent,
+                  inactiveBorderColor: t.dividerColor,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Full name is required';
                     return null;
@@ -213,14 +219,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // ─── Email ───
                 _label('EMAIL', muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: GoogleFonts.inter(fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: 'name@umpsa.edu.my',
-                    prefixIcon: Icon(Icons.alternate_email_rounded, size: 18, color: muted),
-                  ),
+                  hintText: 'name@umpsa.edu.my',
+                  leading: Icon(Icons.alternate_email_rounded, size: 18, color: muted),
+                  textColor: t.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  activeBorderColor: accent,
+                  inactiveBorderColor: t.dividerColor,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Email is required';
                     if (!v.contains('@')) return 'Enter a valid email address';
@@ -232,22 +240,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // ─── Password ───
                 _label('PASSWORD', muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  style: GoogleFonts.inter(fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: Icon(Icons.lock_outline_rounded, size: 18, color: muted),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        size: 18,
-                        color: muted,
-                      ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  hintText: '••••••••',
+                  leading: Icon(Icons.lock_outline_rounded, size: 18, color: muted),
+                  trailing: GestureDetector(
+                    onTap: () { HapticFeedback.selectionClick(); setState(() => _obscurePassword = !_obscurePassword); },
+                    child: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 18,
+                      color: muted,
                     ),
                   ),
+                  textColor: t.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  activeBorderColor: accent,
+                  inactiveBorderColor: t.dividerColor,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Password is required';
                     if (v.length < 6) return 'Password must be at least 6 characters';
@@ -259,22 +269,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // ─── Confirm Password ───
                 _label('CONFIRM PASSWORD', muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
-                  style: GoogleFonts.inter(fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: Icon(Icons.lock_outline_rounded, size: 18, color: muted),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        size: 18,
-                        color: muted,
-                      ),
-                      onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                  hintText: '••••••••',
+                  leading: Icon(Icons.lock_outline_rounded, size: 18, color: muted),
+                  trailing: GestureDetector(
+                    onTap: () { HapticFeedback.selectionClick(); setState(() => _obscureConfirmPassword = !_obscureConfirmPassword); },
+                    child: Icon(
+                      _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 18,
+                      color: muted,
                     ),
                   ),
+                  textColor: t.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  activeBorderColor: accent,
+                  inactiveBorderColor: t.dividerColor,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Please confirm your password';
                     if (v != _passwordController.text) return 'Passwords do not match';
@@ -287,7 +299,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 _label('FACULTY', muted),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedFaculty,
+                  initialValue: _selectedFaculty,
                   style: GoogleFonts.inter(fontSize: 15, color: t.textTheme.bodyLarge?.color),
                   icon: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: muted),
                   decoration: InputDecoration(
@@ -310,7 +322,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 _label('PROGRAM', muted),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedProgram,
+                  initialValue: _selectedProgram,
                   style: GoogleFonts.inter(fontSize: 15, color: t.textTheme.bodyLarge?.color),
                   icon: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: muted),
                   isExpanded: true,
@@ -338,18 +350,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ]),
                 ],
                 const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: authState.isLoading ? null : _register,
-                    child: authState.isLoading
-                        ? SizedBox(
-                            width: 18, height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 1.6, color: t.colorScheme.primary),
-                          )
-                        : const Text('Create account', style: TextStyle(fontSize: 14.5, letterSpacing: 0.4)),
-                  ),
+
+                // ─── Create Account Button (Moon) ───
+                MoonFilledButton(
+                  isFullWidth: true,
+                  buttonSize: MoonButtonSize.lg,
+                  backgroundColor: accent,
+                  onTap: authState.isLoading ? null : _register,
+                  label: authState.isLoading
+                      ? SizedBox(
+                          width: 18, height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 1.6, color: t.colorScheme.onPrimary),
+                        )
+                      : Text(
+                          'Create account',
+                          style: GoogleFonts.inter(
+                            fontSize: 14.5,
+                            letterSpacing: 0.4,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
                 const SizedBox(height: 16),
               ],

@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'package:animated_text_kit/animated_text_kit.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -18,6 +17,9 @@ import '../auth/login_screen.dart';
 import '../fees/fees_screen.dart';
 import 'profile_screen.dart';
 import '../../widgets/page_transitions.dart';
+import '../../widgets/premium_widgets.dart';
+import '../../widgets/pressable_card.dart';
+import '../../widgets/shimmer_loading.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -40,10 +42,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
   late List<Animation<double>> _staggerAnims;
 
   // Dynamic state
-  DateTime? _lastUpdated;
-  Timer? _lastUpdatedTimer;
-  String _statusLine = '';
-  Color _statusColor = Colors.grey;
   bool _hasUnread = false;
 
   @override
@@ -67,10 +65,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
     _loadAll();
     _staggerController.forward();
 
-    // #1 Last updated timer - refresh display every 30s
-    _lastUpdatedTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) setState(() {});
-    });
   }
 
   @override
@@ -80,7 +74,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
     _flipController.dispose();
     _countController.dispose();
     _pulseController.dispose();
-    _lastUpdatedTimer?.cancel();
     super.dispose();
   }
 
@@ -106,49 +99,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
         final data = await ApiService.get('/fees/$sid/summary');
         setState(() {
           _feeSummary = data['summary'];
-          _lastUpdated = DateTime.now();
           _hasUnread = true; // Simulate unread for demo
         });
-        _computeStatusLine();
         // #3 Animated counter
         _countController.reset();
         _countController.forward();
       }
     } catch (_) {}
-  }
-
-  void _computeStatusLine() {
-    if (_feeSummary == null) {
-      _statusLine = 'No fees assigned yet.';
-      _statusColor = Colors.grey;
-      return;
-    }
-    final balance = ((_feeSummary!['balance'] ?? 0) as num).toDouble();
-    final overdue = (_feeSummary!['overdue'] ?? 0) as num;
-    final pending = (_feeSummary!['pendingCount'] ?? _feeSummary!['unpaidCount'] ?? 0) as num;
-    
-    if (balance <= 0) {
-      _statusLine = 'All settled. Nothing due.';
-      _statusColor = const Color(0xFF4CAF50);
-    } else if (overdue > 0) {
-      _statusLine = 'You have overdue fees.';
-      _statusColor = const Color(0xFFE53935);
-    } else if (pending > 0) {
-      _statusLine = '${pending.toInt()} fee(s) pending payment.';
-      _statusColor = Colors.grey;
-    } else {
-      _statusLine = 'RM ${balance.toStringAsFixed(0)} outstanding.';
-      _statusColor = const Color(0xFFFF9800);
-    }
-  }
-
-  String get _lastUpdatedText {
-    if (_lastUpdated == null) return '';
-    final diff = DateTime.now().difference(_lastUpdated!);
-    if (diff.inSeconds < 10) return 'Just now';
-    if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    return '${diff.inHours}h ago';
   }
 
   Future<void> _refresh() async {
@@ -173,19 +130,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
   Widget _buildBalanceFront(bool isDark, Color accent, Color muted, ThemeData t) {
     final user = ref.watch(authProvider).user;
     final isAdmin = user?['role'] == 'admin';
-    
-    return AnimatedBuilder(
-      animation: _balancePulse,
-      builder: (_, child) => Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0F2235) : const Color(0xFFEDE5D4),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: accent.withOpacity(0.15 + _balancePulse.value * 0.1)),
-        ),
-        child: child,
-      ),
-      child: isAdmin
+
+    final balance = ((_feeSummary?['balance'] ?? 0) is num
+        ? (_feeSummary?['balance'] ?? 0) as num
+        : 0).toDouble();
+
+    final innerChild = isAdmin
         ? Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -197,12 +147,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                     style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
                   ),
                   const Spacer(),
-                  Icon(Icons.admin_panel_settings_outlined, size: 14, color: muted.withOpacity(0.5)),
+                  Icon(Icons.admin_panel_settings_outlined, size: 14, color: muted.withValues(alpha: 0.5)),
                 ],
               ),
               const SizedBox(height: 14),
               Text('Treasury Portal',
-                style: GoogleFonts.fraunces(color: t.colorScheme.onSurface, fontSize: 24, fontWeight: FontWeight.w500, height: 1.2),
+                style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 24, fontWeight: FontWeight.w500, height: 1.2),
               ),
               const SizedBox(height: 8),
               Text('Manage fees, view collection stats, and send reminders.',
@@ -232,43 +182,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                 style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
               ),
               const Spacer(),
-              Icon(Icons.flip_rounded, size: 14, color: muted.withOpacity(0.5)),
+              Icon(Icons.flip_rounded, size: 14, color: muted.withValues(alpha: 0.5)),
             ],
           ),
           const SizedBox(height: 14),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('RM',
-                style: GoogleFonts.fraunces(color: muted, fontSize: 18, fontWeight: FontWeight.w400, height: 1.4),
-              ),
-              const SizedBox(width: 6),
-              AnimatedBuilder(
-                animation: _countController,
-                builder: (_, __) {
-                  final val = ((_feeSummary?['balance'] ?? 0) is num
-                    ? (_feeSummary?['balance'] ?? 0) as num
-                    : 0).toDouble() * Curves.easeOutCubic.transform(_countController.value);
-                  return Text(
-                    val.toStringAsFixed(2),
-                    style: GoogleFonts.fraunces(
-                      color: t.colorScheme.onSurface,
-                      fontSize: 40,
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: -1.2,
-                      height: 1,
-                    ),
-                  );
-                },
-              ),
-            ],
+          // #3 Animated counter (TweenAnimationBuilder, easeOutCubic 1.2s, RM currency)
+          AnimatedBalanceText(
+            value: balance,
+            symbol: 'RM ',
+            style: GoogleFonts.inter(
+              color: t.colorScheme.onSurface,
+              fontSize: 40,
+              fontWeight: FontWeight.w400,
+              letterSpacing: -1.2,
+              height: 1,
+            ),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  _feeSummary != null && ((_feeSummary!['balance'] ?? 0) as num) <= 0
+                  _feeSummary != null && balance <= 0
                     ? 'Fully settled. Tap to see breakdown.'
                     : 'Tap to flip. Double-tap to pay.',
                   style: t.textTheme.bodyMedium?.copyWith(fontSize: 13),
@@ -278,7 +213,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
             ],
           ),
         ],
+      );
+
+    return AnimatedBuilder(
+      animation: _balancePulse,
+      builder: (_, child) => Stack(
+        children: [
+          // Gradient backdrop for the glass blur to read against
+          Positioned.fill(child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  accent.withValues(alpha: 0.30 + _balancePulse.value * 0.06),
+                  accent.withValues(alpha: 0.08),
+                ],
+              ),
+            ),
+          )),
+          GlassmorphicCard(
+            padding: const EdgeInsets.all(22),
+            cornerRadius: 14,
+            blurSigma: 20,
+            tint: isDark
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.white.withValues(alpha: 0.45),
+            borderColor: accent.withValues(alpha: 0.20 + _balancePulse.value * 0.10),
+            child: child!,
+          ),
+        ],
       ),
+      child: innerChild,
     );
   }
 
@@ -291,9 +258,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F2235) : const Color(0xFFEDE5D4),
+        color: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF6F6F8),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accent.withOpacity(0.3)),
+        border: Border.all(color: accent.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,7 +273,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                 style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
               ),
               const Spacer(),
-              Icon(Icons.flip_rounded, size: 14, color: muted.withOpacity(0.5)),
+              Icon(Icons.flip_rounded, size: 14, color: muted.withValues(alpha: 0.5)),
             ],
           ),
           const SizedBox(height: 16),
@@ -322,7 +289,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
             child: LinearProgressIndicator(
               value: paidPercent.toDouble(),
               minHeight: 6,
-              backgroundColor: muted.withOpacity(0.15),
+              backgroundColor: muted.withValues(alpha: 0.15),
               valueColor: AlwaysStoppedAnimation<Color>(accent),
             ),
           ),
@@ -340,7 +307,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: t.textTheme.bodyMedium?.copyWith(fontSize: 13)),
-        Text(value, style: GoogleFonts.fraunces(color: valueColor, fontSize: 16, fontWeight: FontWeight.w500)),
+        Text(value, style: GoogleFonts.inter(color: valueColor, fontSize: 16, fontWeight: FontWeight.w500)),
       ],
     );
   }
@@ -358,14 +325,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
     final name = user?['name'] ?? 'Student';
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
-    final accent = isDark ? SAMsTheme.brass : const Color(0xFFB28A3E);
+    const accent = SAMsTheme.accent;
     final muted = t.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
     final today = DateFormat('EEEE, d MMMM').format(DateTime.now());
 
     return Scaffold(
       body: SafeArea(
-        child: RefreshIndicator(
-          color: accent,
+        child: PremiumRefreshIndicator(
           backgroundColor: t.scaffoldBackgroundColor,
           onRefresh: _refresh,
           child: SingleChildScrollView(
@@ -421,14 +387,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                           width: 36, height: 36,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: accent.withOpacity(0.6), width: 1),
+                            border: Border.all(color: accent.withValues(alpha: 0.6), width: 1),
                             color: t.colorScheme.surface,
                             image: _profileImage != null ? DecorationImage(image: FileImage(File(_profileImage!)), fit: BoxFit.cover) : null,
                           ),
                           child: _profileImage == null
                               ? Center(child: Text(
                                   name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                                  style: GoogleFonts.fraunces(color: accent, fontSize: 15, fontWeight: FontWeight.w600),
+                                  style: GoogleFonts.inter(color: accent, fontSize: 15, fontWeight: FontWeight.w600),
                                 ))
                               : null,
                         ),
@@ -482,7 +448,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                               ),
                               const SizedBox(height: 4),
                               Text(name,
-                                style: GoogleFonts.fraunces(color: t.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
+                                style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
                               ),
                             ],
                           ),
@@ -512,10 +478,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                   ),
                 ),
 
-                // ─── FEE SUMMARY: editorial composition ───
-                _fadeSlide(_staggerAnims[3], child: Padding(
+                // ─── FEE SUMMARY: editorial composition (student only) ───
+                Builder(builder: (context) {
+                  final user = ref.read(authProvider).user;
+                  final isAdmin = user?['role'] == 'admin';
+                  // Hide fee summary entirely for admin users — they don't have personal fees.
+                  if (isAdmin) return const SizedBox.shrink();
+                  return _fadeSlide(_staggerAnims[3], child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
-                  child: GestureDetector(
+                  child: _feeSummary == null
+                    ? const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        SkeletonStatCard(height: 150),
+                        SizedBox(height: 12),
+                        Row(children: [
+                          Expanded(child: SkeletonListItem()),
+                        ]),
+                      ])
+                    : GestureDetector(
                     onTap: () {
                       setState(() => _isFlipped = !_isFlipped);
                       if (_isFlipped) {
@@ -546,7 +525,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                       },
                     ),
                   ),
-                )),
+                ));
+                }),
 
                 // ─── QUICK ACCESS ───
                 _SectionLabel(text: 'QUICK ACCESS', muted: muted, accent: accent, top: 32),
@@ -584,7 +564,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                     padding: const EdgeInsets.only(bottom: 32),
                     child: Column(
                       children: [
-                        Container(width: 24, height: 1, color: accent.withOpacity(0.5)),
+                        Container(width: 24, height: 1, color: accent.withValues(alpha: 0.5)),
                         const SizedBox(height: 10),
                         Text('UMPSA · ${DateTime.now().year}',
                           style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 2.4, fontWeight: FontWeight.w500),
@@ -694,7 +674,7 @@ class _ModuleRowState extends State<_ModuleRow> {
         curve: Curves.easeOut,
         decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: t.dividerColor)),
-          color: _pressed ? widget.accent.withOpacity(0.04) : Colors.transparent,
+          color: _pressed ? widget.accent.withValues(alpha: 0.04) : Colors.transparent,
         ),
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 2),
         child: Row(
@@ -703,7 +683,7 @@ class _ModuleRowState extends State<_ModuleRow> {
             SizedBox(
               width: 36,
               child: Text(widget.index,
-                style: GoogleFonts.fraunces(color: widget.accent, fontSize: 14, fontWeight: FontWeight.w500),
+                style: GoogleFonts.inter(color: widget.accent, fontSize: 14, fontWeight: FontWeight.w500),
               ),
             ),
             Expanded(
@@ -711,7 +691,7 @@ class _ModuleRowState extends State<_ModuleRow> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(widget.title,
-                    style: GoogleFonts.fraunces(
+                    style: GoogleFonts.inter(
                       color: t.colorScheme.onSurface,
                       fontSize: 19,
                       fontWeight: FontWeight.w500,
@@ -734,7 +714,7 @@ class _ModuleRowState extends State<_ModuleRow> {
 }
 
 // ─── Quick access item: scale bounce on tap ───
-class _QuickItem extends StatefulWidget {
+class _QuickItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color accent, muted;
@@ -742,56 +722,31 @@ class _QuickItem extends StatefulWidget {
   const _QuickItem({required this.icon, required this.label, required this.accent, required this.muted, required this.onTap});
 
   @override
-  State<_QuickItem> createState() => _QuickItemState();
-}
-
-class _QuickItemState extends State<_QuickItem> with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
-    _scale = Tween<double>(begin: 1.0, end: 0.88).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
-
-  @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    return GestureDetector(
-      onTapDown: (_) => _ctrl.forward(),
-      onTapUp: (_) { _ctrl.reverse(); HapticFeedback.selectionClick(); widget.onTap(); },
-      onTapCancel: () => _ctrl.reverse(),
-      child: AnimatedBuilder(
-        animation: _scale,
-        builder: (_, __) => Transform.scale(
-          scale: _scale.value,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Container(
-                width: 48, height: 48,
-                decoration: BoxDecoration(
-                  color: t.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: t.dividerColor),
-                ),
-                child: Icon(widget.icon, color: t.colorScheme.onSurface, size: 20),
-              ),
-              const SizedBox(height: 8),
-              Text(widget.label,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(color: widget.muted, fontSize: 10.5, fontWeight: FontWeight.w500),
-              ),
-            ],
+    return PressableCard(
+      onTap: onTap,
+      scale: 0.88,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Container(
+            width: 48, height: 48,
+            decoration: BoxDecoration(
+              color: t.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: t.dividerColor),
+            ),
+            child: Icon(icon, color: t.colorScheme.onSurface, size: 20),
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(color: muted, fontSize: 10.5, fontWeight: FontWeight.w500),
+          ),
+        ],
       ),
     );
   }

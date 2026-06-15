@@ -30,34 +30,34 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
 
 final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeState>((ref) => ThemeNotifier());
 
-// ─── Light theme: warm paper ground, ink text, brass accent ───
+// ─── Light theme: Moon Design tokens ───
 class SAMsLightTheme {
-  static const Color background = Color(0xFFF5EFE3); // warm paper
-  static const Color surface = Color(0xFFFFFEF9);
-  static const Color surfaceLight = Color(0xFFEDE5D4);
-  static const Color primary = Color(0xFF0B1B2C); // ink (used as primary action)
-  static const Color primaryLight = Color(0xFF12263A);
-  static const Color accent = Color(0xFFB28A3E); // brass for light mode
-  static const Color textPrimary = Color(0xFF0B1B2C);
-  static const Color textSecondary = Color(0xFF4B5A68);
-  static const Color textMuted = Color(0xFF8A8273);
-  static const Color border = Color(0xFFE3DAC6);
-  static const Color success = Color(0xFF3F7D52);
-  static const Color error = Color(0xFFB14A48);
-  static const Color warning = Color(0xFFB28A3E);
+  static const Color background = Color(0xFFFFFFFF); // Moon goku light
+  static const Color surface = Color(0xFFF6F6F8); // Moon gohan light
+  static const Color surfaceLight = Color(0xFFF6F6F8);
+  static const Color primary = Color(0xFF4D31CC); // Moon piccolo light
+  static const Color primaryLight = Color(0xFF7B61FF);
+  static const Color accent = Color(0xFF4D31CC); // piccolo light
+  static const Color textPrimary = Color(0xFF000000); // Moon bulma light
+  static const Color textSecondary = Color(0xFF595C68); // Moon trunks light
+  static const Color textMuted = Color(0xFF94989E); // Moon trunks
+  static const Color border = Color(0xFFE0E0E0); // Moon beerus light
+  static const Color success = Color(0xFF49B356); // Moon roshi
+  static const Color error = Color(0xFFFF4E64); // Moon chichi
+  static const Color warning = Color(0xFFFFB319); // Moon krillin
 
   static TextTheme _buildLightTextTheme() {
-    final serif = GoogleFonts.fraunces(
+    final heading = GoogleFonts.inter(
       color: textPrimary,
       fontWeight: FontWeight.w500,
       letterSpacing: -0.5,
     );
     final sans = GoogleFonts.inter(color: textPrimary);
     return TextTheme(
-      displayLarge: serif.copyWith(fontSize: 40, height: 1.05),
-      displayMedium: serif.copyWith(fontSize: 32, height: 1.1),
-      headlineLarge: serif.copyWith(fontSize: 28, fontWeight: FontWeight.w500, height: 1.15),
-      headlineMedium: serif.copyWith(fontSize: 22, fontWeight: FontWeight.w500),
+      displayLarge: heading.copyWith(fontSize: 40, height: 1.05),
+      displayMedium: heading.copyWith(fontSize: 32, height: 1.1),
+      headlineLarge: heading.copyWith(fontSize: 28, fontWeight: FontWeight.w500, height: 1.15),
+      headlineMedium: heading.copyWith(fontSize: 22, fontWeight: FontWeight.w500),
       headlineSmall: sans.copyWith(fontWeight: FontWeight.w600, fontSize: 17),
       titleLarge: sans.copyWith(fontWeight: FontWeight.w600, fontSize: 16),
       bodyLarge: sans.copyWith(fontSize: 15.5, height: 1.45),
@@ -86,7 +86,7 @@ class SAMsLightTheme {
         elevation: 0,
         centerTitle: false,
         iconTheme: const IconThemeData(color: textPrimary),
-        titleTextStyle: GoogleFonts.fraunces(
+        titleTextStyle: GoogleFonts.inter(
           color: textPrimary,
           fontSize: 20,
           fontWeight: FontWeight.w500,

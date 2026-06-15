@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
-import '../../../config/theme.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'treasury_dashboard_tab.dart';
 import 'treasury_students_tab.dart';
@@ -18,9 +17,6 @@ class _TreasuryShellState extends State<TreasuryShell>
     with TickerProviderStateMixin {
   int _currentIndex = 0;
   late final PageController _pageController;
-
-  static const _inkNavy = Color(0xFF0B1B2C);
-  static const _brassGold = Color(0xFFC9A961);
 
   final _screens = const [
     TreasuryDashboardTab(),
@@ -64,7 +60,7 @@ class _TreasuryShellState extends State<TreasuryShell>
         children: [
           Container(
             padding: const EdgeInsets.only(bottom: 6, top: 4),
-            color: const Color(0xFF0B1B2C),
+            color: const Color(0xFF000000),
             child: Center(
               child: SmoothPageIndicator(
                 controller: _pageController,
@@ -73,8 +69,8 @@ class _TreasuryShellState extends State<TreasuryShell>
                   dotWidth: 6,
                   dotHeight: 6,
                   spacing: 8,
-                  activeDotColor: Color(0xFFC9A961),
-                  dotColor: Color(0xFF2A3A4C),
+                  activeDotColor: Color(0xFF5C33CF),
+                  dotColor: Color(0xFF292929),
                 ),
               ),
             ),
@@ -100,8 +96,8 @@ class _EditorialBottomNav extends StatelessWidget {
     required this.onTap,
   });
 
-  static const _inkNavy = Color(0xFF0B1B2C);
-  static const _brassGold = Color(0xFFC9A961);
+  static const _moonBlack = Color(0xFF000000);
+  static const _piccolo = Color(0xFF5C33CF);
 
   static const _items = <_NavItemData>[
     _NavItemData(icon: Iconsax.chart_square, activeIcon: Iconsax.chart_square_copy, label: 'Dashboard'),
@@ -112,14 +108,14 @@ class _EditorialBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final double navWidth = MediaQuery.of(context).size.width;
     final double tabWidth = navWidth / _items.length;
-    final double indicatorWidth = 32.0;
+    const double indicatorWidth = 32.0;
 
     return Container(
       decoration: BoxDecoration(
-        color: _inkNavy,
+        color: _moonBlack,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, -2),
           ),
@@ -141,7 +137,7 @@ class _EditorialBottomNav extends StatelessWidget {
                   width: indicatorWidth,
                   height: 3,
                   decoration: BoxDecoration(
-                    color: _brassGold,
+                    color: _piccolo,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -182,11 +178,11 @@ class _NavItem extends StatelessWidget {
     required this.isActive,
   });
 
-  static const _brassGold = Color(0xFFC9A961);
+  static const _piccolo = Color(0xFF5C33CF);
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? _brassGold : Colors.white.withOpacity(0.45);
+    final color = isActive ? _piccolo : Colors.white.withValues(alpha: 0.45);
 
     return Padding(
       padding: const EdgeInsets.only(top: 10),

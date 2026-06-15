@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:moon_design/moon_design.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../home/main_shell.dart';
@@ -30,6 +32,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _login() {
     if (!_formKey.currentState!.validate()) return;
+    HapticFeedback.mediumImpact();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     ref.read(authProvider.notifier).login(email, password);
@@ -39,8 +42,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final t = Theme.of(context);
-    final isDark = t.brightness == Brightness.dark;
-    final accent = isDark ? SAMsTheme.brass : const Color(0xFFB28A3E);
+    const accent = SAMsTheme.accent;
     final muted = t.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
 
     // Navigate to home when authenticated
@@ -86,15 +88,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: t.textTheme.bodyMedium?.copyWith(fontSize: 15, height: 1.5),
                 ),
                 const SizedBox(height: 44),
-                // ─── Field labels in editorial style ───
+
+                // ─── EMAIL ───
                 _fieldLabel('EMAIL', muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
-                  style: GoogleFonts.inter(fontSize: 15),
+                  onSubmitted: (_) => _passwordFocusNode.requestFocus(),
+                  hintText: 'name@umpsa.edu.my',
+                  leading: Icon(Icons.alternate_email_rounded, size: 18, color: muted),
+                  textColor: t.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  activeBorderColor: accent,
+                  inactiveBorderColor: t.dividerColor,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Email is required';
@@ -104,21 +113,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     }
                     return null;
                   },
-                  decoration: InputDecoration(
-                    hintText: 'name@umpsa.edu.my',
-                    prefixIcon: Icon(Icons.alternate_email_rounded, size: 18, color: muted),
-                  ),
                 ),
                 const SizedBox(height: 18),
+
+                // ─── PASSWORD ───
                 _fieldLabel('PASSWORD', muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _passwordController,
                   focusNode: _passwordFocusNode,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _login(),
-                  style: GoogleFonts.inter(fontSize: 15),
+                  onSubmitted: (_) => _login(),
+                  hintText: '••••••••',
+                  leading: Icon(Icons.lock_outline_rounded, size: 18, color: muted),
+                  trailing: GestureDetector(
+                    onTap: () { HapticFeedback.selectionClick(); setState(() => _obscurePassword = !_obscurePassword); },
+                    child: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 18,
+                      color: muted,
+                    ),
+                  ),
+                  textColor: t.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: t.inputDecorationTheme.fillColor,
+                  activeBorderColor: accent,
+                  inactiveBorderColor: t.dividerColor,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Password is required';
@@ -128,32 +149,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     }
                     return null;
                   },
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: Icon(Icons.lock_outline_rounded, size: 18, color: muted),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: muted),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 10),
+
                 // ─── Forgot password link ───
                 Align(
                   alignment: Alignment.centerRight,
-                  child: GestureDetector(
+                  child: MoonTextButton(
                     onTap: () {
+                      HapticFeedback.lightImpact();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
                             'Contact admin to reset password',
                             style: GoogleFonts.inter(fontSize: 13),
                           ),
-                          backgroundColor: const Color(0xFF0B1B2C),
+                          backgroundColor: const Color(0xFF000000),
                         ),
                       );
                     },
-                    child: Text(
+                    label: Text(
                       'Forgot password?',
                       style: GoogleFonts.inter(
                         color: accent,
@@ -174,26 +189,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ],
                 const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: authState.isLoading ? null : _login,
-                    child: authState.isLoading
-                        ? SizedBox(
-                            width: 18, height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 1.6, color: t.colorScheme.primary),
-                          )
-                        : const Text('Sign In', style: TextStyle(fontSize: 14.5, letterSpacing: 0.4)),
-                  ),
+
+                // ─── Sign In Button (Moon) ───
+                MoonFilledButton(
+                  isFullWidth: true,
+                  buttonSize: MoonButtonSize.lg,
+                  backgroundColor: accent,
+                  onTap: authState.isLoading ? null : _login,
+                  label: authState.isLoading
+                      ? SizedBox(
+                          width: 18, height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 1.6, color: t.colorScheme.onPrimary),
+                        )
+                      : Text(
+                          'Sign In',
+                          style: GoogleFonts.inter(
+                            fontSize: 14.5,
+                            letterSpacing: 0.4,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
                 const SizedBox(height: 28),
+
                 // ─── Hairline divider with brass tick ───
                 Row(children: [
                   Expanded(child: Container(height: 1, color: t.dividerColor)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Container(width: 4, height: 4, decoration: BoxDecoration(color: accent, shape: BoxShape.circle)),
+                    child: Container(width: 4, height: 4, decoration: const BoxDecoration(color: accent, shape: BoxShape.circle)),
                   ),
                   Expanded(child: Container(height: 1, color: t.dividerColor)),
                 ]),
@@ -205,7 +230,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     children: [
                       Text("New to SAMs?  ", style: t.textTheme.bodyMedium),
                       InkWell(
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                        onTap: () { HapticFeedback.lightImpact(); Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())); },
                         borderRadius: BorderRadius.circular(4),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
@@ -215,7 +240,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                               decoration: TextDecoration.underline,
-                              decorationColor: accent.withOpacity(0.4),
+                              decorationColor: accent.withValues(alpha: 0.4),
                             ),
                           ),
                         ),
