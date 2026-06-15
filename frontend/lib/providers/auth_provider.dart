@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
+import '../services/fcm_service.dart';
 
 class AuthState {
   final bool isAuthenticated;
@@ -58,6 +59,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       userMap['id'] = userMap['id'] ?? userMap['_id'] ?? '';
       userMap['_id'] = userMap['_id'] ?? userMap['id'] ?? '';
       state = AuthState(isAuthenticated: true, user: userMap, isInitializing: false);
+      // Register FCM token with backend (fire-and-forget)
+      FcmService().registerTokenAfterLogin();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString().replaceAll('Exception: ', ''));
     }
@@ -81,6 +84,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       userMap['id'] = userMap['id'] ?? userMap['_id'] ?? '';
       userMap['_id'] = userMap['_id'] ?? userMap['id'] ?? '';
       state = AuthState(isAuthenticated: true, user: userMap, isInitializing: false);
+      // Register FCM token with backend (fire-and-forget)
+      FcmService().registerTokenAfterLogin();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString().replaceAll('Exception: ', ''));
     }
@@ -97,6 +102,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    // Unregister FCM token before clearing auth (fire-and-forget)
+    FcmService().unregisterToken();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
     state = AuthState(isInitializing: false);

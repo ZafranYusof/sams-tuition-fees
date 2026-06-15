@@ -10,3 +10,8 @@ local.properties
 *.aab
 frontend/.flutter-plugins
 frontend/.flutter-plugins-dependencies
+
+# Firebase
+google-services.json
+firebase-service-account.json
+*-firebase-adminsdk-*.json

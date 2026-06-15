@@ -8,13 +8,18 @@ import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/main_shell.dart';
 import 'providers/auth_provider.dart';
+import 'services/fcm_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
   ));
+  // Initialize Firebase + FCM (non-blocking — failure shouldn't crash app)
+  FcmService().initialize().catchError((e) {
+    debugPrint('[main] FCM init failed: $e');
+  });
   runApp(const ProviderScope(child: SAMsApp()));
 }
 
