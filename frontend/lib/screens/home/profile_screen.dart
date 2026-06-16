@@ -13,6 +13,7 @@ import '../../providers/language_provider.dart' as lp;
 import '../../providers/language_provider.dart';
 import '../../widgets/app_toast.dart';
 import '../../services/api_service.dart';
+import '../../services/fcm_service.dart';
 import '../../widgets/pressable_card.dart';
 import '../auth/login_screen.dart';
 
@@ -269,6 +270,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           }, isLast: true),
 
           const SizedBox(height: 32),
+          // DEBUG: Show FCM token status
+          MoonOutlinedButton(
+            isFullWidth: true,
+            buttonSize: MoonButtonSize.md,
+            onTap: () async {
+              HapticFeedback.lightImpact();
+              try {
+                final fcm = FcmService();
+                final token = await fcm.getToken();
+                if (!mounted) return;
+                if (token == null) {
+                  AppToast.error(context, 'FCM token not available. Check permissions.');
+                } else {
+                  final short = token.length > 40 ? '${token.substring(0,40)}...' : token;
+                  AppToast.info(context, 'Token: $short\n\nToken registered successfully.');
+                }
+              } catch (e) {
+                if (!mounted) return;
+                AppToast.error(context, 'FCM error: $e');
+              }
+            },
+            borderColor: accent.withValues(alpha: 0.4),
+            leading: Icon(Iconsax.information, size: 18, color: accent),
+            label: Text('Check FCM Status', style: GoogleFonts.inter(color: accent, fontSize: 14, fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(height: 12),
           // DEBUG: Test FCM notification
           MoonFilledButton(
             isFullWidth: true,
