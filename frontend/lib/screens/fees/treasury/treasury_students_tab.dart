@@ -276,7 +276,8 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
                   end: Offset.zero,
                 ).animate(slideAnim),
                 // #12 Long-press preview
-                child: _PressableScale(
+                child: Stack(children: [
+                  _PressableScale(
                   onTap: () => _showStudentPreview(context, s),
                   onLongPress: () => _showStudentPreview(context, s),
                   child: Container(
@@ -318,13 +319,22 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
                         else Text(tr('cleared'), style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color)),
                       ]),
                     ])),
-                    if (!isPaid) GestureDetector(
-                      onTap: () => _sendReminderToStudent(context, studentId, studentName),
-                      child: const Icon(Iconsax.notification, color: SAMsTheme.accent, size: 20),
-                    ),
                   ]),
                 ),
                 ),
+                // Bell icon outside _PressableScale so it gets taps
+                if (!isPaid) Positioned(
+                  right: 14, top: 14,
+                  child: GestureDetector(
+                    onTap: () => _sendReminderToStudent(context, studentId, studentName),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      color: Colors.transparent,
+                      child: const Icon(Iconsax.notification, color: SAMsTheme.accent, size: 20),
+                    ),
+                  ),
+                ),
+              ]),
               ),
             );
           },
