@@ -164,6 +164,52 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
     return successful.isNotEmpty ? successful.first : null;
   }
 
+
+  String get _studentStatus => (ref.read(authProvider).user?['studentStatus'] ?? 'active').toString();
+  String get _financingType => (ref.read(authProvider).user?['financingType'] ?? 'unfinanced').toString();
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'warning':
+        return 'Payment warning';
+      case 'restricted_1':
+        return 'Restriction level 1';
+      case 'restricted_2':
+        return 'Restriction level 2';
+      case 'restricted_3':
+        return 'Restriction level 3';
+      case 'deferred':
+        return 'Deferred';
+      default:
+        return 'Active';
+    }
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'warning':
+        return SAMsTheme.warning;
+      case 'restricted_1':
+      case 'restricted_2':
+      case 'restricted_3':
+      case 'deferred':
+        return SAMsTheme.error;
+      default:
+        return SAMsTheme.success;
+    }
+  }
+
+  String _financingLabel(String type) {
+    switch (type) {
+      case 'ptptn':
+        return 'PTPTN';
+      case 'sponsored':
+        return 'Sponsored';
+      default:
+        return 'Self-funded';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
@@ -187,7 +233,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
     }
 
     final daysLeft = _daysLeft;
-    final blocked = _week >= 5 && _balance > 0;
+    // legacy 'blocked' check no longer used — status now sourced from backend studentStatus
     final dueDateStr = _dueDate != null ? '${_dueDate!.day} ${_monthName(_dueDate!.month)} ${_dueDate!.year}' : 'N/A';
 
     return Scaffold(
@@ -204,14 +250,14 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
             decoration: BoxDecoration(
               color: t.cardColor,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: blocked ? SAMsTheme.error.withValues(alpha: 0.4) : SAMsTheme.success.withValues(alpha: 0.4)),
+              border: Border.all(color: _statusColor(_studentStatus).withValues(alpha: 0.4)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(width: 6, height: 6, decoration: BoxDecoration(color: blocked ? SAMsTheme.error : SAMsTheme.success, shape: BoxShape.circle)),
+                Container(width: 6, height: 6, decoration: BoxDecoration(color: _statusColor(_studentStatus), shape: BoxShape.circle)),
                 const SizedBox(width: 6),
-                Text(blocked ? lp.t('blocked', loc) : lp.t('active', loc), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: blocked ? SAMsTheme.error : SAMsTheme.success)),
+                Text(_statusLabel(_studentStatus), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _statusColor(_studentStatus))),
               ],
             ),
           ),
@@ -234,7 +280,16 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                 Text(lp.t('student', loc).toUpperCase(), style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: SAMsTheme.accent, letterSpacing: 1.2)),
                 const SizedBox(height: 4),
                 Text(studentId, style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _HeaderChip(label: _statusLabel(_studentStatus), color: _statusColor(_studentStatus)),
+                    _HeaderChip(label: _financingLabel(_financingType), color: SAMsTheme.accent),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 Text('$_semester  ·  ${lp.t('week', loc)} $_week', style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color ?? Colors.grey)),
               ],
             )),
@@ -277,6 +332,45 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                   Expanded(child: Text('${lp.t('pay_before', loc)} ${lp.t('week', loc)} 5 ${lp.t('maintain_access', loc)}', style: const TextStyle(color: SAMsTheme.warning, fontSize: 12, fontWeight: FontWeight.w500))),
                 ]),
               )),
+
+
+            _fadeSlide(_staggerAnims[1], child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: t.cardColor,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: t.dividerColor),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.timeline_rounded, size: 18, color: SAMsTheme.accent),
+                      const SizedBox(width: 8),
+                      Text('UMP payment schedule', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Default semester fee: RM 1,510. ${_financingType == 'sponsored' ? 'Sponsored students only get restriction checks at Week 18 if sponsor payment is still unsettled.' : 'Week 4 due, Week 5 first restriction, Week 8 second restriction, Week 11 deferment.'}',
+                    style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color, height: 1.4),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: const [
+                      _SchedulePill(label: 'Week 4', detail: 'Fees due'),
+                      _SchedulePill(label: 'Week 5', detail: 'Restriction 1'),
+                      _SchedulePill(label: 'Week 8', detail: 'Restriction 2'),
+                      _SchedulePill(label: 'Week 11', detail: 'Deferred'),
+                    ],
+                  ),
+                ],
+              ),
+            )),
 
             // --- BALANCE OVERVIEW (glassmorphism) ---
             _fadeSlide(_staggerAnims[2], child: Tilt(
@@ -621,6 +715,57 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
 }
 
 // --- METRIC TILE ---
+
+class _HeaderChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _HeaderChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: color, letterSpacing: 0.2),
+      ),
+    );
+  }
+}
+
+class _SchedulePill extends StatelessWidget {
+  final String label;
+  final String detail;
+  const _SchedulePill({required this.label, required this.detail});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: SAMsTheme.accent.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: SAMsTheme.accent.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: SAMsTheme.accent)),
+          const SizedBox(height: 2),
+          Text(detail, style: GoogleFonts.inter(fontSize: 11, color: t.textTheme.bodySmall?.color)),
+        ],
+      ),
+    );
+  }
+}
+
 class _MetricTile extends StatelessWidget {
   final IconData icon;
   final String label;

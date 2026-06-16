@@ -66,7 +66,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> register(String studentId, String name, String email, String password, String faculty, String program) async {
+  Future<void> register(String studentId, String name, String email, String password, String faculty, String program, String financingType) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final data = await ApiService.post('/auth/register', {
@@ -76,6 +76,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         'password': password,
         'faculty': faculty,
         'program': program,
+        'financingType': financingType,
       });
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', data['token']);

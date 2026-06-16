@@ -126,6 +126,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final locale = ref.watch(languageProvider).locale;
     final semester = user?['semester']?.toString() ?? lp.t('not_set', locale);
     final role = user?['role'] ?? 'student';
+    final studentStatus = (user?['studentStatus'] ?? 'active').toString();
+    final financingType = (user?['financingType'] ?? 'unfinanced').toString();
 
     final th = Theme.of(context);
     final isDark = th.brightness == Brightness.dark;
@@ -189,6 +191,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               style: GoogleFonts.inter(color: accent, fontSize: 10, letterSpacing: 1.6, fontWeight: FontWeight.w600),
             ),
           )),
+          const SizedBox(height: 10),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _statusChip(_statusLabel(studentStatus), _statusColor(studentStatus), t),
+              _statusChip(_financingLabel(financingType), accent.withValues(alpha: 0.85), t),
+            ],
+          ),
 
           const SizedBox(height: 36),
           _SectionHead(lp.t('personal', locale), accent: accent, muted: muted),
@@ -196,6 +208,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           _infoRow(lp.t('student_id', locale), studentId.toString(), t),
           _infoRow(lp.t('faculty', locale), faculty.toString(), t),
           _infoRow(lp.t('program', locale), program.toString(), t),
+          _infoRow('Financing', _financingLabel(financingType), t),
+          _infoRow('Academic Status', _statusLabel(studentStatus), t),
           _infoRow(lp.t('semester', locale), semester, t),
           _infoRow(lp.t('email', locale), email.toString(), t, isLast: true),
 
@@ -259,6 +273,69 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ],
       ),
     );
+  }
+
+
+  Widget _statusChip(String label, Color color, ThemeData t) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: GoogleFonts.inter(
+          color: color,
+          fontSize: 10,
+          letterSpacing: 1.2,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'warning':
+        return 'Payment warning';
+      case 'restricted_1':
+        return 'Restriction level 1';
+      case 'restricted_2':
+        return 'Restriction level 2';
+      case 'restricted_3':
+        return 'Restriction level 3';
+      case 'deferred':
+        return 'Deferred';
+      default:
+        return 'Active';
+    }
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'warning':
+        return SAMsTheme.warning;
+      case 'restricted_1':
+      case 'restricted_2':
+      case 'restricted_3':
+      case 'deferred':
+        return SAMsTheme.error;
+      default:
+        return SAMsTheme.success;
+    }
+  }
+
+  String _financingLabel(String type) {
+    switch (type) {
+      case 'ptptn':
+        return 'PTPTN loan';
+      case 'sponsored':
+        return 'Full sponsor';
+      default:
+        return 'Self-funded';
+    }
   }
 
   void _showSignOutDialog(ThemeData t) {

@@ -25,6 +25,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   String? _selectedFaculty;
   String? _selectedProgram;
+  String _selectedFinancingType = 'unfinanced';
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _autoValidate = false;
@@ -121,6 +122,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       password,
       faculty,
       program,
+      _selectedFinancingType,
     );
   }
 
@@ -341,6 +343,53 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     if (v == null || v.isEmpty) return 'Please select a program';
                     return null;
                   },
+                ),
+
+                const SizedBox(height: 16),
+
+                // ─── Financing Type ───
+                _label('FINANCING TYPE', muted),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedFinancingType,
+                  style: GoogleFonts.inter(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
+                  icon: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: muted),
+                  decoration: InputDecoration(
+                    hintText: 'Select financing type',
+                    prefixIcon: Icon(Icons.account_balance_wallet_outlined, size: 18, color: muted),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'unfinanced', child: Text('Self-funded')),
+                    DropdownMenuItem(value: 'ptptn', child: Text('PTPTN Loan')),
+                    DropdownMenuItem(value: 'sponsored', child: Text('Full Sponsor')),
+                  ],
+                  onChanged: (v) => setState(() => _selectedFinancingType = v ?? 'unfinanced'),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: theme.dividerColor),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline_rounded, size: 16, color: accent.withValues(alpha: 0.8)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _selectedFinancingType == 'sponsored'
+                              ? 'Sponsored students will not get the default RM 1,510 semester fee automatically.'
+                              : _selectedFinancingType == 'ptptn'
+                                  ? 'PTPTN students follow the standard UMP fee schedule with restriction checks.'
+                                  : 'Self-funded students will receive the default semester fee automatically after registration.',
+                          style: GoogleFonts.inter(fontSize: 12, color: muted, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
                 if (authState.error != null) ...[
