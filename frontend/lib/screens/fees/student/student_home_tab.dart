@@ -144,7 +144,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
 
   int get _week {
     // Derive semester start from fee data, fallback to earliest fee createdAt
-    DateTime start = DateTime(2026, 2, 9); // default fallback
+    DateTime start = DateTime(2026, 5, 12); // default fallback (shifted +10 weeks for testing)
     for (var f in _fees) {
       if (f['semesterStart'] != null) {
         final parsed = DateTime.tryParse(f['semesterStart'].toString());
