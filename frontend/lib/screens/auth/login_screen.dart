@@ -104,7 +104,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   leading: Icon(Icons.alternate_email_rounded, size: 18, color: muted),
                   textColor: theme.textTheme.bodyLarge?.color,
                   hintTextColor: muted,
-                  backgroundColor: theme.inputDecorationTheme.fillColor,
+                  backgroundColor: theme.inputDecorationTheme.fillColor?.withValues(alpha: 0.4),
                   activeBorderColor: accent,
                   inactiveBorderColor: theme.dividerColor,
                   validator: (value) {
@@ -140,7 +140,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   textColor: theme.textTheme.bodyLarge?.color,
                   hintTextColor: muted,
-                  backgroundColor: theme.inputDecorationTheme.fillColor,
+                  backgroundColor: theme.inputDecorationTheme.fillColor?.withValues(alpha: 0.4),
                   activeBorderColor: accent,
                   inactiveBorderColor: theme.dividerColor,
                   validator: (value) {

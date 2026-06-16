@@ -462,10 +462,19 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
         Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
           Text('RM', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface)),
           const SizedBox(width: 4),
-          FlipCurrencyText(
-            value: _amount,
-            prefix: '',
-            style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.w800, color: t.colorScheme.onSurface, letterSpacing: -1.5, height: 1),
+          // Wrap in Expanded + Align so the flip counter's width changes
+          // don't reflow siblings or the parent container (was causing
+          // a brief "vibrate" when switching between fees with different
+          // digit counts, e.g. RM 1,200 → RM 200).
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FlipCurrencyText(
+                value: _amount,
+                prefix: '',
+                style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.w800, color: t.colorScheme.onSurface, letterSpacing: -1.5, height: 1),
+              ),
+            ),
           ),
         ]),
 
