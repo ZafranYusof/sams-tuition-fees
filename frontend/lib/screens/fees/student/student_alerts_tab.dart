@@ -476,6 +476,11 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
                             color:
                                 theme.textTheme.bodyMedium?.color ?? Colors.grey,
                             height: 1.4)),
+                    const SizedBox(height: 4),
+                    Text(_formatTimestamp(a['createdAt']?.toString() ?? ''),
+                        style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.withValues(alpha: 0.7))),
                   ])),
               if (!isRead)
                 Container(
