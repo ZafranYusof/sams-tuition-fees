@@ -102,7 +102,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (_) {}
   }
 
-  Future<void> logout() async {
+  void updateStudentStatus(String newStatus) {
+    if (state.user != null) {
+      final updatedUser = Map<String, dynamic>.from(state.user!);
+      updatedUser['studentStatus'] = newStatus;
+      state = state.copyWith(user: updatedUser);
+    }
+  }
+
+    Future<void> logout() async {
     // Unregister FCM token before clearing auth (fire-and-forget)
     FcmService().unregisterToken();
     final prefs = await SharedPreferences.getInstance();

@@ -42,8 +42,11 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
       curve: Interval(i * 0.12, 0.4 + i * 0.12, curve: Curves.easeOutCubic),
     ));
     _loadCachedThenFresh();
-    // #2 Real-time polling every 30s
-    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) => _load());
+    // #2 Real-time polling every 30s (fees + user status)
+    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      await _load();
+      await _refreshUserStatus();
+    });
   }
 
   @override
@@ -101,6 +104,21 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
       if (!_staggerController.isAnimating && _staggerController.value == 0 && _fees.isNotEmpty) {
         _staggerController.forward();
       }
+    }
+  }
+
+  Future<void> _refreshUserStatus() async {
+    try {
+      final response = await ApiService.get('/auth/me');
+      if (response != null && response is Map) {
+        final newStatus = response['studentStatus'] as String?;
+        if (newStatus != null && mounted) {
+          // Update AuthProvider with fresh status
+          ref.read(authProvider.notifier).updateStudentStatus(newStatus);
+        }
+      }
+    } catch (e) {
+      // Silent fail - don't disrupt UI if status refresh fails
     }
   }
 
