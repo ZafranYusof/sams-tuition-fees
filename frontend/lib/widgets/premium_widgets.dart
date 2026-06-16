@@ -40,7 +40,7 @@ class PremiumRefreshIndicator extends StatelessWidget {
 
 /// Counts a numeric value up from 0 to [value] using easeOutCubic over
 /// 1200ms and renders it formatted as Malaysian Ringgit currency.
-class AnimatedBalanceText extends StatelessWidget {
+class AnimatedBalanceText extends StatefulWidget {
   final double value;
   final TextStyle? style;
   final String symbol;
@@ -57,24 +57,42 @@ class AnimatedBalanceText extends StatelessWidget {
   });
 
   @override
+  State<AnimatedBalanceText> createState() => _AnimatedBalanceTextState();
+}
+
+class _AnimatedBalanceTextState extends State<AnimatedBalanceText> {
+  bool _hasAnimatedOnce = false;
+
+  @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat.currency(
-      symbol: symbol,
-      decimalDigits: decimals,
+      symbol: widget.symbol,
+      decimalDigits: widget.decimals,
       locale: 'en_MY',
     );
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: value),
-      duration: duration,
-      curve: Curves.easeOutCubic,
-      builder: (_, v, __) => Text(
-        fmt.format(v),
-        style: style ??
-            GoogleFonts.inter(
-              fontSize: 26,
-              fontWeight: FontWeight.w700,
-            ),
-      ),
+    if (!_hasAnimatedOnce) {
+      _hasAnimatedOnce = true;
+      return TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: widget.value),
+        duration: widget.duration,
+        curve: Curves.easeOutCubic,
+        builder: (_, v, __) => Text(
+          fmt.format(v),
+          style: widget.style ??
+              GoogleFonts.inter(
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+      );
+    }
+    return Text(
+      fmt.format(widget.value),
+      style: widget.style ??
+          GoogleFonts.inter(
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+          ),
     );
   }
 }

@@ -241,7 +241,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
             _buildFilterChips(theme),
             Expanded(
               child: _prefVisibleAlerts.isEmpty
-                  ? EmptyState.noNotifications()
+                  ? SingleChildScrollView(physics: const AlwaysScrollableScrollPhysics(), child: EmptyState.noNotifications())
                   : AnimatedBuilder(
                       animation: _staggerController,
                       builder: (context, _) => _buildGroupedList(theme, locale),

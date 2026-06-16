@@ -22,6 +22,7 @@ import '../../../services/api_service.dart';
 import '../../../widgets/app_toast.dart';
 import '../../../widgets/premium_widgets.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../../../services/cache_service.dart';
 
 class StudentPaymentTab extends ConsumerStatefulWidget {
   final String? targetFeeId;
@@ -271,6 +272,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
   }
 
   Future<bool> _pay() async {
+    if (_paying) return false;
     if (_amount <= 0) return false;
     // Haptic owned by _handleConfirm in the payment sheet to avoid duplicate buzz.
     setState(() {
@@ -356,6 +358,8 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
         setState(() => _currentStep = 0); // Reset on failure
       }
       setState(() => _paying = false);
+      await CacheService.save('my_fees', []);
+      await CacheService.save('my_payments', []);
       await _load();
       return success;
     } catch (e) {
