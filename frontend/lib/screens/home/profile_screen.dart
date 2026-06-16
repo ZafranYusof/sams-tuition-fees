@@ -11,6 +11,7 @@ import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart' as lp;
 import '../../providers/language_provider.dart';
+import '../../services/api_service.dart';
 import '../../widgets/app_toast.dart';
 import '../../widgets/pressable_card.dart';
 import '../auth/login_screen.dart';
@@ -617,13 +618,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Expanded(child: MoonFilledButton(
             isFullWidth: true,
             backgroundColor: accent,
-            onTap: () {
+            onTap: () async {
+              if (currentCtrl.text.isEmpty) {
+                AppToast.error(ctx, lp.t('current_password_required', locale));
+                return;
+              }
               if (newCtrl.text.isEmpty || newCtrl.text != confirmCtrl.text) {
                 AppToast.error(ctx, lp.t('passwords_dont_match', locale));
                 return;
               }
-              Navigator.pop(ctx);
-              if (mounted) AppToast.success(context, lp.t('password_updated', locale));
+              try {
+                await ApiService.post('/auth/change-password', {
+                  'currentPassword': currentCtrl.text,
+                  'newPassword': newCtrl.text,
+                });
+                Navigator.pop(ctx);
+                if (mounted) AppToast.success(context, lp.t('password_updated', locale));
+              } catch (e) {
+                Navigator.pop(ctx);
+                if (mounted) AppToast.error(context, e.toString().replaceAll('Exception: ', ''));
+              }
             },
             label: Text(lp.t('save', locale), style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
           )),

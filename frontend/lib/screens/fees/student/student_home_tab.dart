@@ -70,6 +70,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
       } else {
         fees = [];
       }
+      if (!mounted) return;
       setState(() { _fees = fees; _payments = cachedPayments ?? []; _loading = false; });
       _staggerController.forward();
     }
@@ -93,6 +94,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
       // Cache results
       await CacheService.save('my_fees', fees);
       await CacheService.save('my_payments', payments);
+      if (!mounted) return;
       setState(() { _fees = fees; _payments = payments; _loading = false; });
       _ringController.reset();
       _ringController.forward();

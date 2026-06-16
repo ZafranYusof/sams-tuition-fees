@@ -64,7 +64,16 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
 
   Future<void> _load() async {
     try {
-      final payments = await ApiService.get('/fees/payments/history');
+      final response = await ApiService.get('/fees/payments/history');
+      // Normalize response: API may return {payments: [...]} or a plain list
+      List<dynamic> payments;
+      if (response is Map && response.containsKey('payments')) {
+        payments = response['payments'] ?? [];
+      } else if (response is List) {
+        payments = response;
+      } else {
+        payments = [];
+      }
       setState(() { _payments = payments; _loading = false; });
       _staggerCtrl.forward(from: 0);
       _counterCtrl.forward(from: 0);

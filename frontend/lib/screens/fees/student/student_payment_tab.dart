@@ -88,9 +88,18 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
 
   Future<void> _load() async {
     try {
-      final fees = await ApiService.get('/fees/my');
+      final response = await ApiService.get('/fees/my');
+      // Normalize response: API may return {fees: [...]} or a plain list
+      List<dynamic> fees;
+      if (response is Map && response.containsKey('fees')) {
+        fees = response['fees'] ?? [];
+      } else if (response is List) {
+        fees = response;
+      } else {
+        fees = [];
+      }
       int initialIdx = 0;
-      if (widget.targetFeeId != null && fees is List) {
+      if (widget.targetFeeId != null && fees.isNotEmpty) {
         for (var i = 0; i < fees.length; i++) {
           if (fees[i]['_id']?.toString() == widget.targetFeeId) {
             initialIdx = i + 1;
@@ -314,6 +323,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
         }
       }
 
+      if (!mounted) return false;
       if (success) {
         HapticFeedback.heavyImpact();
         _confettiCtrl.play();
