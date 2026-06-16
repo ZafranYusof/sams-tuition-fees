@@ -7,7 +7,6 @@ import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
 import '../../../widgets/app_toast.dart';
 import 'package:figma_squircle/figma_squircle.dart';
-import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../widgets/premium_widgets.dart';
 import '../../../widgets/pressable_card.dart';
@@ -61,13 +60,19 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
       } else {
         fees = [];
       }
+      if (!mounted) return;
       setState(() { _fees = fees; _loading = false; });
-      _staggerController.forward();
-      Future.delayed(const Duration(milliseconds: 400), () {
-        if (mounted) _progressController.forward();
+      // Start animations on next frame to ensure build completes first
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _staggerController.forward();
+          Future.delayed(const Duration(milliseconds: 400), () {
+            if (mounted) _progressController.forward();
+          });
+        }
       });
     } catch (e) {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -75,7 +80,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
     return AnimatedBuilder(
       animation: anim,
       builder: (_, __) => Opacity(
-        opacity: anim.value,
+        opacity: anim.value.clamp(0.0, 1.0),
         child: Transform.translate(offset: Offset(0, 14 * (1 - anim.value)), child: child),
       ),
     );
@@ -453,9 +458,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                 const SizedBox(height: 28),
 
                 // --- COLLECTION OVERVIEW (glassmorphism) ---
-                _fadeSlide(_staggerAnims[1], child: Tilt(
-                  tiltConfig: const TiltConfig(angle: 8, leaveDuration: Duration(milliseconds: 600), leaveCurve: Curves.easeOutCubic),
-                  child: Stack(
+                _fadeSlide(_staggerAnims[1], child: Stack(
                   children: [
                     Positioned.fill(child: Container(
                       decoration: ShapeDecoration(

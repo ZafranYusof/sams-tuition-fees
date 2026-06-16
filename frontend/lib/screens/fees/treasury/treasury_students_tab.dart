@@ -65,13 +65,14 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
       } else {
         fees = [];
       }
+      if (!mounted) return;
       setState(() { _fees = fees; _loading = false; });
       // Stagger in after data loads
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _playStagger(_filtered.length);
+        if (mounted) _playStagger(_filtered.length);
       });
     } catch (e) {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
