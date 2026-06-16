@@ -381,10 +381,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       Expanded(
                         child: Text(
                           _selectedFinancingType == 'sponsored'
-                              ? 'Sponsored students will not get the default RM 1,510 semester fee automatically.'
+                              ? 'Sponsored students still receive the RM 1,510 fee record. The sponsor settles it directly so restriction checks do not apply.'
                               : _selectedFinancingType == 'ptptn'
                                   ? 'PTPTN students follow the standard UMP fee schedule with restriction checks.'
-                                  : 'Self-funded students will receive the default semester fee automatically after registration.',
+                                  : 'Self-funded students receive the default semester fee automatically after registration.',
                           style: GoogleFonts.inter(fontSize: 12, color: muted, height: 1.4),
                         ),
                       ),
