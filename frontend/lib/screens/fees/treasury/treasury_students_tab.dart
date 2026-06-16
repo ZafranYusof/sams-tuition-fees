@@ -56,7 +56,15 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
 
   Future<void> _load() async {
     try {
-      final fees = await ApiService.get('/fees');
+      final response = await ApiService.get('/fees');
+      List<dynamic> fees;
+      if (response is Map && response.containsKey('fees')) {
+        fees = response['fees'] ?? [];
+      } else if (response is List) {
+        fees = response;
+      } else {
+        fees = [];
+      }
       setState(() { _fees = fees; _loading = false; });
       // Stagger in after data loads
       WidgetsBinding.instance.addPostFrameCallback((_) {
