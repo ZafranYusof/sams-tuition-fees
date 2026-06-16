@@ -367,7 +367,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: _buildAlertItem(
-              item['_alert'], item['_animIndex'] as int, theme),
+              item['_alert'], item['_animIndex'] as int, theme, locale),
         );
       },
     );
@@ -438,7 +438,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
     );
   }
 
-  Widget _buildAlertItem(dynamic a, int i, ThemeData theme) {
+  Widget _buildAlertItem(dynamic a, int i, ThemeData theme, String locale) {
     final isRead = a['read'] == true;
     final type = a['type'] ?? 'info';
     final icon = _typeIcon(type);
