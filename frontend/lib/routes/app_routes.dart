@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../screens/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/home/main_shell.dart';
@@ -10,7 +9,6 @@ import '../screens/fees/student/student_fees_shell.dart';
 import '../screens/fees/treasury/treasury_shell.dart';
 
 class AppRoutes {
-  static const String splash = '/';
   static const String login = '/login';
   static const String register = '/register';
   static const String home = '/home';
@@ -24,8 +22,6 @@ class AppRoutes {
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case AppRoutes.splash:
-        return _buildRoute(const SplashScreen(nextScreen: LoginScreen()));
       case AppRoutes.login:
         return _buildRoute(const LoginScreen());
       case AppRoutes.register:

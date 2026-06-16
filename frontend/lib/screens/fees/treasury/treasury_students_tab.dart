@@ -266,8 +266,8 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
                 ).animate(slideAnim),
                 // #12 Long-press preview
                 child: _PressableScale(
-                  onTap: () => _showStudentPreview(context, student),
-                  onLongPress: () => _showStudentPreview(context, student),
+                  onTap: () => _showStudentPreview(context, s),
+                  onLongPress: () => _showStudentPreview(context, s),
                   child: Container(
                                       padding: const EdgeInsets.all(14),
                                       decoration: ShapeDecoration(
@@ -320,13 +320,25 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
   }
 
   // #12 Long-press preview popup
-  void _showStudentPreview(BuildContext context, Map<String, dynamic> student) {
+  // 'data' is the grouped student row from _students (has student submap + aggregates),
+  // OR a raw student map (legacy fallback) — handle both.
+  void _showStudentPreview(BuildContext context, Map<String, dynamic> data) {
     final t = Theme.of(context);
     final locale = ref.read(languageProvider).locale;
     String tr(String k) => translations[locale]?[k] ?? translations['en']?[k] ?? k;
-    final fees = (student['fees'] as List?) ?? [];
-    final totalDue = fees.fold<double>(0, (sum, f) => sum + ((f['amount'] ?? 0) as num).toDouble());
-    final totalPaid = fees.fold<double>(0, (sum, f) => sum + ((f['paidAmount'] ?? 0) as num).toDouble());
+
+    // Detect grouped row vs raw student
+    final bool isGrouped = data.containsKey('student') && data['student'] is Map;
+    final Map student = isGrouped ? (data['student'] as Map) : data;
+    final double totalDue = isGrouped
+        ? ((data['totalAmount'] ?? 0) as num).toDouble()
+        : ((data['fees'] as List?) ?? []).fold<double>(0, (s, f) => s + ((f['totalAmount'] ?? f['amount'] ?? 0) as num).toDouble());
+    final double totalPaid = isGrouped
+        ? ((data['paidAmount'] ?? 0) as num).toDouble()
+        : ((data['fees'] as List?) ?? []).fold<double>(0, (s, f) => s + ((f['paidAmount'] ?? 0) as num).toDouble());
+    final int feeCount = isGrouped
+        ? ((data['feeCount'] ?? 0) as int)
+        : ((data['fees'] as List?) ?? []).length;
     
     showDialog(
       context: context,
@@ -355,7 +367,7 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
             _previewRow(tr('total_due'), 'RM ${totalDue.toStringAsFixed(2)}', t),
             _previewRow(tr('total_paid'), 'RM ${totalPaid.toStringAsFixed(2)}', t),
             _previewRow(tr('balance'), 'RM ${(totalDue - totalPaid).toStringAsFixed(2)}', t),
-            _previewRow(tr('fees'), '${fees.length}', t),
+            _previewRow(tr('fees'), '$feeCount', t),
             const SizedBox(height: 16),
             SizedBox(width: double.infinity, child: MoonTextButton(
               onTap: () => Navigator.pop(ctx),

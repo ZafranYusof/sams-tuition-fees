@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:toastification/toastification.dart';
 import 'config/moon_theme.dart';
 import 'providers/theme_provider.dart';
-import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/main_shell.dart';
 import 'providers/auth_provider.dart';
@@ -23,32 +22,26 @@ void main() async {
   runApp(const ProviderScope(child: SAMsApp()));
 }
 
-class SAMsApp extends ConsumerStatefulWidget {
+class SAMsApp extends ConsumerWidget {
   const SAMsApp({super.key});
 
   @override
-  ConsumerState<SAMsApp> createState() => _SAMsAppState();
-}
-
-class _SAMsAppState extends ConsumerState<SAMsApp> {
-  bool _splashShown = false;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final themeState = ref.watch(themeProvider);
 
-    // Splash always shown first 2.2s, regardless of auth speed
-    Widget home;
-    if (!_splashShown) {
-      home = SplashScreen(
-        onFinish: () {
-          if (mounted) setState(() => _splashShown = true);
-        },
+    // No splash. Show plain background while auth resolves, then route directly.
+    final Widget home;
+    if (authState.isInitializing) {
+      home = Scaffold(
+        backgroundColor: themeState.isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF),
+        body: const Center(
+          child: SizedBox(
+            width: 28, height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2.4, color: Color(0xFF5C33CF)),
+          ),
+        ),
       );
-    } else if (authState.isInitializing) {
-      // Edge case: auth still loading after splash duration
-      home = SplashScreen(onFinish: () {});
     } else {
       home = authState.isAuthenticated ? const MainShell() : const LoginScreen();
     }
