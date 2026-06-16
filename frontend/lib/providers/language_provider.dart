@@ -284,6 +284,13 @@ const Map<String, Map<String, String>> translations = {
     'tap_to_pay': 'Tap to pay',
     'of': 'of',
     'total': 'total',
+
+    // Time relative
+    'time_just_now': 'Just now',
+    'time_minutes_ago': 'm ago',
+    'time_hours_ago': 'h ago',
+    'time_days_ago': 'd ago',
+    'time_weeks_ago': 'w ago',
   },
   'ms': {
     // Common
@@ -537,6 +544,13 @@ const Map<String, Map<String, String>> translations = {
     'tap_to_pay': 'Tekan untuk bayar',
     'of': 'daripada',
     'total': 'jumlah',
+
+    // Time relative
+    'time_just_now': 'Baru sekarang',
+    'time_minutes_ago': 'm lalu',
+    'time_hours_ago': 'j lalu',
+    'time_days_ago': 'h lalu',
+    'time_weeks_ago': 'mng lalu',
   },
 };
 

@@ -615,6 +615,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           )),
         ]),
       ]);
+    }).whenComplete(() {
+      currentCtrl.dispose();
+      newCtrl.dispose();
+      confirmCtrl.dispose();
     });
   }
 

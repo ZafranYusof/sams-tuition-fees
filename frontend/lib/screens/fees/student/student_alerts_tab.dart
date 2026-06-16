@@ -152,19 +152,19 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
     return 'earlier';
   }
 
-  String _formatTimestamp(String? dateStr) {
+  String _formatTimestamp(String? dateStr, String locale) {
     if (dateStr == null || dateStr.isEmpty) return '';
-    final date = DateTime.tryParse(dateStr);
+    final date = DateTime.tryParse(dateStr)?.toLocal();
     if (date == null) return '';
 
     final now = DateTime.now();
     final diff = now.difference(date);
 
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return '${(diff.inDays / 7).floor()}w ago';
+    if (diff.inMinutes < 1) return t('time_just_now', locale);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}${t('time_minutes_ago', locale)}';
+    if (diff.inHours < 24) return '${diff.inHours}${t('time_hours_ago', locale)}';
+    if (diff.inDays < 7) return '${diff.inDays}${t('time_days_ago', locale)}';
+    return '${(diff.inDays / 7).floor()}${t('time_weeks_ago', locale)}';
   }
 
   /// Staggered interval for item at index i
@@ -492,7 +492,7 @@ class _StudentAlertsTabState extends ConsumerState<StudentAlertsTab>
                                 theme.textTheme.bodyMedium?.color ?? Colors.grey,
                             height: 1.4)),
                     const SizedBox(height: 4),
-                    Text(_formatTimestamp(a['createdAt']?.toString() ?? ''),
+                    Text(_formatTimestamp(a['createdAt']?.toString() ?? '', locale),
                         style: TextStyle(
                             fontSize: 10,
                             color: Colors.grey.withValues(alpha: 0.7))),

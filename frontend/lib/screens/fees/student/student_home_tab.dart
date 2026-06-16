@@ -185,8 +185,8 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
   }
 
 
-  String get _studentStatus => (ref.read(authProvider).user?['studentStatus'] ?? 'active').toString();
-  String get _financingType => (ref.read(authProvider).user?['financingType'] ?? 'unfinanced').toString();
+  String get _studentStatus => (ref.watch(authProvider).user?['studentStatus'] ?? 'active').toString();
+  String get _financingType => (ref.watch(authProvider).user?['financingType'] ?? 'unfinanced').toString();
 
   String _statusLabel(String status) {
     switch (status) {
@@ -505,7 +505,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                         child: PressableCard(
                           onTap: isPaidFee ? null : () {
                             HapticFeedback.lightImpact();
-                            Navigator.pushReplacement(context, PageRouteBuilder(
+                            Navigator.push(context, PageRouteBuilder(
                               transitionDuration: const Duration(milliseconds: 450),
                               reverseTransitionDuration: const Duration(milliseconds: 350),
                               pageBuilder: (_, __, ___) => StudentFeesShell(initialTab: 1, targetFeeId: feeId),
@@ -672,7 +672,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
   }
 
   String _fmtRm(double n) => 'RM ${n.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
-  String _monthName(int m) => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m];
+  String _monthName(int m) { final i = m.clamp(1, 12); return ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i]; }
 
 }
 

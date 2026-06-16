@@ -71,6 +71,7 @@ class AppToast {
     required IconData icon,
     required Duration autoClose,
   }) {
+    toastification.dismissAll();
     toastification.show(
       context: context,
       type: type,

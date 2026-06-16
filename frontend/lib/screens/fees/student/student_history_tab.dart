@@ -88,6 +88,11 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
     final method = p['method'] ?? 'fpx';
     String paymentUrl;
 
+    if (txnId.isEmpty) {
+      AppToast.error(context, 'No transaction ID available');
+      return;
+    }
+
     if (method == 'card' && txnId.startsWith('cs_')) {
       paymentUrl = 'https://checkout.stripe.com/c/pay/$txnId';
     } else {
@@ -142,7 +147,7 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
     if (diff.inMinutes < 1) return 'Just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24 && now.day == d.day) return 'Today, ${_formatTime(raw)}';
-    if (diff.inDays == 1 || (now.day - d.day == 1 && now.month == d.month)) return 'Yesterday';
+    if (diff.inDays == 1) return 'Yesterday';
     if (diff.inDays < 7) return '${diff.inDays} days ago';
     if (diff.inDays < 14) return 'Last week';
     if (diff.inDays < 30) return '${(diff.inDays / 7).floor()} weeks ago';

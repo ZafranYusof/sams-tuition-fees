@@ -423,7 +423,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
             builder: (_, __) => Transform.scale(
               scale: 1.0 - (_amountController.value * 0.02),
               child: Opacity(
-                opacity: 1.0 - (_amountController.value * 0.3) + (_amountController.value * 0.3),
+                opacity: 1.0 - (_amountController.value * 0.3),
                 child: Hero(
                   tag: 'fee_${_currentFeeId()}',
                   flightShuttleBuilder: (_, __, ___, ____, _____) => Material(

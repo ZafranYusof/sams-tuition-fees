@@ -7,6 +7,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../config/api_config.dart';
 
 class ApiService {
+  static final Connectivity _connectivity = Connectivity();
   static const int _maxRetries = 3;
   static const List<int> _retryDelays = [1, 2, 4]; // seconds for exponential backoff
 
@@ -32,7 +33,7 @@ class ApiService {
   /// Check if device is online
   static Future<bool> _isOnline() async {
     try {
-      final connectivityResult = await Connectivity().checkConnectivity();
+      final connectivityResult = await _connectivity.checkConnectivity();
       return !connectivityResult.contains(ConnectivityResult.none);
     } catch (e) {
       // If connectivity check fails, assume we're online and let the request try
