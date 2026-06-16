@@ -31,6 +31,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _notifReceipt = true;
   bool _notifSystem = false;
 
+  String _profileImageKey() {
+    final user = ref.read(authProvider).user;
+    final id = user?['studentId'] ?? user?['student_id'] ?? user?['_id'] ?? user?['id'] ?? 'guest';
+    return 'profile_image_$id';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -63,7 +69,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _loadImage() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() => _imagePath = prefs.getString('profile_image'));
+    setState(() => _imagePath = prefs.getString(_profileImageKey()));
   }
 
   Future<void> _pickImage() async {
@@ -96,7 +102,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               onTap: () async {
                 Navigator.pop(context);
                 final prefs = await SharedPreferences.getInstance();
-                await prefs.remove('profile_image');
+                await prefs.remove(_profileImageKey());
                 setState(() => _imagePath = null);
               },
             ),
@@ -110,7 +116,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final picked = await picker.pickImage(source: source, maxWidth: 512, maxHeight: 512, imageQuality: 80);
     if (picked != null) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('profile_image', picked.path);
+      await prefs.setString(_profileImageKey(), picked.path);
       setState(() => _imagePath = picked.path);
     }
   }

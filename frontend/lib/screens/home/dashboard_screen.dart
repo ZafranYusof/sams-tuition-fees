@@ -84,7 +84,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
 
   Future<void> _loadProfileImage() async {
     final prefs = await SharedPreferences.getInstance();
-    final path = prefs.getString('profile_image');
+    final user = ref.read(authProvider).user;
+    final id = user?['studentId'] ?? user?['student_id'] ?? user?['_id'] ?? user?['id'] ?? 'guest';
+    final path = prefs.getString('profile_image_$id');
     // Verify file exists before setting
     if (path != null && File(path).existsSync()) {
       setState(() => _profileImage = path);

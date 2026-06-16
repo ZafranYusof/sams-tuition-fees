@@ -115,8 +115,10 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
   double get _amount {
     if (_fees.isEmpty) return 0;
     if (_selFeeIndex == 0) return _balance;
-    final fee = _fees[_selFeeIndex - 1];
-    return ((fee['totalAmount'] ?? 0) as num).toDouble() - ((fee['paidAmount'] ?? 0) as num).toDouble();
+    final items = _unpaidItems;
+    final idx = _selFeeIndex - 1;
+    if (idx < 0 || idx >= items.length) return _balance;
+    return (items[idx]['balance'] as num).toDouble();
   }
 
   String get _deadlineStr {
@@ -148,8 +150,38 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
     setState(() => _selFeeIndex = index);
   }
 
-  /// Returns the fee id for the currently-selected fee chip.
+  /// Flatten unpaid items across all fees into a list of pickable rows.
+  /// Each row carries: feeId, itemIndex (within fee.items[]), description, balance.
+  List<Map<String, dynamic>> get _unpaidItems {
+    final List<Map<String, dynamic>> out = [];
+    for (var fee in _fees) {
+      final feeId = fee['_id']?.toString() ?? '';
+      final items = (fee['items'] as List?) ?? [];
+      for (var idx = 0; idx < items.length; idx++) {
+        final item = items[idx] as Map?;
+        if (item == null) continue;
+        final amount = ((item['amount'] ?? 0) as num).toDouble();
+        final paid = ((item['paidAmount'] ?? 0) as num).toDouble();
+        final bal = amount - paid;
+        if (bal <= 0.01) continue; // skip fully paid items
+        out.add({
+          'feeId': feeId,
+          'itemIndex': idx,
+          'description': item['description']?.toString() ?? 'Item',
+          'category': item['category']?.toString() ?? 'other',
+          'balance': bal,
+          'totalAmount': amount,
+          'paidAmount': paid,
+        });
+      }
+    }
+    return out;
+  }
+
+
+  /// Returns the fee id for the currently-selected chip.
   /// Index 0 = "All outstanding" → uses first unpaid fee id, falls back to 'all'.
+  /// Index 1+ = per-item selection → returns the fee id that owns that item.
   String _currentFeeId() {
     if (_selFeeIndex == 0) {
       for (var f in _fees) {
@@ -158,8 +190,10 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
       }
       return widget.targetFeeId ?? 'all';
     }
-    if (_selFeeIndex - 1 < _fees.length) {
-      return _fees[_selFeeIndex - 1]['_id']?.toString() ?? 'all';
+    final items = _unpaidItems;
+    final idx = _selFeeIndex - 1;
+    if (idx >= 0 && idx < items.length) {
+      return (items[idx]['feeId'] as String?) ?? 'all';
     }
     return 'all';
   }
@@ -182,9 +216,14 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
         deadline: _deadlineStr,
         feeLabel: _selFeeIndex == 0
             ? 'All outstanding fees'
-            : (_fees[_selFeeIndex - 1]['items']?.isNotEmpty == true
-                ? (_fees[_selFeeIndex - 1]['items'][0]['description']?.toString() ?? 'Tuition Fee')
-                : 'Tuition Fee'),
+            : (() {
+                final items = _unpaidItems;
+                final idx = _selFeeIndex - 1;
+                if (idx >= 0 && idx < items.length) {
+                  return items[idx]['description'] as String;
+                }
+                return 'Tuition Fee';
+              })(),
         initialMethod: _selMethod,
         initialBank: _selBank,
         onConfirm: (method, bank) async {
@@ -224,9 +263,12 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
           if (bal > 0) { targetFeeId = f['_id']; break; }
         }
       } else {
-        final fee = _fees[_selFeeIndex - 1];
-        targetFeeId = fee['_id'];
-        payAmount = ((fee['totalAmount'] ?? 0) as num).toDouble() - ((fee['paidAmount'] ?? 0) as num).toDouble();
+        final items = _unpaidItems;
+        final idx = _selFeeIndex - 1;
+        if (idx >= 0 && idx < items.length) {
+          targetFeeId = items[idx]['feeId'] as String;
+          payAmount = (items[idx]['balance'] as num).toDouble();
+        }
       }
 
       if (targetFeeId.isEmpty || payAmount <= 0) { setState(() { _paying = false; _currentStep = 0; }); return false; }
@@ -478,19 +520,20 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
           ),
         ]),
 
-        if (_fees.length > 1) ...[
+        if (_unpaidItems.length > 1 || _fees.length > 1) ...[
           const SizedBox(height: 18),
           Container(height: 1, color: t.dividerColor),
           const SizedBox(height: 14),
           Text('Pay for', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: t.textTheme.bodySmall?.color)),
           const SizedBox(height: 8),
           _feeChip('All outstanding', _balance, 0),
-          ...List.generate(_fees.length, (i) {
-            final f = _fees[i];
-            final bal = ((f['totalAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble();
-            if (bal <= 0) return const SizedBox.shrink(); // Hide paid fees
-            final name = (f['items'] != null && (f['items'] as List).isNotEmpty) ? f['items'][0]['description'] ?? 'Semester ${f['semester']}' : 'Semester ${f['semester']}';
-            return _feeChip(name, bal, i + 1);
+          ...List.generate(_unpaidItems.length, (i) {
+            final item = _unpaidItems[i];
+            return _feeChip(
+              item['description'] as String,
+              (item['balance'] as num).toDouble(),
+              i + 1,
+            );
           }),
         ],
       ]),

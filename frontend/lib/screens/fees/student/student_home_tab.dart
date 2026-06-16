@@ -243,25 +243,6 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
         elevation: 0,
         title: Text(lp.t('tuition_fees', loc), style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w600)),
         leading: IconButton(icon: Icon(Icons.arrow_back, color: t.colorScheme.onSurface), onPressed: () => Navigator.pop(context)),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: t.cardColor,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _statusColor(_studentStatus).withValues(alpha: 0.4)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(width: 6, height: 6, decoration: BoxDecoration(color: _statusColor(_studentStatus), shape: BoxShape.circle)),
-                const SizedBox(width: 6),
-                Text(_statusLabel(_studentStatus), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _statusColor(_studentStatus))),
-              ],
-            ),
-          ),
-        ],
       ),
       body: PremiumRefreshIndicator(
         onRefresh: _load,
@@ -332,45 +313,6 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                   Expanded(child: Text('${lp.t('pay_before', loc)} ${lp.t('week', loc)} 5 ${lp.t('maintain_access', loc)}', style: const TextStyle(color: SAMsTheme.warning, fontSize: 12, fontWeight: FontWeight.w500))),
                 ]),
               )),
-
-
-            _fadeSlide(_staggerAnims[1], child: Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: t.cardColor,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: t.dividerColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.timeline_rounded, size: 18, color: SAMsTheme.accent),
-                      const SizedBox(width: 8),
-                      Text('UMP payment schedule', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Default semester fee: RM 1,510. ${_financingType == 'sponsored' ? 'Sponsored students only get restriction checks at Week 18 if sponsor payment is still unsettled.' : 'Week 4 due, Week 5 first restriction, Week 8 second restriction, Week 11 deferment.'}',
-                    style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color, height: 1.4),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: const [
-                      _SchedulePill(label: 'Week 4', detail: 'Fees due'),
-                      _SchedulePill(label: 'Week 5', detail: 'Restriction 1'),
-                      _SchedulePill(label: 'Week 8', detail: 'Restriction 2'),
-                      _SchedulePill(label: 'Week 11', detail: 'Deferred'),
-                    ],
-                  ),
-                ],
-              ),
-            )),
 
             // --- BALANCE OVERVIEW (glassmorphism) ---
             _fadeSlide(_staggerAnims[2], child: Tilt(
@@ -733,34 +675,6 @@ class _HeaderChip extends StatelessWidget {
       child: Text(
         label,
         style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: color, letterSpacing: 0.2),
-      ),
-    );
-  }
-}
-
-class _SchedulePill extends StatelessWidget {
-  final String label;
-  final String detail;
-  const _SchedulePill({required this.label, required this.detail});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: SAMsTheme.accent.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: SAMsTheme.accent.withValues(alpha: 0.15)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: SAMsTheme.accent)),
-          const SizedBox(height: 2),
-          Text(detail, style: GoogleFonts.inter(fontSize: 11, color: t.textTheme.bodySmall?.color)),
-        ],
       ),
     );
   }
