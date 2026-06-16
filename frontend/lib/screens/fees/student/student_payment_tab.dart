@@ -511,7 +511,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
           Expanded(
             child: Align(
               alignment: Alignment.centerLeft,
-              child: FlipCurrencyText(
+              child: CrossfadeCurrencyText(
                 value: _amount,
                 prefix: '',
                 style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.w800, color: t.colorScheme.onSurface, letterSpacing: -1.5, height: 1),

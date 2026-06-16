@@ -112,6 +112,39 @@ class AnimatedIntText extends StatelessWidget {
   }
 }
 
+/// Smooth crossfade currency text (no shake/vibrate). Uses AnimatedSwitcher
+/// with fade transition instead of flip animation. Recommended for payment
+/// screens where amount changes frequently.
+class CrossfadeCurrencyText extends StatelessWidget {
+  final double value;
+  final TextStyle? style;
+  final String prefix;
+  final int fractionDigits;
+
+  const CrossfadeCurrencyText({
+    super.key,
+    required this.value,
+    this.style,
+    this.prefix = 'RM ',
+    this.fractionDigits = 2,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      child: Text(
+        '$prefix${NumberFormat.currency(locale: 'en_MY', symbol: '', decimalDigits: fractionDigits).format(value)}',
+        key: ValueKey<double>(value),
+        style: style,
+      ),
+    );
+  }
+}
+
 /// Premium flip-style currency counter (e.g. "RM 1,234.56"). Each digit
 /// flips like an odometer when [value] changes — far more tactile than a
 /// plain tween. Uses `animated_flip_counter` under the hood with the
