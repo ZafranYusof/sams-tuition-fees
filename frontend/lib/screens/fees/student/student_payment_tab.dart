@@ -209,6 +209,30 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
     return out;
   }
 
+  /// ALL items including paid (for display in "Pay for" chips).
+  List<Map<String, dynamic>> get _allItems {
+    final List<Map<String, dynamic>> out = [];
+    for (var fee in _fees) {
+      final feeId = fee['_id']?.toString() ?? '';
+      final items = (fee['items'] as List?) ?? [];
+      for (var idx = 0; idx < items.length; idx++) {
+        final item = items[idx] as Map?;
+        if (item == null) continue;
+        final amount = ((item['amount'] ?? 0) as num).toDouble();
+        final paid = ((item['paidAmount'] ?? 0) as num).toDouble();
+        out.add({
+          'feeId': feeId,
+          'itemIndex': idx,
+          'description': item['description']?.toString() ?? 'Item',
+          'category': item['category']?.toString() ?? 'other',
+          'balance': amount - paid,
+          'totalAmount': amount,
+          'paidAmount': paid,
+        });
+      }
+    }
+    return out;
+  }
 
   /// Returns the fee id for the currently-selected chip.
   /// Index 0 = "All outstanding" → uses first unpaid fee id, falls back to 'all'.
@@ -555,15 +579,15 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
           ),
         ]),
 
-        if (_unpaidItems.length > 1 || _fees.length > 1) ...[
+        if (_allItems.length > 1 || _fees.length > 1) ...[
           const SizedBox(height: 18),
           Container(height: 1, color: t.dividerColor),
           const SizedBox(height: 14),
           Text('Pay for', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: t.textTheme.bodySmall?.color)),
           const SizedBox(height: 8),
           _feeChip('All outstanding', _balance, 0),
-          ...List.generate(_unpaidItems.length, (i) {
-            final item = _unpaidItems[i];
+          ...List.generate(_allItems.length, (i) {
+            final item = _allItems[i];
             return _feeChip(
               item['description'] as String,
               (item['balance'] as num).toDouble(),
@@ -587,9 +611,9 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
         margin: const EdgeInsets.only(bottom: 6),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         decoration: BoxDecoration(
-          color: active ? SAMsTheme.primary.withValues(alpha: 0.06) : Colors.transparent,
+          color: disabled ? SAMsTheme.success.withValues(alpha: 0.04) : (active ? SAMsTheme.primary.withValues(alpha: 0.06) : Colors.transparent),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: active ? SAMsTheme.primary.withValues(alpha: 0.4) : t.dividerColor, width: active ? 1.5 : 1),
+          border: Border.all(color: disabled ? SAMsTheme.success.withValues(alpha: 0.2) : (active ? SAMsTheme.primary.withValues(alpha: 0.4) : t.dividerColor), width: active ? 1.5 : 1),
         ),
         child: Row(children: [
           AnimatedContainer(
@@ -597,10 +621,10 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
             width: 18, height: 18,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: active ? SAMsTheme.primary : Colors.transparent,
-              border: Border.all(color: active ? SAMsTheme.primary : (t.textTheme.bodySmall?.color ?? Colors.grey).withValues(alpha: 0.4), width: 1.5),
+              color: disabled ? SAMsTheme.success : (active ? SAMsTheme.primary : Colors.transparent),
+              border: Border.all(color: disabled ? SAMsTheme.success : (active ? SAMsTheme.primary : (t.textTheme.bodySmall?.color ?? Colors.grey).withValues(alpha: 0.4)), width: 1.5),
             ),
-            child: active ? const Icon(Icons.check, size: 11, color: Colors.white) : null,
+            child: (disabled || active) ? const Icon(Icons.check, size: 11, color: Colors.white) : null,
           ),
           const SizedBox(width: 12),
           Expanded(child: Text(label, style: TextStyle(fontSize: 13, fontWeight: active ? FontWeight.w600 : FontWeight.w400, color: disabled ? t.textTheme.bodySmall?.color : t.colorScheme.onSurface))),
