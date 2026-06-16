@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart' as lp;
 import '../../providers/language_provider.dart';
 import '../../widgets/app_toast.dart';
+import '../../services/api_service.dart';
 import '../../widgets/pressable_card.dart';
 import '../auth/login_screen.dart';
 
@@ -268,6 +269,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           }, isLast: true),
 
           const SizedBox(height: 32),
+          // DEBUG: Test FCM notification
+          MoonFilledButton(
+            isFullWidth: true,
+            buttonSize: MoonButtonSize.md,
+            onTap: () async {
+              HapticFeedback.lightImpact();
+              try {
+                final resp = await ApiService.post('/users/test-notification', {});
+                if (!mounted) return;
+                if (resp['success'] == true) {
+                  AppToast.success(context, 'Test notification sent! Check your phone.');
+                } else {
+                  AppToast.error(context, 'FCM push failed: ${resp['reason'] ?? 'unknown'}');
+                }
+              } catch (e) {
+                if (!mounted) return;
+                AppToast.error(context, 'Error: $e');
+              }
+            },
+            backgroundColor: accent,
+            leading: const Icon(Iconsax.notification, size: 18, color: Colors.white),
+            label: Text('Test Push Notification', style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(height: 16),
           MoonOutlinedButton(
             isFullWidth: true,
             buttonSize: MoonButtonSize.lg,
