@@ -296,6 +296,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             label: Text('Check FCM Status', style: GoogleFonts.inter(color: accent, fontSize: 14, fontWeight: FontWeight.w600)),
           ),
           const SizedBox(height: 12),
+          // DEBUG: Force register FCM token
+          MoonFilledButton(
+            isFullWidth: true,
+            buttonSize: MoonButtonSize.md,
+            onTap: () async {
+              HapticFeedback.lightImpact();
+              try {
+                await FcmService().registerTokenAfterLogin();
+                if (!mounted) return;
+                AppToast.success(context, 'FCM token registered! Try Test Push again.');
+              } catch (e) {
+                if (!mounted) return;
+                AppToast.error(context, 'Registration failed: $e');
+              }
+            },
+            backgroundColor: accent.withValues(alpha: 0.8),
+            leading: const Icon(Iconsax.add_circle, size: 18, color: Colors.white),
+            label: Text('Register FCM Token', style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(height: 12),
           // DEBUG: Test FCM notification
           MoonFilledButton(
             isFullWidth: true,
