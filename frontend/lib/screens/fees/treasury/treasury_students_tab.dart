@@ -128,13 +128,13 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
     String tr(String k) => translations[locale]?[k] ?? translations['en']?[k] ?? k;
     // Inject dummy fees so Skeletonizer can render placeholder cards.
     if (_loading && _fees.isEmpty) {
-      _fees = List.generate(5, (i) => {
+      _fees = List.generate(5, (i) => (<String, dynamic>{
         '_id': 'skeleton_$i',
         'status': 'unpaid',
         'student': {'_id': 'stu_$i', 'name': 'Loading Student', 'studentId': 'CB00000', 'program': 'Computer Science'},
         'totalAmount': 1234.0,
         'paidAmount': 0.0,
-      });
+      }));
     }
 
     return Skeletonizer(
@@ -246,6 +246,8 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
           itemBuilder: (_, i) {
             final s = _filtered[i];
             final student = s['student'] ?? {};
+            final studentId = student['_id'] ?? student['studentId'] ?? '';
+            final studentName = student['name'] ?? 'Student';
             final status = s['status'] ?? 'unpaid';
             final balance = ((s['totalAmount'] ?? 0) as num).toDouble() - ((s['paidAmount'] ?? 0) as num).toDouble();
             final isPaid = status == 'paid';
@@ -316,7 +318,10 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
                         else Text(tr('cleared'), style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color)),
                       ]),
                     ])),
-                    if (!isPaid) const Icon(Icons.notification_important, color: SAMsTheme.accent, size: 20),
+                    if (!isPaid) GestureDetector(
+                      onTap: () => _sendReminderToStudent(context, studentId, studentName),
+                      child: const Icon(Iconsax.notification, color: SAMsTheme.accent, size: 20),
+                    ),
                   ]),
                 ),
                 ),
@@ -326,6 +331,40 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
         );
       },
     );
+  }
+
+  Future<void> _sendReminderToStudent(BuildContext context, String studentId, String studentName) async {
+    HapticFeedback.lightImpact();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Send Reminder', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+        content: Text('Send payment reminder to $studentName?', style: GoogleFonts.inter()),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: GoogleFonts.inter())),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Send', style: GoogleFonts.inter(color: SAMsTheme.accent, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ApiService.post('/notifications', {
+        'studentId': studentId,
+        'title': 'Payment Reminder',
+        'message': 'You have outstanding fees. Please make payment before the due date.',
+        'type': 'reminder',
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Reminder sent to $studentName')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: SAMsTheme.error));
+      }
+    }
   }
 
   // #12 Long-press preview popup
