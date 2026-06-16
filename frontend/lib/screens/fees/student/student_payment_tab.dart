@@ -297,7 +297,10 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
 
   Future<bool> _pay() async {
     if (_paying) return false;
-    if (_amount <= 0) return false;
+    if (_amount <= 0) {
+      if (mounted) AppToast.warning(context, 'No amount to pay. Please select an unpaid item.');
+      return false;
+    }
     // Haptic owned by _handleConfirm in the payment sheet to avoid duplicate buzz.
     setState(() {
       _paying = true;
@@ -327,7 +330,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
         }
       }
 
-      if (targetFeeId.isEmpty || payAmount <= 0) { setState(() { _paying = false; _currentStep = 0; }); return false; }
+      if (targetFeeId.isEmpty || payAmount <= 0) { setState(() { _paying = false; _currentStep = 0; }); if (mounted) AppToast.warning(context, 'No unpaid fee selected.'); return false; }
 
       String? txnId;
       bool success = false;
@@ -341,6 +344,9 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
         });
         final paymentUrl = result['paymentUrl'];
         final billCode = result['billCode'];
+        if (paymentUrl == null) {
+          if (mounted) AppToast.error(context, 'Payment gateway unavailable. Please try again later.');
+        }
         if (paymentUrl != null && mounted) {
           final webResult = await Navigator.push<bool>(context, MaterialPageRoute(
             builder: (_) => _PaymentWebView(url: paymentUrl, title: 'FPX Payment'),
@@ -358,6 +364,9 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
         });
         final paymentUrl = result['paymentUrl'];
         final sessionId = result['paymentIntentId'];
+        if (paymentUrl == null) {
+          if (mounted) AppToast.error(context, 'Card payment unavailable. Please try again later.');
+        }
         if (paymentUrl != null && mounted) {
           final webResult = await Navigator.push<bool>(context, MaterialPageRoute(
             builder: (_) => _PaymentWebView(url: paymentUrl, title: 'Card Payment'),
