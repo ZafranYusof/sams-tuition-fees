@@ -98,7 +98,9 @@ class ApiService {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return data;
     } else {
-      throw Exception(data['error'] ?? 'Something went wrong');
+      // Handle both 'error' and 'reason' fields from backend
+      final msg = data['error'] ?? data['reason'] ?? data['message'] ?? 'Something went wrong';
+      throw Exception(msg);
     }
   }
 }
