@@ -25,7 +25,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String? _imagePath;
-  bool _isDarkMode = true;
   // Notification preferences (local-only persistence)
   bool _notifPaymentReminders = true;
   bool _notifNewFee = true;
@@ -42,7 +41,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void initState() {
     super.initState();
     _loadImage();
-    _loadDarkMode();
     _loadNotifPrefs();
   }
 
@@ -54,18 +52,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _notifReceipt = prefs.getBool('notif_receipt') ?? true;
       _notifSystem = prefs.getBool('notif_system') ?? false;
     });
-  }
-
-  Future<void> _loadDarkMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() => _isDarkMode = prefs.getBool('dark_mode') ?? true);
-  }
-
-  Future<void> _toggleDarkMode(bool value) async {
-    HapticFeedback.selectionClick();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('dark_mode', value);
-    setState(() => _isDarkMode = value);
   }
 
   Future<void> _loadImage() async {
@@ -224,21 +210,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           // ─── PREFERENCES ───
           _SectionHead(lp.t('preferences', locale), accent: accent, muted: muted),
           const SizedBox(height: 12),
-          // Dark mode toggle (kept as-is, with Iconsax icon)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: t.dividerColor))),
-            child: Row(children: [
-              Icon(Iconsax.moon, color: accent.withValues(alpha: 0.7), size: 18),
-              const SizedBox(width: 14),
-              Expanded(child: Text(lp.t('dark_mode', locale), style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 14, fontWeight: FontWeight.w500))),
-              SizedBox(height: 28, child: MoonSwitch(
-                value: _isDarkMode,
-                onChanged: _toggleDarkMode,
-                activeTrackColor: accent,
-              )),
-            ]),
-          ),
+          // Language setting row
           _settingsRow(t, accent, Iconsax.translate, lp.t('language', locale), () => _showLanguageSheet(t, accent)),
           _settingsRow(t, accent, Iconsax.notification, lp.t('notifications', locale), () => _showNotificationsSheet(t, accent), isLast: true),
 

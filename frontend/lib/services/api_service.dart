@@ -94,7 +94,7 @@ class ApiService {
           Uri.parse('${ApiConfig.baseUrl}$endpoint'),
           headers: await _headers(),
         ).timeout(const Duration(seconds: 30));
-        return _handleResponse(response);
+        return await _handleResponse(response);
       } on TimeoutException {
         throw Exception('Request timed out. Please check your connection.');
       } on SocketException {
@@ -111,7 +111,7 @@ class ApiService {
           headers: await _headers(),
           body: jsonEncode(body),
         ).timeout(const Duration(seconds: 30));
-        return _handleResponse(response);
+        return await _handleResponse(response);
       } on TimeoutException {
         throw Exception('Request timed out. Please check your connection.');
       } on SocketException {
@@ -128,7 +128,7 @@ class ApiService {
           headers: await _headers(),
           body: jsonEncode(body),
         ).timeout(const Duration(seconds: 30));
-        return _handleResponse(response);
+        return await _handleResponse(response);
       } on TimeoutException {
         throw Exception('Request timed out. Please check your connection.');
       } on SocketException {
@@ -137,10 +137,10 @@ class ApiService {
     });
   }
 
-  static dynamic _handleResponse(http.Response response) {
+  static Future<dynamic> _handleResponse(http.Response response) async {
     // Handle 401 - token expired or invalid
     if (response.statusCode == 401) {
-      _handleUnauthorized();
+      await _handleUnauthorized();
       throw Exception('Session expired. Please login again.');
     }
 

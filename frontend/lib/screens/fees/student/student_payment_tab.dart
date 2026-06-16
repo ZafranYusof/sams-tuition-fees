@@ -98,13 +98,34 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
       } else {
         fees = [];
       }
+      // Determine which chip to pre-select if a targetFeeId was passed.
+      // Chips are built from _unpaidItems (flat list of all unpaid items
+      // across all fees), so we must find the first unpaid item that
+      // belongs to targetFeeId, not the fee's position in _fees.
       int initialIdx = 0;
       if (widget.targetFeeId != null && fees.isNotEmpty) {
-        for (var i = 0; i < fees.length; i++) {
-          if (fees[i]['_id']?.toString() == widget.targetFeeId) {
-            initialIdx = i + 1;
-            break;
+        int itemCounter = 0;
+        for (var f in fees) {
+          final fid = f['_id']?.toString() ?? '';
+          final items = (f['items'] as List?) ?? [];
+          bool foundInFee = false;
+          for (var idx = 0; idx < items.length; idx++) {
+            final item = items[idx] as Map?;
+            if (item == null) continue;
+            final amount = ((item['amount'] ?? 0) as num).toDouble();
+            final paid = ((item['paidAmount'] ?? 0) as num).toDouble();
+            if (amount - paid > 0.01) {
+              if (fid == widget.targetFeeId) {
+                initialIdx = itemCounter + 1; // +1 because chip 0 = "All"
+                foundInFee = true;
+                break;
+              }
+              itemCounter++;
+            }
           }
+          if (foundInFee) break;
+          // Count remaining unpaid items in this fee even if not target
+          // (already counted above, nothing extra needed).
         }
       }
       setState(() { _fees = fees; _selFeeIndex = initialIdx; _loading = false; });

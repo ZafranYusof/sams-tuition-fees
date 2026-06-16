@@ -39,9 +39,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
         userMap['id'] = userMap['id'] ?? userMap['_id'] ?? '';
         userMap['_id'] = userMap['_id'] ?? userMap['id'] ?? '';
         state = AuthState(isAuthenticated: true, user: userMap, isInitializing: false);
-      } catch (_) {
-        await prefs.remove('token');
-        state = AuthState(isInitializing: false);
+      } catch (e) {
+        // Only remove token on 401 — network errors should preserve session
+        if (e.toString().contains('401') || e.toString().contains('Session expired')) {
+          await prefs.remove('token');
+          state = AuthState(isInitializing: false);
+        } else {
+          // Network error or other transient issue — keep token, stay authenticated
+          state = state.copyWith(isAuthenticated: true, isInitializing: false, error: 'Unable to verify session. Please check your connection.');
+        }
       }
     } else {
       state = AuthState(isInitializing: false);
@@ -99,7 +105,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       userMap['id'] = userMap['id'] ?? userMap['_id'] ?? '';
       userMap['_id'] = userMap['_id'] ?? userMap['id'] ?? '';
       state = AuthState(isAuthenticated: true, user: userMap, isInitializing: false);
-    } catch (_) {}
+    } catch (e) {
+      // If 401, ApiService already removed token — clear auth state too
+      if (e.toString().contains('401') || e.toString().contains('Session expired')) {
+        state = AuthState(isInitializing: false);
+      }
+    }
   }
 
   void updateStudentStatus(String newStatus) {
