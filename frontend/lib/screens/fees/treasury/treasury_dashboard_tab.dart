@@ -70,7 +70,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
             if (mounted) _progressController.forward();
           });
         }
-      });
+      }));
     } catch (e) {
       if (mounted) setState(() => _loading = false);
     }
@@ -259,7 +259,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                                 'studentId': studentId,
                                 'items': [{'description': descCtrl.text.trim(), 'amount': amount, 'category': 'tuition'}],
                                 'semester': 2,
-                                'academicYear': '2025/2026',
+                                        'academicYear': '2025/2026',
                                 'dueDate': '2026-06-30',
                               });
                               if (mounted) {
@@ -398,7 +398,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
 
     // Inject dummy fees so Skeletonizer has UI to render placeholders against.
     if (_loading && _fees.isEmpty) {
-      _fees = List.generate(4, (i) => {
+      _fees = List.generate(4, (i) => (<String, dynamic>{
         '_id': 'skeleton_$i',
         'status': i.isEven ? 'paid' : 'unpaid',
         'student': {'_id': 'stu_$i', 'name': 'Loading Student', 'studentId': 'CB00000'},
@@ -406,8 +406,8 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
         'totalAmount': 1234.0,
         'paidAmount': i.isEven ? 1234.0 : 0.0,
         'semester': 1,
-        'academicYear': '2025/2026',
-      });
+                'academicYear': '2025/2026',
+      }));
     }
 
     return Scaffold(
@@ -529,7 +529,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                   ),
                     ),
                   ],
-                ))),
+                )),
 
                 const SizedBox(height: 16),
 
