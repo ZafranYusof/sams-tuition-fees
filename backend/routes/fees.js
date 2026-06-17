@@ -110,11 +110,11 @@ router.post('/pay', auth, async (req, res) => {
     const payment = new Payment({
       student: req.user.id,
       fee: feeId,
-      amount: actualAmount,
-      method: 'fpx',
+      paymentAmount: actualAmount,
+      paymentMethod: 'fpx',
       bank,
-      transactionId,
-      status: 'success',
+      paymentTxnRef: transactionId,
+      paymentStatus: 'completed',
       receipt: `RCP-${Date.now()}`
     });
     await payment.save();
@@ -196,7 +196,7 @@ router.get('/', auth, adminOnly, async (req, res) => {
     const limit = parseInt(req.query.limit) || 100;
     const skip = (page - 1) * limit;
     
-    const fees = await Fee.find().populate('student', 'name studentId').skip(skip).limit(limit).sort({ createdAt: -1 });
+    const fees = await Fee.find().populate('student', 'studName studentId major').skip(skip).limit(limit).sort({ createdAt: -1 });
     const total = await Fee.countDocuments();
     res.json(fees.length <= 100 ? fees : { fees, total, page, pages: Math.ceil(total / limit) });
   } catch (err) {

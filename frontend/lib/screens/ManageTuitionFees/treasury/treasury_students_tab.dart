@@ -100,11 +100,11 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
       
       // Determine worst status
       final feeStatus = f['feeStatus'] ?? 'unpaid';
-      final currentStatus = grouped[studentId]!['status'] as String;
+      final currentStatus = grouped[studentId]!['feeStatus'] as String;
       if (feeStatus == 'unpaid' || feeStatus == 'overdue') {
-        grouped[studentId]!['status'] = 'unpaid';
+        grouped[studentId]!['feeStatus'] = 'unpaid';
       } else if (feeStatus == 'partial' && currentStatus != 'unpaid') {
-        grouped[studentId]!['status'] = 'partial';
+        grouped[studentId]!['feeStatus'] = 'partial';
       }
     }
     return grouped.values.toList();
@@ -113,7 +113,7 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
   List<Map<String, dynamic>> get _filtered => _students.where((s) {
     final student = s['student'] ?? {};
     final q = _query.toLowerCase();
-    final matchQ = q.isEmpty || (student['name'] ?? '').toString().toLowerCase().contains(q) || (student['studentId'] ?? '').toString().toLowerCase().contains(q);
+    final matchQ = q.isEmpty || (student['studName'] ?? '').toString().toLowerCase().contains(q) || (student['studentId'] ?? '').toString().toLowerCase().contains(q);
     final status = s['feeStatus'] ?? 'unpaid';
     final matchF = _filter == 'all' ||
         (_filter == 'paid' && status == 'paid') ||
@@ -131,7 +131,7 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
       _fees = List.generate(5, (i) => (<String, dynamic>{
         '_id': 'skeleton_$i',
         'status': 'unpaid',
-        'student': {'_id': 'stu_$i', 'name': 'Loading Student', 'studentId': 'CB00000', 'program': 'Computer Science'},
+        'student': {'_id': 'stu_$i', 'studName': 'Loading Student', 'studentId': 'CB00000', 'major': 'Computer Science'},
         'feeAmount': 1234.0,
         'paidAmount': 0.0,
       }));
@@ -247,7 +247,7 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
             final s = _filtered[i];
             final student = s['student'] ?? {};
             final studentId = student['_id'] ?? student['studentId'] ?? '';
-            final studentName = student['name'] ?? 'Student';
+            final studentName = student['studName'] ?? 'Student';
             final status = s['feeStatus'] ?? 'unpaid';
             final balance = ((s['feeAmount'] ?? 0) as num).toDouble() - ((s['paidAmount'] ?? 0) as num).toDouble();
             final isPaid = status == 'paid';
@@ -294,17 +294,17 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
                     Container(
                       width: 42, height: 42,
                       decoration: BoxDecoration(color: SAMsTheme.primary.withValues(alpha: 0.15), shape: BoxShape.circle),
-                      child: Center(child: Text(((student['name'] ?? 'S') as String).isNotEmpty ? (student['name'] as String)[0].toUpperCase() : 'S', style: const TextStyle(color: SAMsTheme.primary, fontWeight: FontWeight.w700, fontSize: 16))),
+                      child: Center(child: Text(((student['studName'] ?? 'S') as String).isNotEmpty ? (student['studName'] as String)[0].toUpperCase() : 'S', style: const TextStyle(color: SAMsTheme.primary, fontWeight: FontWeight.w700, fontSize: 16))),
                     ),
                     const SizedBox(width: 12),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(
-                        student['name'] ?? tr('unknown'),
+                        student['studName'] ?? tr('unknown'),
                         style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${student['studentId'] ?? ''} \u00b7 ${student['program'] ?? ''} \u00b7 $feeCount ${tr('fees').toLowerCase()}',
+                        '${student['studentId'] ?? ''} \u00b7 ${student['major'] ?? ''} \u00b7 $feeCount ${tr('fees').toLowerCase()}',
                         style: GoogleFonts.jetBrainsMono(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color),
                       ),
                       const SizedBox(height: 6),
@@ -410,18 +410,18 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
               Container(
                 width: 48, height: 48,
                 decoration: BoxDecoration(color: SAMsTheme.primary.withValues(alpha: 0.15), shape: BoxShape.circle),
-                child: Center(child: Text(((student['name'] ?? 'S') as String).isNotEmpty ? (student['name'] as String)[0].toUpperCase() : 'S', style: const TextStyle(color: SAMsTheme.primary, fontWeight: FontWeight.w700, fontSize: 20))),
+                child: Center(child: Text(((student['studName'] ?? 'S') as String).isNotEmpty ? (student['studName'] as String)[0].toUpperCase() : 'S', style: const TextStyle(color: SAMsTheme.primary, fontWeight: FontWeight.w700, fontSize: 20))),
               ),
               const SizedBox(width: 14),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(student['name'] ?? tr('unknown'), style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
+                Text(student['studName'] ?? tr('unknown'), style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
                 Text(student['studentId'] ?? '', style: GoogleFonts.jetBrainsMono(fontSize: 12, color: t.textTheme.bodySmall?.color)),
               ])),
             ]),
             const SizedBox(height: 16),
             Container(width: double.infinity, height: 1, color: t.dividerColor),
             const SizedBox(height: 16),
-            _previewRow(tr('program'), student['program'] ?? 'N/A', t),
+            _previewRow(tr('major'), student['major'] ?? 'N/A', t),
             _previewRow(tr('total_due'), 'RM ${totalDue.toStringAsFixed(2)}', t),
             _previewRow(tr('total_paid'), 'RM ${totalPaid.toStringAsFixed(2)}', t),
             _previewRow(tr('balance'), 'RM ${(totalDue - totalPaid).toStringAsFixed(2)}', t),

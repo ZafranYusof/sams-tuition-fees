@@ -142,15 +142,15 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
   String get _semester {
     if (_fees.isEmpty) return 'Sem 1, 2025/2026';
     final f = _fees.first;
-    final sem = f['semester'] ?? 1;
+    final sem = f['feeSemester'] ?? 1;
     final year = f['academicYear'] ?? '2025/2026';
     return 'Sem $sem, $year';
   }
 
   DateTime? get _dueDate {
     for (var f in _fees) {
-      if ((f['feeStatus'] ?? '') != 'paid' && f['dueDate'] != null) {
-        return DateTime.tryParse(f['dueDate'].toString());
+      if ((f['feeStatus'] ?? '') != 'paid' && f['feeDueDate'] != null) {
+        return DateTime.tryParse(f['feeDueDate'].toString());
       }
     }
     return null;
@@ -180,7 +180,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
 
   Map<String, dynamic>? get _lastPayment {
     if (_payments.isEmpty) return null;
-    final successful = _payments.where((p) => p['status'] == 'success').toList();
+    final successful = _payments.where((p) => p['paymentStatus'] == 'completed').toList();
     return successful.isNotEmpty ? successful.first : null;
   }
 
@@ -244,7 +244,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
         '_id': 'skeleton_$i',
         'status': 'unpaid',
         'items': [{'description': 'Loading fee item', 'amount': 1234.0}],
-        'totalAmount': 1234.0,
+        'feeAmount': 1234.0,
         'paidAmount': 0.0,
         'semester': 1,
         'academicYear': '2025/2026',
@@ -485,7 +485,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                   final totalAmt = ((fee['feeAmount'] ?? 0) as num).toDouble();
                   final paidAmt = ((fee['paidAmount'] ?? 0) as num).toDouble();
                   final balanceAmt = totalAmt - paidAmt;
-                  final semLabel = 'Sem ${fee['semester'] ?? '-'}, ${fee['academicYear'] ?? ''}';
+                  final semLabel = 'Sem ${fee['feeSemester'] ?? '-'}, ${fee['academicYear'] ?? ''}';
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Hero(
@@ -561,7 +561,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                                     child: Row(children: [
                                       Expanded(child: Text(item['description']?.toString() ?? '',
                                         style: GoogleFonts.inter(fontSize: 12, color: t.textTheme.bodySmall?.color))),
-                                      Text('RM ${((item['amount'] ?? 0) as num).toStringAsFixed(2)}',
+                                      Text('RM ${((item['paymentAmount'] ?? 0) as num).toStringAsFixed(2)}',
                                         style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500,
                                           color: isPaidFee ? SAMsTheme.success : t.colorScheme.onSurface,
                                           decoration: isPaidFee ? TextDecoration.lineThrough : null)),
@@ -608,13 +608,13 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                       ),
                       const SizedBox(width: 14),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(_fmtRm(((_lastPayment!['amount'] ?? 0) as num).toDouble()), style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
+                        Text(_fmtRm(((_lastPayment!['paymentAmount'] ?? 0) as num).toDouble()), style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
                         const SizedBox(height: 2),
                         Text(
-                          _lastPayment!['paidAt'] != null
-                            ? _lastPayment!['paidAt'].toString().length >= 10
-                              ? _lastPayment!['paidAt'].toString().substring(0, 10)
-                              : _lastPayment!['paidAt'].toString()
+                          _lastPayment!['paymentDate'] != null
+                            ? _lastPayment!['paymentDate'].toString().length >= 10
+                              ? _lastPayment!['paymentDate'].toString().substring(0, 10)
+                              : _lastPayment!['paymentDate'].toString()
                             : '',
                           style: GoogleFonts.inter(fontSize: 11, color: t.textTheme.bodySmall?.color ?? Colors.grey),
                         ),
@@ -622,7 +622,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(color: SAMsTheme.accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
-                        child: Text('via ${_lastPayment!['method']?.toUpperCase() ?? 'FPX'}', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: SAMsTheme.accent)),
+                        child: Text('via ${_lastPayment!['paymentMethod']?.toUpperCase() ?? 'FPX'}', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: SAMsTheme.accent)),
                       ),
                     ]),
                   ),

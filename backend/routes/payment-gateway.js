@@ -108,7 +108,7 @@ router.get('/fpx/callback', async (req, res) => {
     if (payment && payment.paymentStatus === 'pending') {
       // status_id: 1 = success, 2 = pending, 3 = failed
       if (status_id === '1') {
-        payment.paymentStatus = 'success';
+        payment.paymentStatus = 'completed';
         payment.receipt = `RCP-${Date.now()}`;
 
         // Fetch real bank name from ToyibPay
@@ -139,7 +139,7 @@ router.get('/fpx/callback', async (req, res) => {
             { _id: payment.fee },
             {
               $inc: { paidAmount: actualAmount },
-              $set: { status: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
+              { $set: { feeStatus: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
             }
           );
         }
@@ -192,7 +192,7 @@ router.post('/fpx/webhook', async (req, res) => {
     const payment = await Payment.findOne({ paymentTxnRef: billcode });
     if (payment && payment.paymentStatus === 'pending') {
       if (status_id === '1') {
-        payment.paymentStatus = 'success';
+        payment.paymentStatus = 'completed';
         payment.receipt = `RCP-${Date.now()}`;
 
         // Fetch real bank from ToyibPay
@@ -220,7 +220,7 @@ router.post('/fpx/webhook', async (req, res) => {
             { _id: payment.fee },
             {
               $inc: { paidAmount: actualAmount },
-              $set: { status: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
+              { $set: { feeStatus: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
             }
           );
         }
@@ -331,7 +331,7 @@ router.get('/card/success', async (req, res) => {
     const payment = await Payment.findOne({ paymentTxnRef: session_id });
 
     if (payment && payment.paymentStatus === 'pending' && session.payment_status === 'paid') {
-      payment.paymentStatus = 'success';
+      payment.paymentStatus = 'completed';
       payment.receipt = `RCP-${Date.now()}`;
       await payment.save();
 
@@ -343,7 +343,7 @@ router.get('/card/success', async (req, res) => {
           { _id: payment.fee },
           {
             $inc: { paidAmount: actualAmount },
-            $set: { status: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
+            { $set: { feeStatus: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
           }
         );
       }
@@ -374,7 +374,7 @@ router.post('/card/confirm', auth, async (req, res) => {
 
     if (session.payment_status === 'paid') {
       if (payment.paymentStatus === 'pending') {
-        payment.paymentStatus = 'success';
+        payment.paymentStatus = 'completed';
         payment.receipt = `RCP-${Date.now()}`;
         await payment.save();
 
@@ -386,12 +386,12 @@ router.post('/card/confirm', auth, async (req, res) => {
             { _id: payment.fee },
             {
               $inc: { paidAmount: actualAmount },
-              $set: { status: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
+              { $set: { feeStatus: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
             }
           );
         }
       }
-      res.json({ status: 'success', payment });
+      res.json({ paymentStatus: 'completed', payment });
     } else {
       res.json({ status: 'pending', payment });
     }
@@ -420,7 +420,7 @@ router.post('/card/webhook', express.raw({ type: 'application/json' }), async (r
       const payment = await Payment.findOne({ paymentTxnRef: paymentIntent.id });
       
       if (payment && payment.paymentStatus === 'pending') {
-        payment.paymentStatus = 'success';
+        payment.paymentStatus = 'completed';
         payment.receipt = `RCP-${Date.now()}`;
         await payment.save();
 

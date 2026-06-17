@@ -84,8 +84,8 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
 
   Future<void> _continuePay(Map<String, dynamic> p) async {
     HapticFeedback.mediumImpact();
-    final txnId = p['transactionId'] ?? '';
-    final method = p['method'] ?? 'fpx';
+    final txnId = p['paymentTxnRef'] ?? '';
+    final method = p['paymentMethod'] ?? 'fpx';
     String paymentUrl;
 
     if (txnId.isEmpty) {
@@ -109,17 +109,17 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
   List<dynamic> get _filtered {
     final list = _payments.where((p) {
       final q = _query.toLowerCase();
-      final matchQ = q.isEmpty || (p['transactionId'] ?? '').toLowerCase().contains(q) || (p['bank'] ?? '').toLowerCase().contains(q);
-      final matchF = _filter == 'all' || p['status'] == _filter;
+      final matchQ = q.isEmpty || (p['paymentTxnRef'] ?? '').toLowerCase().contains(q) || (p['bank'] ?? '').toLowerCase().contains(q);
+      final matchF = _filter == 'all' || p['paymentStatus'] == _filter;
       return matchQ && matchF;
     }).toList();
 
     list.sort((a, b) {
       switch (_sort) {
-        case 'date_asc': return (a['paidAt'] ?? '').compareTo(b['paidAt'] ?? '');
-        case 'amount_desc': return ((b['amount'] ?? 0) as num).compareTo((a['amount'] ?? 0) as num);
-        case 'amount_asc': return ((a['amount'] ?? 0) as num).compareTo((b['amount'] ?? 0) as num);
-        default: return (b['paidAt'] ?? '').compareTo(a['paidAt'] ?? '');
+        case 'date_asc': return (a['paymentDate'] ?? '').compareTo(b['paymentDate'] ?? '');
+        case 'amount_desc': return ((b['paymentAmount'] ?? 0) as num).compareTo((a['paymentAmount'] ?? 0) as num);
+        case 'amount_asc': return ((a['paymentAmount'] ?? 0) as num).compareTo((b['paymentAmount'] ?? 0) as num);
+        default: return (b['paymentDate'] ?? '').compareTo(a['paymentDate'] ?? '');
       }
     });
     return list;
@@ -284,7 +284,7 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
             _quickAction(Iconsax.eye, lp.t('view_receipt', loc), muted, () { Navigator.pop(context); _viewPaymentDetail(p); }),
             _quickAction(Iconsax.share, lp.t('share_receipt', loc), muted, () { Navigator.pop(context); _shareReceipt(p); }),
             _quickAction(Iconsax.copy, 'Copy Reference', muted, () {
-              Clipboard.setData(ClipboardData(text: p['transactionId'] ?? ''));
+              Clipboard.setData(ClipboardData(text: p['paymentTxnRef'] ?? ''));
               Navigator.pop(context);
               AppToast.success(context, 'Reference copied');
             }),
@@ -304,25 +304,25 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
 
   void _shareReceipt(Map<String, dynamic> p) {
     HapticFeedback.mediumImpact();
-    AppToast.info(context, 'Sharing receipt for ${_shortId(p['transactionId'] ?? '')}');
+    AppToast.info(context, 'Sharing receipt for ${_shortId(p['paymentTxnRef'] ?? '')}');
   }
 
   void _viewPaymentDetail(Map<String, dynamic> p) {
     HapticFeedback.lightImpact();
     final loc = ref.read(lp.languageProvider).locale;
-    final status = p['status'] ?? 'pending';
-    final isSuccess = status == 'success';
+    final status = p['paymentStatus'] ?? 'pending';
+    final isSuccess = status == 'completed';
     final isFailed = status == 'failed';
     final col = isSuccess ? const Color(0xFF2E7D32) : (isFailed ? const Color(0xFFC62828) : SAMsTheme.accent);
 
-    final bank = p['bank'] as String? ?? (p['method'] == 'card' ? 'Card Payment' : 'FPX Bank');
+    final bank = p['bank'] as String? ?? (p['paymentMethod'] == 'card' ? 'Card Payment' : 'FPX Bank');
     String description = 'Tuition Fee Payment';
     if (p['fee'] != null && p['fee'] is Map) {
       final fee = p['fee'] as Map<String, dynamic>;
       if (fee['items'] != null && (fee['items'] as List).isNotEmpty) {
         description = (fee['items'] as List).map((item) => item['description'] ?? '').where((d) => d.isNotEmpty).join(', ');
-      } else if (fee['semester'] != null) {
-        description = 'Semester ${fee['semester']} Fees';
+      } else if (fee['feeSemester'] != null) {
+        description = 'Semester ${fee['feeSemester']} Fees';
       }
       if (description.isEmpty) description = 'Tuition Fee Payment';
     }
@@ -357,7 +357,7 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
             Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Text('RM', style: GoogleFonts.inter(color: muted, fontSize: 16, fontWeight: FontWeight.w400)),
               const SizedBox(width: 4),
-              Text(((p['amount'] ?? 0) as num).toStringAsFixed(2), style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 32, fontWeight: FontWeight.w400, letterSpacing: -1, height: 1)),
+              Text(((p['paymentAmount'] ?? 0) as num).toStringAsFixed(2), style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 32, fontWeight: FontWeight.w400, letterSpacing: -1, height: 1)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -372,10 +372,10 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
             const SizedBox(height: 20),
             Divider(color: muted.withValues(alpha: 0.15), height: 1),
             const SizedBox(height: 16),
-            _sheetRow('Reference', _shortId(p['transactionId'] ?? ''), muted, t),
-            _sheetRow('Date', _formatDate(p['paidAt']), muted, t),
-            _sheetRow('Time', _formatTime(p['paidAt']), muted, t),
-            _sheetRow('Method', p['method'] == 'card' ? 'Card (Stripe)' : 'FPX Online Banking', muted, t),
+            _sheetRow('Reference', _shortId(p['paymentTxnRef'] ?? ''), muted, t),
+            _sheetRow('Date', _formatDate(p['paymentDate']), muted, t),
+            _sheetRow('Time', _formatTime(p['paymentDate']), muted, t),
+            _sheetRow('Method', p['paymentMethod'] == 'card' ? 'Card (Stripe)' : 'FPX Online Banking', muted, t),
             _sheetRow('Bank', bank, muted, t),
             _sheetRow('Description', description, muted, t),
             const SizedBox(height: 20),
@@ -402,21 +402,21 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
     );
   }
 
-  double get _totalPaid => _payments.where((p) => p['status'] == 'success').fold(0.0, (sum, p) => sum + ((p['amount'] ?? 0) as num).toDouble());
-  double get _totalPending => _payments.where((p) => p['status'] == 'pending').fold(0.0, (sum, p) => sum + ((p['amount'] ?? 0) as num).toDouble());
-  double get _totalFailed => _payments.where((p) => p['status'] == 'failed').fold(0.0, (sum, p) => sum + ((p['amount'] ?? 0) as num).toDouble());
+  double get _totalPaid => _payments.where((p) => p['paymentStatus'] == 'completed').fold(0.0, (sum, p) => sum + ((p['paymentAmount'] ?? 0) as num).toDouble());
+  double get _totalPending => _payments.where((p) => p['paymentStatus'] == 'pending').fold(0.0, (sum, p) => sum + ((p['paymentAmount'] ?? 0) as num).toDouble());
+  double get _totalFailed => _payments.where((p) => p['paymentStatus'] == 'failed').fold(0.0, (sum, p) => sum + ((p['paymentAmount'] ?? 0) as num).toDouble());
 
   // SPARKLINE DATA - last 30 days payment amounts
   List<double> _sparklineData() {
     final now = DateTime.now();
     final buckets = List<double>.filled(30, 0);
     for (final p in _payments) {
-      if (p['status'] != 'success') continue;
-      final d = DateTime.tryParse(p['paidAt']?.toString() ?? '')?.toLocal();
+      if (p['paymentStatus'] != 'success') continue;
+      final d = DateTime.tryParse(p['paymentDate']?.toString() ?? '')?.toLocal();
       if (d == null) continue;
       final daysAgo = now.difference(d).inDays;
       if (daysAgo >= 0 && daysAgo < 30) {
-        buckets[29 - daysAgo] += ((p['amount'] ?? 0) as num).toDouble();
+        buckets[29 - daysAgo] += ((p['paymentAmount'] ?? 0) as num).toDouble();
       }
     }
     return buckets;
@@ -638,9 +638,9 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
 
   // SUMMARY BACK - breakdown
   Widget _buildSummaryBack(Color cardBg, Color muted, Color accent, ThemeData t) {
-    final successCount = _payments.where((p) => p['status'] == 'success').length;
-    final pendingCount = _payments.where((p) => p['status'] == 'pending').length;
-    final failedCount = _payments.where((p) => p['status'] == 'failed').length;
+    final successCount = _payments.where((p) => p['paymentStatus'] == 'completed').length;
+    final pendingCount = _payments.where((p) => p['paymentStatus'] == 'pending').length;
+    final failedCount = _payments.where((p) => p['paymentStatus'] == 'failed').length;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -676,7 +676,7 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
   Widget _buildFilterTabs(Color muted, Color accent, ThemeData t) {
     final filters = ['all', 'success', 'failed', 'pending'];
     final labels = ['All', 'Success', 'Failed', 'Pending'];
-    final counts = filters.map((f) => f == 'all' ? _payments.length : _payments.where((p) => p['status'] == f).length).toList();
+    final counts = filters.map((f) => f == 'all' ? _payments.length : _payments.where((p) => p['paymentStatus'] == f).length).toList();
     final currentIndex = filters.indexOf(_filter);
 
     return Padding(
@@ -758,17 +758,17 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
 
   // PAYMENT CARD - the meat
   Widget _buildPaymentCard(dynamic p, int i, Color muted, Color accent, Color cardBg, ThemeData t, bool isDark) {
-    final status = p['status'] ?? 'pending';
-    final isSuccess = status == 'success';
+    final status = p['paymentStatus'] ?? 'pending';
+    final isSuccess = status == 'completed';
     final isFailed = status == 'failed';
     final isPending = status == 'pending';
     final statusColor = isSuccess ? const Color(0xFF2E7D32) : (isFailed ? const Color(0xFFC62828) : accent);
 
-    final txnId = p['transactionId'] ?? '';
-    final amount = ((p['amount'] ?? 0) as num).toStringAsFixed(2);
-    final bank = p['bank'] as String? ?? (p['method'] == 'card' ? 'Card' : 'FPX');
-    final smartDateStr = _smartDate(p['paidAt']);
-    final isRecent = _isRecent(p['paidAt']);
+    final txnId = p['paymentTxnRef'] ?? '';
+    final amount = ((p['paymentAmount'] ?? 0) as num).toStringAsFixed(2);
+    final bank = p['bank'] as String? ?? (p['paymentMethod'] == 'card' ? 'Card' : 'FPX');
+    final smartDateStr = _smartDate(p['paymentDate']);
+    final isRecent = _isRecent(p['paymentDate']);
 
     // Spotlight: dim non-matching when searching
     final isMatch = _query.isEmpty || (txnId).toString().toLowerCase().contains(_query.toLowerCase()) || bank.toLowerCase().contains(_query.toLowerCase());

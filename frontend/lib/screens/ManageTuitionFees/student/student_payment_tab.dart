@@ -113,7 +113,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
           for (var idx = 0; idx < items.length; idx++) {
             final item = items[idx] as Map?;
             if (item == null) continue;
-            final amount = ((item['amount'] ?? 0) as num).toDouble();
+            final amount = ((item['paymentAmount'] ?? 0) as num).toDouble();
             final paid = ((item['paidAmount'] ?? 0) as num).toDouble();
             if (amount - paid > 0.01) {
               if (fid == widget.targetFeeId) {
@@ -155,8 +155,8 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
 
   String get _deadlineStr {
     for (var f in _fees) {
-      if (f['dueDate'] != null) {
-        final d = DateTime.tryParse(f['dueDate'].toString());
+      if (f['feeDueDate'] != null) {
+        final d = DateTime.tryParse(f['feeDueDate'].toString());
         if (d != null) {
           final months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
           return '${d.day} ${months[d.month]} ${d.year}';
@@ -168,8 +168,8 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
 
   int get _daysLeft {
     for (var f in _fees) {
-      if (f['dueDate'] != null) {
-        final d = DateTime.tryParse(f['dueDate'].toString());
+      if (f['feeDueDate'] != null) {
+        final d = DateTime.tryParse(f['feeDueDate'].toString());
         if (d != null) return d.difference(DateTime.now()).inDays.clamp(0, 999);
       }
     }
@@ -328,7 +328,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
           ));
           if (webResult == true || webResult == null) {
             final status = await ApiService.get('/payment/fpx/status/$billCode');
-            if (status['status'] == 'success') { success = true; txnId = billCode; }
+            if (status['paymentStatus'] == 'completed') { success = true; txnId = billCode; }
             else { if (mounted) AppToast.warning(context, 'Payment pending or failed'); }
           }
         }
@@ -348,7 +348,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
           ));
           if (webResult == true || webResult == null) {
             final confirm = await ApiService.post('/payment/card/confirm', {'paymentIntentId': sessionId});
-            if (confirm['status'] == 'success') { success = true; txnId = sessionId; }
+            if (confirm['paymentStatus'] == 'completed') { success = true; txnId = sessionId; }
             else { if (mounted) AppToast.warning(context, 'Card payment pending or failed'); }
           }
         }
@@ -390,7 +390,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
         '_id': 'skeleton_$i',
         'status': 'unpaid',
         'items': [{'description': 'Loading fee item', 'amount': 1234.0}],
-        'totalAmount': 1234.0,
+        'feeAmount': 1234.0,
         'paidAmount': 0.0,
         'semester': 1,
         'academicYear': '2025/2026',
@@ -801,7 +801,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
           ),
           child: Column(children: [
             _receiptRow(t, 'Reference', _receipt!['txn_id']),
-            _receiptRow(t, 'Amount', 'RM ${((_receipt!['amount'] as num).toDouble()).toStringAsFixed(2)}'),
+            _receiptRow(t, 'Amount', 'RM ${((_receipt!['paymentAmount'] as num).toDouble()).toStringAsFixed(2)}'),
             _receiptRow(t, 'Channel', _receipt!['bank']),
             _receiptRow(t, 'Date', DateTime.now().toString().substring(0, 16)),
             _receiptRow(t, 'Status', 'Completed', isLast: true, valueColor: SAMsTheme.success),
@@ -822,7 +822,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
                 try {
                   final dir = await getApplicationDocumentsDirectory();
                   final txnId = _receipt!['txn_id'] ?? 'unknown';
-                  final amount = ((_receipt!['amount'] as num?)?.toDouble() ?? 0).toStringAsFixed(2);
+                  final amount = ((_receipt!['paymentAmount'] as num?)?.toDouble() ?? 0).toStringAsFixed(2);
                   final bank = _receipt!['bank'] ?? 'FPX';
                   final date = DateTime.now().toString().substring(0, 16);
                   final receiptText = '═══════════════════════════════\n'
@@ -860,7 +860,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
               onTap: () async {
                 HapticFeedback.lightImpact();
                 final txnId = _receipt!['txn_id'] ?? 'unknown';
-                final amount = ((_receipt!['amount'] as num?)?.toDouble() ?? 0).toStringAsFixed(2);
+                final amount = ((_receipt!['paymentAmount'] as num?)?.toDouble() ?? 0).toStringAsFixed(2);
                 final bank = _receipt!['bank'] ?? 'FPX';
                 final date = DateTime.now().toString().substring(0, 16);
 

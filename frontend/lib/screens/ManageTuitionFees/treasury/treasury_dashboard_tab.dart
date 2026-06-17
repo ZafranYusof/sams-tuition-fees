@@ -143,7 +143,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
               itemBuilder: (_, i) {
                 final f = _fees[i];
                 final status = f['feeStatus'] ?? 'unpaid';
-                final studentName = f['student']?['name'] ?? f['student']?['studentId'] ?? 'Student';
+                final studentName = f['student']?['studName'] ?? f['student']?['studentId'] ?? 'Student';
                 final amount = ((f['feeAmount'] ?? 0) as num).toDouble();
                 final paid = ((f['paidAmount'] ?? 0) as num).toDouble();
                 final col = status == 'paid' ? SAMsTheme.success : (status == 'partial' ? SAMsTheme.warning : SAMsTheme.error);
@@ -316,7 +316,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                   child: Row(children: [
                     Container(width: 6, height: 6, decoration: const BoxDecoration(color: SAMsTheme.error, shape: BoxShape.circle)),
                     const SizedBox(width: 8),
-                    Text('${f['student']?['name'] ?? 'Student'} — RM ${((f['feeAmount'] ?? 0) as num).toStringAsFixed(0)}', style: GoogleFonts.inter(fontSize: 11, color: isDark ? const Color(0xFF94989E) : Colors.grey)),
+                    Text('${f['student']?['studName'] ?? 'Student'} — RM ${((f['feeAmount'] ?? 0) as num).toStringAsFixed(0)}', style: GoogleFonts.inter(fontSize: 11, color: isDark ? const Color(0xFF94989E) : Colors.grey)),
                   ]),
                 )),
                 if (unpaidFees.length > 3) Padding(
@@ -392,7 +392,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final user = ref.watch(authProvider).user;
-    final name = user?['name'] ?? 'Admin';
+    final name = user?['studName'] ?? 'Admin';
     final locale = ref.watch(lp.languageProvider).locale;
     String tr(String k) => lp.translations[locale]?[k] ?? lp.translations['en']?[k] ?? k;
 
@@ -401,7 +401,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
       _fees = List.generate(4, (i) => (<String, dynamic>{
         '_id': 'skeleton_$i',
         'status': i.isEven ? 'paid' : 'unpaid',
-        'student': {'_id': 'stu_$i', 'name': 'Loading Student', 'studentId': 'CB00000'},
+        'student': {'_id': 'stu_$i', 'studName': 'Loading Student', 'studentId': 'CB00000'},
         'items': [{'description': 'Loading fee', 'amount': 1234.0}],
         'totalAmount': 1234.0,
         'paidAmount': i.isEven ? 1234.0 : 0.0,
@@ -595,7 +595,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                 const SizedBox(height: 12),
                 ..._fees.take(5).map((f) {
                   final status = f['feeStatus'] ?? 'unpaid';
-                  final studentName = f['student']?['name'] ?? f['student']?['studentId'] ?? 'Student';
+                  final studentName = f['student']?['studName'] ?? f['student']?['studentId'] ?? 'Student';
                   final amount = ((f['feeAmount'] ?? 0) as num).toDouble();
                   final paid = ((f['paidAmount'] ?? 0) as num).toDouble();
                   final col = status == 'paid' ? SAMsTheme.success : (status == 'partial' ? SAMsTheme.warning : SAMsTheme.error);
