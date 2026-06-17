@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const { auth, adminOnly } = require('../middleware/auth');
+const fcm = require('../services/fcmService');
 
 const router = express.Router();
 
@@ -44,6 +45,8 @@ router.post('/send-reminder', auth, adminOnly, async (req, res) => {
     if (!Array.isArray(studentIds) || studentIds.length === 0) {
       return res.status(400).json({ error: 'studentIds array required' });
     }
+    
+    // Create notifications in database
     const notifications = studentIds.map(sid => ({
       studentId: sid,
       title: 'Payment Reminder',
@@ -52,7 +55,44 @@ router.post('/send-reminder', auth, adminOnly, async (req, res) => {
       read: false,
     }));
     const created = await Notification.insertMany(notifications);
-    res.status(201).json({ success: true, count: created.length });
+    
+    // Send FCM push notifications to each student
+    const Student = require('../models/Student');
+    let pushSent = 0;
+    let pushFailed = 0;
+    
+    for (const sid of studentIds) {
+      try {
+        // Find student by studentId to get MongoDB _id
+        const student = await Student.findOne({ studentId: sid }).select('_id');
+        if (student) {
+          const result = await fcm.sendToUser(student._id.toString(), {
+            title: 'Payment Reminder',
+            body: message || 'You have outstanding tuition fees. Please make payment before the deadline.',
+            data: { type: 'reminder' }
+          });
+          if (result.success) {
+            pushSent++;
+          } else {
+            pushFailed++;
+            console.log(`[Reminder] FCM failed for ${sid}: ${result.reason}`);
+          }
+        } else {
+          pushFailed++;
+          console.log(`[Reminder] Student ${sid} not found`);
+        }
+      } catch (err) {
+        pushFailed++;
+        console.error(`[Reminder] Error sending to ${sid}:`, err.message);
+      }
+    }
+    
+    res.status(201).json({ 
+      success: true, 
+      count: created.length,
+      pushSent,
+      pushFailed
+    });
   } catch (err) {
     console.error('Send reminder error:', err.message);
     res.status(500).json({ error: 'Failed to send reminders' });
