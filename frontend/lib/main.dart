@@ -7,6 +7,7 @@ import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/main_shell.dart';
 import 'providers/auth_provider.dart';
+import 'screens/ManageClassAttendanceSystem/LecturerDashboard.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +33,7 @@ class SAMsApp extends ConsumerWidget {
     if (authState.isInitializing) {
       home = const SplashScreen();
     } else {
-      home = authState.isAuthenticated ? const MainShell() : const LoginScreen();
+      home = authState.isAuthenticated ? const MainShell() : const LecturerDashboard();
     }
 
     return MaterialApp(

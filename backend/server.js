@@ -31,6 +31,9 @@ app.use('/api/payments', paymentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/payment', paymentGatewayRoutes);
 
+const attendanceRoutes = require('./routes/AttendanceRoute');
+app.use('/api/attendance', attendanceRoutes);
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

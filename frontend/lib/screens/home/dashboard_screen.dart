@@ -18,6 +18,7 @@ import '../auth/login_screen.dart';
 import '../fees/fees_screen.dart';
 import 'profile_screen.dart';
 import '../../widgets/page_transitions.dart';
+import '../ManageClassAttendanceSystem/StudentCourses.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -508,8 +509,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                         accent: accent,
                         onTap: () => Navigator.push(context, SlidePageRoute(page: const FeesScreen())),
                       ),
+                       _ModuleRow(
+                        index: '03',
+                        title: 'Attendance',
+                        subtitle: 'Balance, payments, receipts',
+                        accent: accent,
+                        onTap: () => Navigator.push(context, SlidePageRoute(page: const StudentCourses())),
+                      ),
                     ],
                   ),
+                  
                 ),
 
                 // ─── FEE SUMMARY: editorial composition ───
