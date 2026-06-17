@@ -145,11 +145,12 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
 
   double get _amount {
     if (_fees.isEmpty) return 0;
-    if (_selFeeIndex == 0) return _balance;
     final items = _unpaidItems;
-    final idx = _selFeeIndex - 1;
-    if (idx < 0 || idx >= items.length) return _balance;
-    return (items[idx]['balance'] as num).toDouble();
+    if (_selFeeIndex < 0 || _selFeeIndex >= items.length) {
+      // Default to first unpaid item if available
+      return items.isNotEmpty ? (items[0]['balance'] as num).toDouble() : 0;
+    }
+    return (items[_selFeeIndex]['balance'] as num).toDouble();
   }
 
   String get _deadlineStr {
@@ -235,22 +236,14 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
   }
 
   /// Returns the fee id for the currently-selected chip.
-  /// Index 0 = "All outstanding" → uses first unpaid fee id, falls back to 'all'.
-  /// Index 1+ = per-item selection → returns the fee id that owns that item.
+  /// Index 0+ = per-item selection → returns the fee id that owns that item.
   String _currentFeeId() {
-    if (_selFeeIndex == 0) {
-      for (var f in _fees) {
-        final bal = ((f['feeAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble();
-        if (bal > 0) return f['_id']?.toString() ?? 'all';
-      }
-      return widget.targetFeeId ?? 'all';
-    }
     final items = _unpaidItems;
-    final idx = _selFeeIndex - 1;
-    if (idx >= 0 && idx < items.length) {
-      return (items[idx]['feeId'] as String?) ?? 'all';
+    if (_selFeeIndex >= 0 && _selFeeIndex < items.length) {
+      return (items[_selFeeIndex]['feeId'] as String?) ?? 'all';
     }
-    return 'all';
+    // Default to first unpaid item
+    return items.isNotEmpty ? (items[0]['feeId'] as String?) ?? 'all' : (widget.targetFeeId ?? 'all');
   }
 
   /// Premium multi-step payment bottom sheet.
@@ -269,15 +262,12 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
       builder: (ctx) => _PaymentSheet(
         amount: _amount,
         deadline: _deadlineStr,
-        feeLabel: _selFeeIndex == 0
-            ? 'All outstanding fees'
-            : (() {
+        feeLabel: (() {
                 final items = _unpaidItems;
-                final idx = _selFeeIndex - 1;
-                if (idx >= 0 && idx < items.length) {
-                  return items[idx]['description'] as String;
+                if (_selFeeIndex >= 0 && _selFeeIndex < items.length) {
+                  return items[_selFeeIndex]['description'] as String;
                 }
-                return 'Tuition Fee';
+                return items.isNotEmpty ? items[0]['description'] as String : 'Tuition Fee';
               })(),
         initialMethod: _selMethod,
         initialBank: _selBank,
@@ -316,18 +306,15 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
       String targetFeeId = '';
       double payAmount = _amount;
 
-      if (_selFeeIndex == 0) {
-        for (var f in _fees) {
-          final bal = ((f['feeAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble();
-          if (bal > 0) { targetFeeId = f['_id']; break; }
-        }
-      } else {
-        final items = _unpaidItems;
-        final idx = _selFeeIndex - 1;
-        if (idx >= 0 && idx < items.length) {
-          targetFeeId = items[idx]['feeId'] as String;
-          payAmount = (items[idx]['balance'] as num).toDouble();
-        }
+      // Get the selected fee item
+      final items = _unpaidItems;
+      if (_selFeeIndex >= 0 && _selFeeIndex < items.length) {
+        targetFeeId = items[_selFeeIndex]['feeId'] as String;
+        payAmount = (items[_selFeeIndex]['balance'] as num).toDouble();
+      } else if (items.isNotEmpty) {
+        // Default to first unpaid item
+        targetFeeId = items[0]['feeId'] as String;
+        payAmount = (items[0]['balance'] as num).toDouble();
       }
 
       if (targetFeeId.isEmpty || payAmount <= 0) { setState(() { _paying = false; _currentStep = 0; }); if (mounted) AppToast.warning(context, 'No unpaid fee selected.'); return false; }
@@ -594,13 +581,12 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
           const SizedBox(height: 14),
           Text('Pay for', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: t.textTheme.bodySmall?.color)),
           const SizedBox(height: 8),
-          _feeChip('All outstanding', _balance, 0),
           ...List.generate(_allItems.length, (i) {
             final item = _allItems[i];
             return _feeChip(
               item['description'] as String,
               (item['balance'] as num).toDouble(),
-              i + 1,
+              i,
             );
           }),
         ],
