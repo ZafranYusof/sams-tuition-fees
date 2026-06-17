@@ -93,14 +93,12 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> with Si
           child: GlassCard(
             child: ListTile(
               contentPadding: const EdgeInsets.all(16),
-              title: Text(course['name'] ?? '', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w500)),
+              title: Text(course['courseName'] ?? '', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w500)),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 4),
-                  Text('${course['code']} | ${course['creditHours']} credits', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 12)),
-                  const SizedBox(height: 4),
-                  Text('${course['enrolled']}/${course['capacity']} enrolled', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12)),
+                  Text('${course['courseId']} | ${course['creditHours']} credits', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 12)),
                 ],
               ),
               trailing: ElevatedButton(
@@ -131,8 +129,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> with Si
           child: GlassCard(
             child: ListTile(
               contentPadding: const EdgeInsets.all(16),
-              title: Text(course['name'] ?? 'Unknown', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w500)),
-              subtitle: Text(course['code'] ?? '', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 12)),
+              title: Text(course['courseName'] ?? 'Unknown', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w500)),
+              subtitle: Text(course['courseId'] ?? '', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 12)),
               trailing: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
