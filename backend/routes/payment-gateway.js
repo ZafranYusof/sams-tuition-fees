@@ -26,6 +26,12 @@ router.post('/fpx/create', auth, async (req, res) => {
     const fee = await Fee.findById(feeId);
     if (!fee) return res.status(404).json({ error: 'Fee not found' });
 
+    // Cancel any stale pending payments for this fee (older than 15 min)
+    await Payment.updateMany(
+      { student: req.user.id, fee: feeId, paymentStatus: 'pending', expiresAt: { $lt: new Date() } },
+      { $set: { paymentStatus: 'failed' } }
+    );
+
     // Check for existing pending payment for this fee (avoid duplicate)
     const existingPayment = await Payment.findOne({
       student: req.user.id,
@@ -74,6 +80,16 @@ router.post('/fpx/create', auth, async (req, res) => {
     const result = await response.json();
 
     if (result && result[0] && result[0].BillCode) {
+      // Check if bill code already exists (ToyibPay sandbox can return same code)
+      const existingByCode = await Payment.findOne({ paymentTxnRef: result[0].BillCode });
+      if (existingByCode) {
+        return res.json({
+          billCode: existingByCode.paymentTxnRef,
+          paymentUrl: `${baseUrl}/${existingByCode.paymentTxnRef}`,
+          payment: existingByCode,
+        });
+      }
+
       // Save pending payment
       const payment = new Payment({
         student: req.user.id,
@@ -264,6 +280,12 @@ router.post('/card/create-intent', auth, async (req, res) => {
 
     const fee = await Fee.findById(feeId);
     if (!fee) return res.status(404).json({ error: 'Fee not found' });
+
+    // Cancel any stale pending payments for this fee (older than 15 min)
+    await Payment.updateMany(
+      { student: req.user.id, fee: feeId, paymentStatus: 'pending', expiresAt: { $lt: new Date() } },
+      { $set: { paymentStatus: 'failed' } }
+    );
 
     // Check for existing pending payment for this fee (avoid duplicate)
     const existingPayment = await Payment.findOne({
