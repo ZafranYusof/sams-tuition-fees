@@ -134,14 +134,14 @@ router.post('/', async (req, res) => {
 
     // 7. Seed courses for Open Registration
     const coursesData = [
-      { code: 'BCS1013', name: 'Programming Fundamentals', credits: 3, department: 'Computer Science' },
-      { code: 'BCS2013', name: 'Data Structures & Algorithms', credits: 3, department: 'Computer Science' },
-      { code: 'BCS2023', name: 'Object Oriented Programming', credits: 3, department: 'Computer Science' },
-      { code: 'BCS3013', name: 'Database Systems', credits: 3, department: 'Computer Science' },
-      { code: 'BMS1013', name: 'Calculus I', credits: 3, department: 'Mathematics' },
-      { code: 'BMS2013', name: 'Linear Algebra', credits: 3, department: 'Mathematics' },
-      { code: 'BEE1013', name: 'Basic Electrical Engineering', credits: 3, department: 'Electrical' },
-      { code: 'BME1013', name: 'Engineering Mechanics', credits: 3, department: 'Mechanical' },
+      { courseId: 'BCS1013', courseName: 'Programming Fundamentals', creditHours: 3 },
+      { courseId: 'BCS2013', courseName: 'Data Structures & Algorithms', creditHours: 3 },
+      { courseId: 'BCS2023', courseName: 'Object Oriented Programming', creditHours: 3 },
+      { courseId: 'BCS3013', courseName: 'Database Systems', creditHours: 3 },
+      { courseId: 'BMS1013', courseName: 'Calculus I', creditHours: 3 },
+      { courseId: 'BMS2013', courseName: 'Linear Algebra', creditHours: 3 },
+      { courseId: 'BEE1013', courseName: 'Basic Electrical Engineering', creditHours: 3 },
+      { courseId: 'BME1013', courseName: 'Engineering Mechanics', creditHours: 3 },
     ];
     
     const existingCourses = await Course.countDocuments();
