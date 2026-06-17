@@ -6,6 +6,31 @@ const Course = require('../models/ManageOpenRegistration/Course');
 const FacultyRegistrar = require('../models/FacultyRegistrar');
 const { auth } = require('../middleware/auth');
 
+// GET /registration/courses — List all available courses
+router.get('/courses', auth, async (req, res) => {
+  try {
+    const courses = await Course.find({}).sort({ code: 1 });
+    res.json(courses);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET /registration/my — Get current student's enrollments
+router.get('/my', auth, async (req, res) => {
+  try {
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ message: 'Student access required' });
+    }
+    const enrollments = await Enrollment.find({ student: req.user.id })
+      .populate('course')
+      .sort({ createdAt: -1 });
+    res.json(enrollments);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // POST /registration/open — FacultyRegistrar opens registration for a session
 router.post('/open', auth, async (req, res) => {
   try {

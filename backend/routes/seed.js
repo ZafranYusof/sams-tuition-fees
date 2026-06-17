@@ -6,6 +6,7 @@ const FacultyRegistrar = require('../models/FacultyRegistrar');
 const PusatAdab = require('../models/PusatAdab');
 const Treasury = require('../models/ManageTuitionFees/Treasury');
 const Fee = require('../models/ManageTuitionFees/Fee');
+const Course = require('../models/ManageOpenRegistration/Course');
 
 const router = express.Router();
 
@@ -129,6 +130,26 @@ router.post('/', async (req, res) => {
         fees: fees.map(f => ({ id: f._id, type: f.feeType, amount: f.feeAmount }))
       };
       results.push(`Cleaned ${deleted.deletedCount} old fee records, created ${fees.length} new ones`);
+    }
+
+    // 7. Seed courses for Open Registration
+    const coursesData = [
+      { code: 'BCS1013', name: 'Programming Fundamentals', credits: 3, department: 'Computer Science' },
+      { code: 'BCS2013', name: 'Data Structures & Algorithms', credits: 3, department: 'Computer Science' },
+      { code: 'BCS2023', name: 'Object Oriented Programming', credits: 3, department: 'Computer Science' },
+      { code: 'BCS3013', name: 'Database Systems', credits: 3, department: 'Computer Science' },
+      { code: 'BMS1013', name: 'Calculus I', credits: 3, department: 'Mathematics' },
+      { code: 'BMS2013', name: 'Linear Algebra', credits: 3, department: 'Mathematics' },
+      { code: 'BEE1013', name: 'Basic Electrical Engineering', credits: 3, department: 'Electrical' },
+      { code: 'BME1013', name: 'Engineering Mechanics', credits: 3, department: 'Mechanical' },
+    ];
+    
+    const existingCourses = await Course.countDocuments();
+    if (existingCourses === 0) {
+      const courses = await Course.insertMany(coursesData);
+      results.push(`Seeded ${courses.length} courses`);
+    } else {
+      results.push(`${existingCourses} courses already exist`);
     }
 
     res.json({ message: 'Seed completed', results, fees: feesResult });
