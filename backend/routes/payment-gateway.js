@@ -9,6 +9,31 @@ const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// ADMIN: Fix stuck payment by bill code (one-time fix)
+router.post('/fix-payment', auth, async (req, res) => {
+  try {
+    const { billCode } = req.body;
+    const payment = await Payment.findOne({ paymentTxnRef: billCode });
+    if (!payment) return res.status(404).json({ error: 'Payment not found' });
+    
+    payment.paymentStatus = 'completed';
+    payment.receipt = `RCP-${Date.now()}`;
+    await payment.save();
+
+    // Update fee paid amount
+    const fee = await Fee.findById(payment.fee);
+    if (fee) {
+      fee.feeAmountPaid = (fee.feeAmountPaid || 0) + payment.paymentAmount;
+      fee.feeStatus = fee.feeAmountPaid >= fee.feeAmount ? 'paid' : 'partial';
+      await fee.save();
+    }
+
+    res.json({ success: true, payment, fee });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── TOYYIBPAY (FPX) ───
 
 // Create FPX payment bill
