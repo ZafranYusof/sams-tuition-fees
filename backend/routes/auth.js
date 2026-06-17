@@ -4,6 +4,7 @@ const Student = require('../models/Student');
 const Lecturer = require('../models/Lecturer');
 const FacultyRegistrar = require('../models/FacultyRegistrar');
 const PusatAdab = require('../models/PusatAdab');
+const Treasury = require('../models/ManageTuitionFees/Treasury');
 const { jwtSecret, jwtExpire } = require('../config');
 const { auth } = require('../middleware/auth');
 
@@ -27,6 +28,10 @@ async function findUser(identifier) {
   user = await PusatAdab.findOne({ $or: [{ staffEmail: identifier }, { paStaffId: identifier }] });
   if (user) return { user, role: 'staff', Model: PusatAdab };
 
+  // Try Treasury
+  user = await Treasury.findOne({ trsEmail: identifier });
+  if (user) return { user, role: 'admin', Model: Treasury };
+
   return null;
 }
 
@@ -37,6 +42,7 @@ function getPasswordField(role) {
     case 'lecturer': return 'lectPassword';
     case 'faculty': return 'facultyPassword';
     case 'staff': return 'staffPassword';
+    case 'admin': return 'trsPassword';
     default: return 'password';
   }
 }
@@ -53,6 +59,8 @@ function formatUser(user, role) {
       return { ...base, facultyId: user.facultyId, name: 'Faculty Registrar', email: user.facultyEmail, phoneNum: user.facultyPhoneNumber };
     case 'staff':
       return { ...base, paStaffId: user.paStaffId, name: user.staffName, email: user.staffEmail, phoneNum: user.staffPhoneNumber };
+    case 'admin':
+      return { ...base, name: user.trsName, email: user.trsEmail };
     default:
       return base;
   }
@@ -133,6 +141,9 @@ router.get('/profile', auth, async (req, res) => {
       case 'staff':
         user = await PusatAdab.findById(id).select('-staffPassword');
         break;
+      case 'admin':
+        user = await Treasury.findById(id).select('-trsPassword');
+        break;
       default:
         return res.status(400).json({ error: 'Invalid role' });
     }
@@ -161,6 +172,9 @@ router.get('/me', auth, async (req, res) => {
         break;
       case 'staff':
         user = await PusatAdab.findById(id).select('-staffPassword');
+        break;
+      case 'admin':
+        user = await Treasury.findById(id).select('-trsPassword');
         break;
       default:
         return res.status(400).json({ error: 'Invalid role' });
@@ -191,6 +205,9 @@ router.put('/profile', auth, async (req, res) => {
       case 'staff':
         user = await PusatAdab.findByIdAndUpdate(id, { staffName: req.body.name, staffPhoneNumber: req.body.phoneNum }, { new: true }).select('-staffPassword');
         break;
+      case 'admin':
+        user = await Treasury.findByIdAndUpdate(id, { trsName: req.body.name }, { new: true }).select('-trsPassword');
+        break;
       default:
         return res.status(400).json({ error: 'Invalid role' });
     }
@@ -220,6 +237,7 @@ router.post('/change-password', auth, async (req, res) => {
       case 'lecturer': user = await Lecturer.findById(id); break;
       case 'faculty': user = await FacultyRegistrar.findById(id); break;
       case 'staff': user = await PusatAdab.findById(id); break;
+      case 'admin': user = await Treasury.findById(id); break;
       default: return res.status(400).json({ error: 'Invalid role' });
     }
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -233,6 +251,7 @@ router.post('/change-password', auth, async (req, res) => {
       case 'lecturer': user.lectPassword = newPassword; break;
       case 'faculty': user.facultyPassword = newPassword; break;
       case 'staff': user.staffPassword = newPassword; break;
+      case 'admin': user.trsPassword = newPassword; break;
     }
     await user.save();
 
