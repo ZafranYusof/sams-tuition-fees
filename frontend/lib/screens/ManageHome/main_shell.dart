@@ -88,11 +88,6 @@ class _MainShellState extends ConsumerState<MainShell> {
         index: _currentIndex,
         children: _pages,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: _navItems,
-      ),
     );
   }
 }

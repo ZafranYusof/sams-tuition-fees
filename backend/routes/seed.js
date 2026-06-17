@@ -1,10 +1,11 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const Student = require('../models/Student');
-const Lecturer = require('../models/Lecturer');
-const FacultyRegistrar = require('../models/FacultyRegistrar');
-const PusatAdab = require('../models/PusatAdab');
+const Student = require('../models/ManageAuth/Student');
+const Lecturer = require('../models/ManageAuth/Lecturer');
+const FacultyRegistrar = require('../models/ManageAuth/FacultyRegistrar');
+const PusatAdab = require('../models/ManageAuth/PusatAdab');
 const Treasury = require('../models/ManageTuitionFees/Treasury');
+const Fee = require('../models/ManageTuitionFees/Fee');
 
 const router = express.Router();
 
@@ -94,6 +95,54 @@ router.post('/', async (req, res) => {
     res.json({ message: 'Seed completed', results });
   } catch (err) {
     console.error('Seed error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /seed/clean-fees — Delete all old fee records and create fresh ones for CB23109
+router.post('/clean-fees', async (req, res) => {
+  try {
+    // Delete ALL fee records (old data from users collection)
+    const deleted = await Fee.deleteMany({});
+    
+    // Get CB23109 student
+    const student = await Student.findOne({ studentId: 'CB23109' });
+    if (!student) {
+      return res.status(404).json({ error: 'Student CB23109 not found' });
+    }
+    
+    // Create fresh fee records for CB23109
+    const fees = await Fee.insertMany([
+      {
+        student: student._id,
+        feeType: 'Tuition Fee',
+        feeDescription: 'Yuran Pengajian Semester 2 2025/2026',
+        feeAmount: 860,
+        feeStatus: 'unpaid',
+        feeSemester: 2,
+        academicYear: '2025/2026',
+        paidAmount: 0
+      },
+      {
+        student: student._id,
+        feeType: 'Asrama Fee',
+        feeDescription: 'Yuran Asrama Semester 2 2025/2026',
+        feeAmount: 650,
+        feeStatus: 'unpaid',
+        feeSemester: 2,
+        academicYear: '2025/2026',
+        paidAmount: 0
+      }
+    ]);
+    
+    res.json({ 
+      message: 'Fees cleaned and reseeded',
+      deleted: deleted.deletedCount,
+      created: fees.length,
+      fees: fees.map(f => ({ id: f._id, type: f.feeType, amount: f.feeAmount }))
+    });
+  } catch (err) {
+    console.error('Clean fees error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
