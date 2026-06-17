@@ -16,9 +16,10 @@ const sessionsRoutes = require('./routes/sessions');
 const campusRoutes = require('./routes/campus');
 const curriculumRoutes = require('./routes/curriculum');
 const usersRoutes = require('./routes/users');
+const seedRoutes = require('./routes/seed');
 
-const Payment = require('./models/Payment');
-const Fee = require('./models/Fee');
+const Payment = require('./models/ManageTuitionFees/Payment');
+const Fee = require('./models/ManageTuitionFees/Fee');
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/api/sessions', sessionsRoutes);
 app.use('/api/campus', campusRoutes);
 app.use('/api/curriculum', curriculumRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/seed', seedRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
