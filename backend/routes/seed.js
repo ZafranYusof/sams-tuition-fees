@@ -9,10 +9,11 @@ const Fee = require('../models/ManageTuitionFees/Fee');
 
 const router = express.Router();
 
-// POST /seed — Seed all user accounts (one-time use)
+// POST /seed — Seed all user accounts + clean/reseed fees
 router.post('/', async (req, res) => {
   try {
     const results = [];
+    let feesResult = null;
 
     // 1. Student
     const studentExists = await Student.findOne({ studentId: 'CB23109' });
@@ -92,57 +93,47 @@ router.post('/', async (req, res) => {
       results.push('Treasury already exists');
     }
 
-    res.json({ message: 'Seed completed', results });
+    // 6. Clean old fees and create fresh ones for CB23109
+    const student = await Student.findOne({ studentId: 'CB23109' });
+    if (student) {
+      // Delete ALL existing fee records (old data from users collection migration)
+      const deleted = await Fee.deleteMany({});
+      
+      // Create fresh fee records for CB23109
+      const fees = await Fee.insertMany([
+        {
+          student: student._id,
+          feeType: 'Tuition Fee',
+          feeDescription: 'Yuran Pengajian Semester 2 2025/2026',
+          feeAmount: 860,
+          feeStatus: 'unpaid',
+          feeSemester: 2,
+          academicYear: '2025/2026',
+          paidAmount: 0
+        },
+        {
+          student: student._id,
+          feeType: 'Asrama Fee',
+          feeDescription: 'Yuran Asrama Semester 2 2025/2026',
+          feeAmount: 650,
+          feeStatus: 'unpaid',
+          feeSemester: 2,
+          academicYear: '2025/2026',
+          paidAmount: 0
+        }
+      ]);
+      
+      feesResult = {
+        deleted: deleted.deletedCount,
+        created: fees.length,
+        fees: fees.map(f => ({ id: f._id, type: f.feeType, amount: f.feeAmount }))
+      };
+      results.push(`Cleaned ${deleted.deletedCount} old fee records, created ${fees.length} new ones`);
+    }
+
+    res.json({ message: 'Seed completed', results, fees: feesResult });
   } catch (err) {
     console.error('Seed error:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// POST /seed/clean-fees — Delete all old fee records and create fresh ones for CB23109
-router.post('/clean-fees', async (req, res) => {
-  try {
-    // Delete ALL fee records (old data from users collection)
-    const deleted = await Fee.deleteMany({});
-    
-    // Get CB23109 student
-    const student = await Student.findOne({ studentId: 'CB23109' });
-    if (!student) {
-      return res.status(404).json({ error: 'Student CB23109 not found' });
-    }
-    
-    // Create fresh fee records for CB23109
-    const fees = await Fee.insertMany([
-      {
-        student: student._id,
-        feeType: 'Tuition Fee',
-        feeDescription: 'Yuran Pengajian Semester 2 2025/2026',
-        feeAmount: 860,
-        feeStatus: 'unpaid',
-        feeSemester: 2,
-        academicYear: '2025/2026',
-        paidAmount: 0
-      },
-      {
-        student: student._id,
-        feeType: 'Asrama Fee',
-        feeDescription: 'Yuran Asrama Semester 2 2025/2026',
-        feeAmount: 650,
-        feeStatus: 'unpaid',
-        feeSemester: 2,
-        academicYear: '2025/2026',
-        paidAmount: 0
-      }
-    ]);
-    
-    res.json({ 
-      message: 'Fees cleaned and reseeded',
-      deleted: deleted.deletedCount,
-      created: fees.length,
-      fees: fees.map(f => ({ id: f._id, type: f.feeType, amount: f.feeAmount }))
-    });
-  } catch (err) {
-    console.error('Clean fees error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
