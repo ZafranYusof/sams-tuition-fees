@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:moon_design/moon_design.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
 import '../home/main_shell.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -22,6 +25,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   String? _selectedFaculty;
   String? _selectedProgram;
+  String _selectedFinancingType = 'unfinanced';
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _autoValidate = false;
@@ -102,6 +106,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void _register() {
     setState(() => _autoValidate = true);
     if (!_formKey.currentState!.validate()) return;
+    HapticFeedback.mediumImpact();
 
     final studentId = _studentIdController.text.trim();
     final name = _nameController.text.trim();
@@ -117,22 +122,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       password,
       faculty,
       program,
+      _selectedFinancingType,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final t = Theme.of(context);
-    final isDark = t.brightness == Brightness.dark;
-    final accent = isDark ? SAMsTheme.brass : const Color(0xFFB28A3E);
-    final muted = t.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
+    final locale = ref.watch(languageProvider).locale;
+    final theme = Theme.of(context);
+    const accent = SAMsTheme.accent;
+    final muted = theme.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
 
     // Navigate to home when authenticated after registration
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (next.isAuthenticated && !(prev?.isAuthenticated ?? false)) {
+        final role = next.user?['role'] ?? 'student';
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainShell()),
+          MaterialPageRoute(builder: (_) => MainShell(role: role)),
           (route) => false,
         );
       }
@@ -142,9 +149,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () { HapticFeedback.lightImpact(); Navigator.pop(context); },
         ),
-        title: const Text('Create account'),
+        title: Text(t('create_account_title', locale)),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -162,30 +169,32 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   children: [
                     Container(width: 26, height: 1, color: accent),
                     const SizedBox(width: 10),
-                    Text('NEW STUDENT',
+                    Text(t('new_student', locale),
                       style: GoogleFonts.inter(color: muted, fontSize: 11, letterSpacing: 2.4, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
                 const SizedBox(height: 28),
-                Text('Join SAMs', style: t.textTheme.displayMedium),
+                Text(t('join_sams', locale), style: theme.textTheme.displayMedium),
                 const SizedBox(height: 8),
                 Text(
-                  'A few details and you\'re in.',
-                  style: t.textTheme.bodyMedium?.copyWith(fontSize: 15),
+                  t('join_sams_subtitle', locale),
+                  style: theme.textTheme.bodyMedium?.copyWith(fontSize: 15),
                 ),
                 const SizedBox(height: 36),
 
                 // ─── Student ID ───
-                _label('STUDENT ID', muted),
+                _label(t('student_id_label', locale), muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _studentIdController,
-                  style: GoogleFonts.inter(fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: 'CB23000',
-                    prefixIcon: Icon(Icons.badge_outlined, size: 18, color: muted),
-                  ),
+                  hintText: 'CB23000',
+                  leading: Icon(Icons.badge_outlined, size: 18, color: muted),
+                  textColor: theme.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: theme.inputDecorationTheme.fillColor?.withValues(alpha: 0.4),
+                  activeBorderColor: accent,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Student ID is required';
                     return null;
@@ -196,13 +205,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // ─── Full Name ───
                 _label('FULL NAME', muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _nameController,
-                  style: GoogleFonts.inter(fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: 'Your name',
-                    prefixIcon: Icon(Icons.person_outline, size: 18, color: muted),
-                  ),
+                  hintText: 'Your name',
+                  leading: Icon(Icons.person_outline, size: 18, color: muted),
+                  textColor: theme.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: theme.inputDecorationTheme.fillColor?.withValues(alpha: 0.4),
+                  activeBorderColor: accent,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Full name is required';
                     return null;
@@ -213,14 +224,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // ─── Email ───
                 _label('EMAIL', muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: GoogleFonts.inter(fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: 'name@umpsa.edu.my',
-                    prefixIcon: Icon(Icons.alternate_email_rounded, size: 18, color: muted),
-                  ),
+                  hintText: 'name@umpsa.edu.my',
+                  leading: Icon(Icons.alternate_email_rounded, size: 18, color: muted),
+                  textColor: theme.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: theme.inputDecorationTheme.fillColor?.withValues(alpha: 0.4),
+                  activeBorderColor: accent,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Email is required';
                     if (!v.contains('@')) return 'Enter a valid email address';
@@ -232,22 +245,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // ─── Password ───
                 _label('PASSWORD', muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  style: GoogleFonts.inter(fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: Icon(Icons.lock_outline_rounded, size: 18, color: muted),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        size: 18,
-                        color: muted,
-                      ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  hintText: '••••••••',
+                  leading: Icon(Icons.lock_outline_rounded, size: 18, color: muted),
+                  trailing: GestureDetector(
+                    onTap: () { HapticFeedback.selectionClick(); setState(() => _obscurePassword = !_obscurePassword); },
+                    child: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 18,
+                      color: muted,
                     ),
                   ),
+                  textColor: theme.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: theme.inputDecorationTheme.fillColor?.withValues(alpha: 0.4),
+                  activeBorderColor: accent,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Password is required';
                     if (v.length < 6) return 'Password must be at least 6 characters';
@@ -259,22 +274,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // ─── Confirm Password ───
                 _label('CONFIRM PASSWORD', muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
-                  style: GoogleFonts.inter(fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: Icon(Icons.lock_outline_rounded, size: 18, color: muted),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        size: 18,
-                        color: muted,
-                      ),
-                      onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                  hintText: '••••••••',
+                  leading: Icon(Icons.lock_outline_rounded, size: 18, color: muted),
+                  trailing: GestureDetector(
+                    onTap: () { HapticFeedback.selectionClick(); setState(() => _obscureConfirmPassword = !_obscureConfirmPassword); },
+                    child: Icon(
+                      _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 18,
+                      color: muted,
                     ),
                   ),
+                  textColor: theme.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: theme.inputDecorationTheme.fillColor?.withValues(alpha: 0.4),
+                  activeBorderColor: accent,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Please confirm your password';
                     if (v != _passwordController.text) return 'Passwords do not match';
@@ -287,8 +304,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 _label('FACULTY', muted),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedFaculty,
-                  style: GoogleFonts.inter(fontSize: 15, color: t.textTheme.bodyLarge?.color),
+                  initialValue: _selectedFaculty,
+                  style: GoogleFonts.inter(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
                   icon: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: muted),
                   decoration: InputDecoration(
                     hintText: 'Select faculty',
@@ -310,8 +327,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 _label('PROGRAM', muted),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedProgram,
-                  style: GoogleFonts.inter(fontSize: 15, color: t.textTheme.bodyLarge?.color),
+                  initialValue: _selectedProgram,
+                  style: GoogleFonts.inter(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
                   icon: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: muted),
                   isExpanded: true,
                   decoration: InputDecoration(
@@ -329,6 +346,53 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   },
                 ),
 
+                const SizedBox(height: 16),
+
+                // ─── Financing Type ───
+                _label('FINANCING TYPE', muted),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedFinancingType,
+                  style: GoogleFonts.inter(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
+                  icon: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: muted),
+                  decoration: InputDecoration(
+                    hintText: 'Select financing type',
+                    prefixIcon: Icon(Icons.account_balance_wallet_outlined, size: 18, color: muted),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'unfinanced', child: Text('Self-funded')),
+                    DropdownMenuItem(value: 'ptptn', child: Text('PTPTN Loan')),
+                    DropdownMenuItem(value: 'sponsored', child: Text('Full Sponsor')),
+                  ],
+                  onChanged: (v) => setState(() => _selectedFinancingType = v ?? 'unfinanced'),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: theme.dividerColor),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline_rounded, size: 16, color: accent.withValues(alpha: 0.8)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _selectedFinancingType == 'sponsored'
+                              ? 'Sponsored students still receive the RM 1,510 fee record. The sponsor settles it directly so restriction checks do not apply.'
+                              : _selectedFinancingType == 'ptptn'
+                                  ? 'PTPTN students follow the standard UMP fee schedule with restriction checks.'
+                                  : 'Self-funded students receive the default semester fee automatically after registration.',
+                          style: GoogleFonts.inter(fontSize: 12, color: muted, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 if (authState.error != null) ...[
                   const SizedBox(height: 14),
                   Row(children: [
@@ -338,18 +402,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ]),
                 ],
                 const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: authState.isLoading ? null : _register,
-                    child: authState.isLoading
-                        ? SizedBox(
-                            width: 18, height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 1.6, color: t.colorScheme.primary),
-                          )
-                        : const Text('Create account', style: TextStyle(fontSize: 14.5, letterSpacing: 0.4)),
-                  ),
+
+                // ─── Create Account Button (Moon) ───
+                MoonFilledButton(
+                  isFullWidth: true,
+                  buttonSize: MoonButtonSize.lg,
+                  backgroundColor: accent,
+                  onTap: authState.isLoading ? null : _register,
+                  label: authState.isLoading
+                      ? SizedBox(
+                          width: 18, height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 1.6, color: theme.colorScheme.onPrimary),
+                        )
+                      : Text(
+                          'Create account',
+                          style: GoogleFonts.inter(
+                            fontSize: 14.5,
+                            letterSpacing: 0.4,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
                 const SizedBox(height: 16),
               ],

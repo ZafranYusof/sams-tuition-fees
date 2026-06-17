@@ -8,17 +8,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'package:animated_text_kit/animated_text_kit.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/language_provider.dart';
+import '../../providers/language_provider.dart' as lp;
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
 import '../fees/fees_screen.dart';
+import '../registration/registration_screen.dart';
+import '../curriculum/curriculum_screen.dart';
+import '../attendance/attendance_screen.dart';
 import 'profile_screen.dart';
 import '../../widgets/page_transitions.dart';
 import '../ManageClassAttendanceSystem/StudentCourses.dart';
+import '../../widgets/premium_widgets.dart';
+import '../../widgets/pressable_card.dart';
+import '../../widgets/shimmer_loading.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -41,10 +47,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
   late List<Animation<double>> _staggerAnims;
 
   // Dynamic state
-  DateTime? _lastUpdated;
-  Timer? _lastUpdatedTimer;
-  String _statusLine = '';
-  Color _statusColor = Colors.grey;
   bool _hasUnread = false;
 
   @override
@@ -68,10 +70,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
     _loadAll();
     _staggerController.forward();
 
-    // #1 Last updated timer - refresh display every 30s
-    _lastUpdatedTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) setState(() {});
-    });
   }
 
   @override
@@ -81,7 +79,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
     _flipController.dispose();
     _countController.dispose();
     _pulseController.dispose();
-    _lastUpdatedTimer?.cancel();
     super.dispose();
   }
 
@@ -91,7 +88,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
 
   Future<void> _loadProfileImage() async {
     final prefs = await SharedPreferences.getInstance();
-    final path = prefs.getString('profile_image');
+    final user = ref.read(authProvider).user;
+    final id = user?['studentId'] ?? user?['student_id'] ?? user?['_id'] ?? user?['id'] ?? 'guest';
+    final path = prefs.getString('profile_image_$id');
     // Verify file exists before setting
     if (path != null && File(path).existsSync()) {
       setState(() => _profileImage = path);
@@ -107,49 +106,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
         final data = await ApiService.get('/fees/$sid/summary');
         setState(() {
           _feeSummary = data['summary'];
-          _lastUpdated = DateTime.now();
           _hasUnread = true; // Simulate unread for demo
         });
-        _computeStatusLine();
         // #3 Animated counter
         _countController.reset();
         _countController.forward();
       }
     } catch (_) {}
-  }
-
-  void _computeStatusLine() {
-    if (_feeSummary == null) {
-      _statusLine = 'No fees assigned yet.';
-      _statusColor = Colors.grey;
-      return;
-    }
-    final balance = ((_feeSummary!['balance'] ?? 0) as num).toDouble();
-    final overdue = (_feeSummary!['overdue'] ?? 0) as num;
-    final pending = (_feeSummary!['pendingCount'] ?? _feeSummary!['unpaidCount'] ?? 0) as num;
-    
-    if (balance <= 0) {
-      _statusLine = 'All settled. Nothing due.';
-      _statusColor = const Color(0xFF4CAF50);
-    } else if (overdue > 0) {
-      _statusLine = 'You have overdue fees.';
-      _statusColor = const Color(0xFFE53935);
-    } else if (pending > 0) {
-      _statusLine = '${pending.toInt()} fee(s) pending payment.';
-      _statusColor = Colors.grey;
-    } else {
-      _statusLine = 'RM ${balance.toStringAsFixed(0)} outstanding.';
-      _statusColor = const Color(0xFFFF9800);
-    }
-  }
-
-  String get _lastUpdatedText {
-    if (_lastUpdated == null) return '';
-    final diff = DateTime.now().difference(_lastUpdated!);
-    if (diff.inSeconds < 10) return 'Just now';
-    if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    return '${diff.inHours}h ago';
   }
 
   Future<void> _refresh() async {
@@ -174,19 +137,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
   Widget _buildBalanceFront(bool isDark, Color accent, Color muted, ThemeData t) {
     final user = ref.watch(authProvider).user;
     final isAdmin = user?['role'] == 'admin';
-    
-    return AnimatedBuilder(
-      animation: _balancePulse,
-      builder: (_, child) => Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0F2235) : const Color(0xFFEDE5D4),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: accent.withOpacity(0.15 + _balancePulse.value * 0.1)),
-        ),
-        child: child,
-      ),
-      child: isAdmin
+
+    final balance = ((_feeSummary?['balance'] ?? 0) is num
+        ? (_feeSummary?['balance'] ?? 0) as num
+        : 0).toDouble();
+
+    final innerChild = isAdmin
         ? Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -198,12 +154,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                     style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
                   ),
                   const Spacer(),
-                  Icon(Icons.admin_panel_settings_outlined, size: 14, color: muted.withOpacity(0.5)),
+                  Icon(Icons.admin_panel_settings_outlined, size: 14, color: muted.withValues(alpha: 0.5)),
                 ],
               ),
               const SizedBox(height: 14),
               Text('Treasury Portal',
-                style: GoogleFonts.fraunces(color: t.colorScheme.onSurface, fontSize: 24, fontWeight: FontWeight.w500, height: 1.2),
+                style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 24, fontWeight: FontWeight.w500, height: 1.2),
               ),
               const SizedBox(height: 8),
               Text('Manage fees, view collection stats, and send reminders.',
@@ -233,43 +189,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                 style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
               ),
               const Spacer(),
-              Icon(Icons.flip_rounded, size: 14, color: muted.withOpacity(0.5)),
+              Icon(Icons.flip_rounded, size: 14, color: muted.withValues(alpha: 0.5)),
             ],
           ),
           const SizedBox(height: 14),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('RM',
-                style: GoogleFonts.fraunces(color: muted, fontSize: 18, fontWeight: FontWeight.w400, height: 1.4),
-              ),
-              const SizedBox(width: 6),
-              AnimatedBuilder(
-                animation: _countController,
-                builder: (_, __) {
-                  final val = ((_feeSummary?['balance'] ?? 0) is num
-                    ? (_feeSummary?['balance'] ?? 0) as num
-                    : 0).toDouble() * Curves.easeOutCubic.transform(_countController.value);
-                  return Text(
-                    val.toStringAsFixed(2),
-                    style: GoogleFonts.fraunces(
-                      color: t.colorScheme.onSurface,
-                      fontSize: 40,
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: -1.2,
-                      height: 1,
-                    ),
-                  );
-                },
-              ),
-            ],
+          // #3 Animated counter — premium odometer-style flip per digit
+          FlipCurrencyText(
+            value: balance,
+            prefix: 'RM ',
+            style: GoogleFonts.inter(
+              color: t.colorScheme.onSurface,
+              fontSize: 40,
+              fontWeight: FontWeight.w400,
+              letterSpacing: -1.2,
+              height: 1,
+            ),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  _feeSummary != null && ((_feeSummary!['balance'] ?? 0) as num) <= 0
+                  _feeSummary != null && balance <= 0
                     ? 'Fully settled. Tap to see breakdown.'
                     : 'Tap to flip. Double-tap to pay.',
                   style: t.textTheme.bodyMedium?.copyWith(fontSize: 13),
@@ -279,7 +220,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
             ],
           ),
         ],
+      );
+
+    return AnimatedBuilder(
+      animation: _balancePulse,
+      builder: (_, child) => Stack(
+        children: [
+          // Gradient backdrop for the glass blur to read against
+          Positioned.fill(child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  accent.withValues(alpha: 0.30 + _balancePulse.value * 0.06),
+                  accent.withValues(alpha: 0.08),
+                ],
+              ),
+            ),
+          )),
+          GlassmorphicCard(
+            padding: const EdgeInsets.all(22),
+            cornerRadius: 14,
+            blurSigma: 20,
+            tint: isDark
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.white.withValues(alpha: 0.45),
+            borderColor: accent.withValues(alpha: 0.20 + _balancePulse.value * 0.10),
+            child: child!,
+          ),
+        ],
       ),
+      child: innerChild,
     );
   }
 
@@ -292,9 +265,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F2235) : const Color(0xFFEDE5D4),
+        color: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF6F6F8),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accent.withOpacity(0.3)),
+        border: Border.all(color: accent.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +280,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                 style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
               ),
               const Spacer(),
-              Icon(Icons.flip_rounded, size: 14, color: muted.withOpacity(0.5)),
+              Icon(Icons.flip_rounded, size: 14, color: muted.withValues(alpha: 0.5)),
             ],
           ),
           const SizedBox(height: 16),
@@ -323,7 +296,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
             child: LinearProgressIndicator(
               value: paidPercent.toDouble(),
               minHeight: 6,
-              backgroundColor: muted.withOpacity(0.15),
+              backgroundColor: muted.withValues(alpha: 0.15),
               valueColor: AlwaysStoppedAnimation<Color>(accent),
             ),
           ),
@@ -341,7 +314,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: t.textTheme.bodyMedium?.copyWith(fontSize: 13)),
-        Text(value, style: GoogleFonts.fraunces(color: valueColor, fontSize: 16, fontWeight: FontWeight.w500)),
+        Text(value, style: GoogleFonts.inter(color: valueColor, fontSize: 16, fontWeight: FontWeight.w500)),
       ],
     );
   }
@@ -359,14 +332,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
     final name = user?['name'] ?? 'Student';
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
-    final accent = isDark ? SAMsTheme.brass : const Color(0xFFB28A3E);
+    const accent = SAMsTheme.accent;
     final muted = t.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
     final today = DateFormat('EEEE, d MMMM').format(DateTime.now());
 
     return Scaffold(
       body: SafeArea(
-        child: RefreshIndicator(
-          color: accent,
+        child: PremiumRefreshIndicator(
           backgroundColor: t.scaffoldBackgroundColor,
           onRefresh: _refresh,
           child: SingleChildScrollView(
@@ -395,7 +367,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                         children: [
                           _IconBtn(icon: Icons.notifications_none_rounded, onTap: () {
                             setState(() => _hasUnread = false);
-                            Navigator.pushNamed(context, '/fees', arguments: {'initialTab': 3});
+                            if (user?['role'] == 'student') {
+                              Navigator.pushNamed(context, '/fees', arguments: {'initialTab': 3});
+                            } else {
+                              // For non-student roles, navigate to profile
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                            }
                           }),
                           if (_hasUnread) Positioned(
                             right: 2, top: 2,
@@ -422,14 +399,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                           width: 36, height: 36,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: accent.withOpacity(0.6), width: 1),
+                            border: Border.all(color: accent.withValues(alpha: 0.6), width: 1),
                             color: t.colorScheme.surface,
                             image: _profileImage != null ? DecorationImage(image: FileImage(File(_profileImage!)), fit: BoxFit.cover) : null,
                           ),
                           child: _profileImage == null
                               ? Center(child: Text(
                                   name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                                  style: GoogleFonts.fraunces(color: accent, fontSize: 15, fontWeight: FontWeight.w600),
+                                  style: GoogleFonts.inter(color: accent, fontSize: 15, fontWeight: FontWeight.w600),
                                 ))
                               : null,
                         ),
@@ -478,19 +455,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text((user?['program'] ?? 'Software Engineering').toString().toUpperCase(),
-                                style: GoogleFonts.inter(color: muted, fontSize: 9.5, letterSpacing: 1.6, fontWeight: FontWeight.w600),
-                              ),
+                              if (user?['role'] == 'student') ...[
+                                Text((user?['program'] ?? 'Software Engineering').toString().toUpperCase(),
+                                  style: GoogleFonts.inter(color: muted, fontSize: 9.5, letterSpacing: 1.6, fontWeight: FontWeight.w600),
+                                ),
+                              ] else ...[
+                                Text((user?['role'] ?? 'Staff').toString().toUpperCase(),
+                                  style: GoogleFonts.inter(color: muted, fontSize: 9.5, letterSpacing: 1.6, fontWeight: FontWeight.w600),
+                                ),
+                              ],
                               const SizedBox(height: 4),
                               Text(name,
-                                style: GoogleFonts.fraunces(color: t.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
+                                style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
                               ),
                             ],
                           ),
                         ),
-                        Text(user?['studentId']?.toString() ?? user?['student_id']?.toString() ?? '—',
-                          style: GoogleFonts.jetBrainsMono(color: muted, fontSize: 12, letterSpacing: 0.5),
-                        ),
+                        if (user?['role'] == 'student') ...[
+                          Text(user?['studentId']?.toString() ?? user?['student_id']?.toString() ?? '—',
+                            style: GoogleFonts.jetBrainsMono(color: muted, fontSize: 12, letterSpacing: 0.5),
+                          ),
+                        ] else ...[
+                          Text(user?['email']?.toString() ?? '—',
+                            style: GoogleFonts.jetBrainsMono(color: muted, fontSize: 12, letterSpacing: 0.5),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -502,29 +491,83 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
                   child: Column(
                     children: [
-                      _ModuleRow(
-                        index: '01',
-                        title: 'Tuition Fees',
-                        subtitle: 'Balance, payments, receipts',
-                        accent: accent,
-                        onTap: () => Navigator.push(context, SlidePageRoute(page: const FeesScreen())),
-                      ),
-                       _ModuleRow(
-                        index: '03',
-                        title: 'Attendance',
-                        subtitle: 'Balance, payments, receipts',
-                        accent: accent,
-                        onTap: () => Navigator.push(context, SlidePageRoute(page: const StudentCourses())),
-                      ),
+                      if (user?['role'] == 'student' || user?['role'] == 'admin') ...[
+                        _ModuleRow(
+                          index: '01',
+                          title: 'Tuition Fees',
+                          subtitle: 'Balance, payments, receipts',
+                          accent: accent,
+                          onTap: () => Navigator.push(context, SlidePageRoute(page: const FeesScreen())),
+                        ),
+                        _ModuleRow(
+                          index: '02',
+                          title: 'Course Registration',
+                          subtitle: 'Register courses, view enrollment',
+                          accent: accent,
+                          onTap: () => Navigator.push(context, SlidePageRoute(page: const RegistrationScreen())),
+                        ),
+                        _ModuleRow(
+                          index: '03',
+                          title: 'Curriculum Activities',
+                          subtitle: 'Activities, credit claims, sign up',
+                          accent: accent,
+                          onTap: () => Navigator.push(context, SlidePageRoute(page: const CurriculumScreen())),
+                        ),
+                        _ModuleRow(
+                          index: '04',
+                          title: 'Attendance',
+                          subtitle: 'Mark attendance, view history',
+                          accent: accent,
+                          onTap: () => Navigator.push(context, SlidePageRoute(page: const AttendanceScreen())),
+                        ),
+                      ] else if (user?['role'] == 'lecturer') ...[
+                        _ModuleRow(
+                          index: '01',
+                          title: 'Class Attendance',
+                          subtitle: 'Manage student attendance',
+                          accent: accent,
+                          onTap: () => Navigator.push(context, SlidePageRoute(page: const AttendanceScreen())),
+                        ),
+                      ] else if (user?['role'] == 'faculty' || user?['role'] == 'registrar') ...[
+                        _ModuleRow(
+                          index: '01',
+                          title: 'Open Registration',
+                          subtitle: 'Manage course registration',
+                          accent: accent,
+                          onTap: () => Navigator.push(context, SlidePageRoute(page: const RegistrationScreen())),
+                        ),
+                      ] else if (user?['role'] == 'staff') ...[
+                        _ModuleRow(
+                          index: '01',
+                          title: 'Curriculum Activity',
+                          subtitle: 'Manage activities and credits',
+                          accent: accent,
+                          onTap: () => Navigator.push(context, SlidePageRoute(page: const CurriculumScreen())),
+                        ),
+                      ],
                     ],
                   ),
                   
                 ),
 
-                // ─── FEE SUMMARY: editorial composition ───
-                _fadeSlide(_staggerAnims[3], child: Padding(
+                // ─── FEE SUMMARY: editorial composition (student only) ───
+                Builder(builder: (context) {
+                  final user = ref.read(authProvider).user;
+                  final isAdmin = user?['role'] == 'admin';
+                  final isStudent = user?['role'] == 'student';
+                  // Hide fee summary for non-student roles (admin, lecturer, faculty, staff)
+                  if (!isStudent) return const SizedBox.shrink();
+                  return _fadeSlide(_staggerAnims[3], child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
-                  child: GestureDetector(
+                  child: _feeSummary == null
+                    ? const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        SkeletonStatCard(height: 150),
+                        SizedBox(height: 12),
+                        Row(children: [
+                          Expanded(child: SkeletonListItem()),
+                        ]),
+                      ])
+                    : GestureDetector(
                     onTap: () {
                       setState(() => _isFlipped = !_isFlipped);
                       if (_isFlipped) {
@@ -555,7 +598,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                       },
                     ),
                   ),
-                )),
+                ));
+                }),
 
                 // ─── QUICK ACCESS ───
                 _SectionLabel(text: 'QUICK ACCESS', muted: muted, accent: accent, top: 32),
@@ -569,18 +613,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                     crossAxisSpacing: 4,
                     mainAxisSpacing: 14,
                     children: [
-                      _QuickItem(icon: Iconsax.ticket_discount, label: 'e-Kupon', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Iconsax.hospital, label: 'Emergency', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Iconsax.monitor, label: 'EDasar', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Iconsax.teacher, label: 'Alumni', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Iconsax.bus, label: 'Bus', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Iconsax.message_question, label: 'FAQ', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Iconsax.cloud, label: 'Weather', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Iconsax.map, label: 'Map', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Iconsax.calendar_1, label: 'Calendar', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Iconsax.coffee, label: 'Cafetaria', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Iconsax.document_text, label: 'News', accent: accent, muted: muted, onTap: () {}),
-                      _QuickItem(icon: Iconsax.moon, label: 'Prayer', accent: accent, muted: muted, onTap: () {}),
+                      if (user?['role'] == 'student') ...[
+                        _QuickItem(icon: Iconsax.ticket_discount, label: 'e-Kupon', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.hospital, label: 'Emergency', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.monitor, label: 'EDasar', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.teacher, label: 'Alumni', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.bus, label: 'Bus', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.message_question, label: 'FAQ', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.cloud, label: 'Weather', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.map, label: 'Map', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.calendar_1, label: 'Calendar', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.coffee, label: 'Cafetaria', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.document_text, label: 'News', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.moon, label: 'Prayer', accent: accent, muted: muted, onTap: () {}),
+                      ] else if (user?['role'] == 'lecturer') ...[
+                        _QuickItem(icon: Iconsax.teacher, label: 'Attendance', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.document_text, label: 'Reports', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.calendar_1, label: 'Schedule', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.message_question, label: 'FAQ', accent: accent, muted: muted, onTap: () {}),
+                      ] else if (user?['role'] == 'faculty' || user?['role'] == 'registrar') ...[
+                        _QuickItem(icon: Iconsax.document_text, label: 'Registration', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.teacher, label: 'Students', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.calendar_1, label: 'Schedule', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.message_question, label: 'FAQ', accent: accent, muted: muted, onTap: () {}),
+                      ] else if (user?['role'] == 'staff') ...[
+                        _QuickItem(icon: Iconsax.activity, label: 'Activities', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.teacher, label: 'Students', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.calendar_1, label: 'Schedule', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.message_question, label: 'FAQ', accent: accent, muted: muted, onTap: () {}),
+                      ] else ...[
+                        _QuickItem(icon: Iconsax.ticket_discount, label: 'e-Kupon', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.hospital, label: 'Emergency', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.monitor, label: 'EDasar', accent: accent, muted: muted, onTap: () {}),
+                        _QuickItem(icon: Iconsax.teacher, label: 'Alumni', accent: accent, muted: muted, onTap: () {}),
+                      ],
                     ],
                   ),
                 ),
@@ -593,7 +659,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                     padding: const EdgeInsets.only(bottom: 32),
                     child: Column(
                       children: [
-                        Container(width: 24, height: 1, color: accent.withOpacity(0.5)),
+                        Container(width: 24, height: 1, color: accent.withValues(alpha: 0.5)),
                         const SizedBox(height: 10),
                         Text('UMPSA · ${DateTime.now().year}',
                           style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 2.4, fontWeight: FontWeight.w500),
@@ -627,12 +693,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.person_outline),
-              title: const Text('Profile'),
+              title: Text(lp.t('profile', lang)),
               onTap: () async { Navigator.pop(ctx); await Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())); _loadProfileImage(); },
             ),
             ListTile(
               leading: Icon(isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
-              title: Text(isDark ? 'Light mode' : 'Dark mode'),
+              title: Text(isDark ? lp.t('light_mode', lang) : lp.t('dark_mode', lang)),
               onTap: () { Navigator.pop(ctx); ref.read(themeProvider.notifier).toggle(); },
             ),
             ListTile(
@@ -642,7 +708,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
             ),
             ListTile(
               leading: const Icon(Icons.logout_rounded, color: SAMsTheme.error),
-              title: const Text('Logout', style: TextStyle(color: SAMsTheme.error)),
+              title: Text(lp.t('logout', lang), style: const TextStyle(color: SAMsTheme.error)),
               onTap: () { Navigator.pop(ctx); ref.read(authProvider.notifier).logout(); Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false); },
             ),
           ]),
@@ -703,7 +769,7 @@ class _ModuleRowState extends State<_ModuleRow> {
         curve: Curves.easeOut,
         decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: t.dividerColor)),
-          color: _pressed ? widget.accent.withOpacity(0.04) : Colors.transparent,
+          color: _pressed ? widget.accent.withValues(alpha: 0.04) : Colors.transparent,
         ),
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 2),
         child: Row(
@@ -712,7 +778,7 @@ class _ModuleRowState extends State<_ModuleRow> {
             SizedBox(
               width: 36,
               child: Text(widget.index,
-                style: GoogleFonts.fraunces(color: widget.accent, fontSize: 14, fontWeight: FontWeight.w500),
+                style: GoogleFonts.inter(color: widget.accent, fontSize: 14, fontWeight: FontWeight.w500),
               ),
             ),
             Expanded(
@@ -720,7 +786,7 @@ class _ModuleRowState extends State<_ModuleRow> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(widget.title,
-                    style: GoogleFonts.fraunces(
+                    style: GoogleFonts.inter(
                       color: t.colorScheme.onSurface,
                       fontSize: 19,
                       fontWeight: FontWeight.w500,
@@ -743,7 +809,7 @@ class _ModuleRowState extends State<_ModuleRow> {
 }
 
 // ─── Quick access item: scale bounce on tap ───
-class _QuickItem extends StatefulWidget {
+class _QuickItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color accent, muted;
@@ -751,56 +817,31 @@ class _QuickItem extends StatefulWidget {
   const _QuickItem({required this.icon, required this.label, required this.accent, required this.muted, required this.onTap});
 
   @override
-  State<_QuickItem> createState() => _QuickItemState();
-}
-
-class _QuickItemState extends State<_QuickItem> with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
-    _scale = Tween<double>(begin: 1.0, end: 0.88).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
-
-  @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    return GestureDetector(
-      onTapDown: (_) => _ctrl.forward(),
-      onTapUp: (_) { _ctrl.reverse(); HapticFeedback.selectionClick(); widget.onTap(); },
-      onTapCancel: () => _ctrl.reverse(),
-      child: AnimatedBuilder(
-        animation: _scale,
-        builder: (_, __) => Transform.scale(
-          scale: _scale.value,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Container(
-                width: 48, height: 48,
-                decoration: BoxDecoration(
-                  color: t.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: t.dividerColor),
-                ),
-                child: Icon(widget.icon, color: t.colorScheme.onSurface, size: 20),
-              ),
-              const SizedBox(height: 8),
-              Text(widget.label,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(color: widget.muted, fontSize: 10.5, fontWeight: FontWeight.w500),
-              ),
-            ],
+    return PressableCard(
+      onTap: onTap,
+      scale: 0.88,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Container(
+            width: 48, height: 48,
+            decoration: BoxDecoration(
+              color: t.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: t.dividerColor),
+            ),
+            child: Icon(icon, color: t.colorScheme.onSurface, size: 20),
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(color: muted, fontSize: 10.5, fontWeight: FontWeight.w500),
+          ),
+        ],
       ),
     );
   }

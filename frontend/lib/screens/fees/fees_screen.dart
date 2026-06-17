@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
+
 import 'student/student_fees_shell.dart';
 import 'treasury/treasury_shell.dart';
+import '../registrar/registrar_dashboard.dart';
 
 class FeesScreen extends ConsumerWidget {
   const FeesScreen({super.key});
@@ -17,6 +18,16 @@ class FeesScreen extends ConsumerWidget {
 
     if (role == 'admin') {
       return const TreasuryShell();
+    }
+    if (role == 'registrar') {
+      return const RegistrarDashboard();
+    }
+    // For non-student roles (lecturer, faculty, staff), show a message
+    if (role != 'student') {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Fees')),
+        body: const Center(child: Text('Fees module is for students only')),
+      );
     }
     return StudentFeesShell(initialTab: initialTab);
   }

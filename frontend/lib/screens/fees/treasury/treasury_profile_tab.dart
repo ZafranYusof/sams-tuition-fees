@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:moon_design/moon_design.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../config/theme.dart';
 import '../../../providers/auth_provider.dart';
 import '../../auth/login_screen.dart';
 
@@ -56,10 +56,10 @@ class _TreasuryProfileTabState extends ConsumerState<TreasuryProfileTab>
     final user = ref.watch(authProvider).user;
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
-    final ink = const Color(0xFF0B1B2C);
-    final brass = const Color(0xFFC9A961);
-    final muted = isDark ? const Color(0xFF8A9BB5) : const Color(0xFF6B7280);
-    final surface = isDark ? const Color(0xFF0B1B2C) : const Color(0xFFF5F0E8);
+    const ink = Color(0xFF000000);
+    const brass = Color(0xFF5C33CF);
+    final muted = isDark ? const Color(0xFF94989E) : const Color(0xFF6B7280);
+    final surface = isDark ? const Color(0xFF000000) : const Color(0xFFF6F6F8);
     final onSurface = t.colorScheme.onSurface;
 
     final name = user?['name'] ?? 'Treasury Admin';
@@ -79,7 +79,7 @@ class _TreasuryProfileTabState extends ConsumerState<TreasuryProfileTab>
         centerTitle: false,
         title: Text(
           'Profile',
-          style: GoogleFonts.fraunces(
+          style: GoogleFonts.inter(
             color: onSurface,
             fontSize: 22,
             fontWeight: FontWeight.w400,
@@ -99,13 +99,13 @@ class _TreasuryProfileTabState extends ConsumerState<TreasuryProfileTab>
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: isDark ? ink : const Color(0xFF1A2B3C),
+                      color: isDark ? ink : const Color(0xFF1F1F1F),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: Text(
                         initial,
-                        style: GoogleFonts.fraunces(
+                        style: GoogleFonts.inter(
                           color: brass,
                           fontSize: 32,
                           fontWeight: FontWeight.w400,
@@ -118,7 +118,7 @@ class _TreasuryProfileTabState extends ConsumerState<TreasuryProfileTab>
                 Center(
                   child: Text(
                     name,
-                    style: GoogleFonts.fraunces(
+                    style: GoogleFonts.inter(
                       color: onSurface,
                       fontSize: 20,
                       fontWeight: FontWeight.w400,
@@ -131,7 +131,7 @@ class _TreasuryProfileTabState extends ConsumerState<TreasuryProfileTab>
                     child: Text(
                       email,
                       style: GoogleFonts.inter(
-                        color: muted.withOpacity(0.7),
+                        color: muted.withValues(alpha: 0.7),
                         fontSize: 12,
                       ),
                     ),
@@ -198,31 +198,28 @@ class _TreasuryProfileTabState extends ConsumerState<TreasuryProfileTab>
           _staggerItem(
             idx++,
             Center(
-              child: TextButton.icon(
-                onPressed: () {
+              child: MoonTextButton(
+                onTap: () {
                   ref.read(authProvider.notifier).logout();
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
                     (route) => false,
                   );
                 },
-                icon: Icon(
+                leading: Icon(
                   Icons.logout_outlined,
                   size: 16,
-                  color: muted.withOpacity(0.7),
+                  color: muted.withValues(alpha: 0.7),
                 ),
                 label: Text(
                   'Sign out',
                   style: GoogleFonts.inter(
-                    color: muted.withOpacity(0.7),
+                    color: muted.withValues(alpha: 0.7),
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                     decoration: TextDecoration.underline,
-                    decorationColor: muted.withOpacity(0.4),
+                    decorationColor: muted.withValues(alpha: 0.4),
                   ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
               ),
             ),
@@ -265,14 +262,14 @@ class _TreasuryProfileTabState extends ConsumerState<TreasuryProfileTab>
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: muted.withOpacity(0.15),
+            color: muted.withValues(alpha: 0.15),
             width: 0.5,
           ),
         ),
       ),
       child: Row(
         children: [
-          Icon(icon, color: muted.withOpacity(0.6), size: 18),
+          Icon(icon, color: muted.withValues(alpha: 0.6), size: 18),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -310,22 +307,22 @@ class _TreasuryProfileTabState extends ConsumerState<TreasuryProfileTab>
     bool isDark,
     Color brass,
   ) {
+    bool notificationsEnabled = false;
     return StatefulBuilder(
       builder: (context, setLocalState) {
-        bool notificationsEnabled = true;
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: muted.withOpacity(0.15),
+                color: muted.withValues(alpha: 0.15),
                 width: 0.5,
               ),
             ),
           ),
           child: Row(
             children: [
-              Icon(Icons.notifications_none_outlined, color: muted.withOpacity(0.6), size: 18),
+              Icon(Icons.notifications_none_outlined, color: muted.withValues(alpha: 0.6), size: 18),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -359,8 +356,8 @@ class _TreasuryProfileTabState extends ConsumerState<TreasuryProfileTab>
                   onChanged: (val) {
                     setLocalState(() => notificationsEnabled = val);
                   },
-                  activeColor: brass,
-                  inactiveTrackColor: muted.withOpacity(0.2),
+                  activeThumbColor: brass,
+                  inactiveTrackColor: muted.withValues(alpha: 0.2),
                 ),
               ),
             ],

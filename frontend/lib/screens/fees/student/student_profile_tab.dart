@@ -6,7 +6,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../services/cache_service.dart';
 import '../../auth/login_screen.dart';
-import 'package:figma_squircle/figma_squircle.dart';
+import 'package:moon_design/moon_design.dart';
 
 class StudentProfileTab extends ConsumerStatefulWidget {
   const StudentProfileTab({super.key});
@@ -125,9 +125,9 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
+          MoonTextButton(
+            onTap: () => Navigator.of(ctx).pop(),
+            label: Text(
               'Cancel',
               style: GoogleFonts.inter(
                 color: muted,
@@ -136,8 +136,8 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
               ),
             ),
           ),
-          TextButton(
-            onPressed: () {
+          MoonTextButton(
+            onTap: () {
               Navigator.of(ctx).pop();
               ref.read(authProvider.notifier).logout();
               Navigator.of(context).pushAndRemoveUntil(
@@ -145,7 +145,7 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
                 (route) => false,
               );
             },
-            child: Text(
+            label: Text(
               'Sign out',
               style: GoogleFonts.inter(
                 color: brass,
@@ -164,10 +164,10 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
     final user = ref.watch(authProvider).user;
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
-    final ink = const Color(0xFF0B1B2C);
-    final brass = const Color(0xFFC9A961);
-    final muted = isDark ? const Color(0xFF8A9BB5) : const Color(0xFF6B7280);
-    final surface = isDark ? const Color(0xFF0B1B2C) : const Color(0xFFF5F0E8);
+    const ink = Color(0xFF000000);
+    const brass = Color(0xFF5C33CF);
+    final muted = isDark ? const Color(0xFF94989E) : const Color(0xFF6B7280);
+    final surface = isDark ? const Color(0xFF000000) : const Color(0xFFF6F6F8);
     final onSurface = t.colorScheme.onSurface;
 
     final name = user?['name'] ?? '—';
@@ -186,7 +186,7 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
         centerTitle: false,
         title: Text(
           'Profile',
-          style: GoogleFonts.fraunces(
+          style: GoogleFonts.inter(
             color: onSurface,
             fontSize: 22,
             fontWeight: FontWeight.w400,
@@ -206,13 +206,13 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: isDark ? ink : const Color(0xFF1A2B3C),
+                      color: isDark ? ink : const Color(0xFF1F1F1F),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: Text(
                         initial,
-                        style: GoogleFonts.fraunces(
+                        style: GoogleFonts.inter(
                           color: brass,
                           fontSize: 32,
                           fontWeight: FontWeight.w400,
@@ -225,7 +225,7 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
                 Center(
                   child: Text(
                     name,
-                    style: GoogleFonts.fraunces(
+                    style: GoogleFonts.inter(
                       color: onSurface,
                       fontSize: 20,
                       fontWeight: FontWeight.w400,
@@ -252,7 +252,7 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
                       child: Text(
                         email,
                         style: GoogleFonts.inter(
-                          color: muted.withOpacity(0.7),
+                          color: muted.withValues(alpha: 0.7),
                           fontSize: 12,
                         ),
                       ),
@@ -364,25 +364,22 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
           _staggerItem(
             idx++,
             Center(
-              child: TextButton.icon(
-                onPressed: () => _showSignOutDialog(context, brass, muted, onSurface, surface),
-                icon: Icon(
+              child: MoonTextButton(
+                onTap: () => _showSignOutDialog(context, brass, muted, onSurface, surface),
+                leading: Icon(
                   Icons.logout_outlined,
                   size: 16,
-                  color: muted.withOpacity(0.7),
+                  color: muted.withValues(alpha: 0.7),
                 ),
                 label: Text(
                   'Sign out',
                   style: GoogleFonts.inter(
-                    color: muted.withOpacity(0.7),
+                    color: muted.withValues(alpha: 0.7),
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                     decoration: TextDecoration.underline,
-                    decorationColor: muted.withOpacity(0.4),
+                    decorationColor: muted.withValues(alpha: 0.4),
                   ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
               ),
             ),
@@ -396,13 +393,13 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
 
   /// Fee payment summary card at top
   Widget _feeSummaryCard(Color brass, Color muted, Color onSurface, bool isDark) {
-    final cardBg = isDark ? const Color(0xFF132236) : Colors.white;
+    final cardBg = isDark ? const Color(0xFF1F1F1F) : Colors.white;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: brass.withOpacity(0.25), width: 0.5),
+        border: Border.all(color: brass.withValues(alpha: 0.25), width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,7 +437,7 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
                     const SizedBox(height: 4),
                     Text(
                       _feesLoaded ? 'RM ${_totalPaid.toStringAsFixed(2)}' : '—',
-                      style: GoogleFonts.fraunces(
+                      style: GoogleFonts.inter(
                         fontSize: 18,
                         color: SAMsTheme.success,
                         fontWeight: FontWeight.w500,
@@ -449,7 +446,7 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
                   ],
                 ),
               ),
-              Container(width: 1, height: 36, color: muted.withOpacity(0.15)),
+              Container(width: 1, height: 36, color: muted.withValues(alpha: 0.15)),
               const SizedBox(width: 20),
               Expanded(
                 child: Column(
@@ -466,7 +463,7 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
                     const SizedBox(height: 4),
                     Text(
                       _feesLoaded ? 'RM ${_outstanding.toStringAsFixed(2)}' : '—',
-                      style: GoogleFonts.fraunces(
+                      style: GoogleFonts.inter(
                         fontSize: 18,
                         color: _outstanding > 0 ? SAMsTheme.error : onSurface,
                         fontWeight: FontWeight.w500,
@@ -513,14 +510,14 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: muted.withOpacity(0.15),
+            color: muted.withValues(alpha: 0.15),
             width: 0.5,
           ),
         ),
       ),
       child: Row(
         children: [
-          Icon(icon, color: muted.withOpacity(0.6), size: 18),
+          Icon(icon, color: muted.withValues(alpha: 0.6), size: 18),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -569,14 +566,14 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: muted.withOpacity(0.15),
+            color: muted.withValues(alpha: 0.15),
             width: 0.5,
           ),
         ),
       ),
       child: Row(
         children: [
-          Icon(icon, color: muted.withOpacity(0.6), size: 18),
+          Icon(icon, color: muted.withValues(alpha: 0.6), size: 18),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -605,11 +602,11 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
           ),
           Transform.scale(
             scale: 0.8,
-            child: Switch(
+            child: MoonSwitch(
               value: value,
               onChanged: onChanged,
-              activeColor: brass,
-              inactiveTrackColor: muted.withOpacity(0.2),
+              activeTrackColor: brass,
+              inactiveTrackColor: muted.withValues(alpha: 0.2),
             ),
           ),
         ],

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:moon_design/moon_design.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
+import '../../widgets/app_toast.dart';
 import '../home/main_shell.dart';
 import 'register_screen.dart';
 
@@ -30,6 +34,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _login() {
     if (!_formKey.currentState!.validate()) return;
+    HapticFeedback.mediumImpact();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     ref.read(authProvider.notifier).login(email, password);
@@ -38,16 +43,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final t = Theme.of(context);
-    final isDark = t.brightness == Brightness.dark;
-    final accent = isDark ? SAMsTheme.brass : const Color(0xFFB28A3E);
-    final muted = t.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
+    final locale = ref.watch(languageProvider).locale;
+    final theme = Theme.of(context);
+    const accent = SAMsTheme.accent;
+    final muted = theme.textTheme.bodyMedium?.color ?? SAMsTheme.textSecondary;
 
     // Navigate to home when authenticated
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (next.isAuthenticated && !(prev?.isAuthenticated ?? false)) {
+        final role = next.user?['role'] ?? 'student';
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainShell()),
+          MaterialPageRoute(builder: (_) => MainShell(role: role)),
           (route) => false,
         );
       }
@@ -79,82 +85,87 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 56),
-                Text('Welcome', style: t.textTheme.displayMedium),
+                Text(t('welcome', locale), style: theme.textTheme.displayMedium),
                 const SizedBox(height: 8),
                 Text(
-                  'Sign in to continue your\nacademic journey.',
-                  style: t.textTheme.bodyMedium?.copyWith(fontSize: 15, height: 1.5),
+                  t('welcome_login_subtitle', locale),
+                  style: theme.textTheme.bodyMedium?.copyWith(fontSize: 15, height: 1.5),
                 ),
                 const SizedBox(height: 44),
-                // ─── Field labels in editorial style ───
-                _fieldLabel('EMAIL', muted),
+
+                // ─── EMAIL ───
+                _fieldLabel(t('email_label', locale), muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
-                  style: GoogleFonts.inter(fontSize: 15),
+                  onSubmitted: (_) => _passwordFocusNode.requestFocus(),
+                  hintText: 'name@umpsa.edu.my',
+                  leading: Icon(Icons.alternate_email_rounded, size: 18, color: muted),
+                  textColor: theme.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: theme.inputDecorationTheme.fillColor?.withValues(alpha: 0.4),
+                  activeBorderColor: accent,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Email is required';
+                      return t('email_required', locale);
                     }
                     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value.trim())) {
-                      return 'Enter a valid email address';
+                      return t('email_invalid', locale);
                     }
                     return null;
                   },
-                  decoration: InputDecoration(
-                    hintText: 'name@umpsa.edu.my',
-                    prefixIcon: Icon(Icons.alternate_email_rounded, size: 18, color: muted),
-                  ),
                 ),
                 const SizedBox(height: 18),
-                _fieldLabel('PASSWORD', muted),
+
+                // ─── PASSWORD ───
+                _fieldLabel(t('password_label', locale), muted),
                 const SizedBox(height: 8),
-                TextFormField(
+                MoonFormTextInput(
                   controller: _passwordController,
                   focusNode: _passwordFocusNode,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _login(),
-                  style: GoogleFonts.inter(fontSize: 15),
+                  onSubmitted: (_) => _login(),
+                  hintText: '••••••••',
+                  leading: Icon(Icons.lock_outline_rounded, size: 18, color: muted),
+                  trailing: GestureDetector(
+                    onTap: () { HapticFeedback.selectionClick(); setState(() => _obscurePassword = !_obscurePassword); },
+                    child: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 18,
+                      color: muted,
+                    ),
+                  ),
+                  textColor: theme.textTheme.bodyLarge?.color,
+                  hintTextColor: muted,
+                  backgroundColor: theme.inputDecorationTheme.fillColor?.withValues(alpha: 0.4),
+                  activeBorderColor: accent,
+                  inactiveBorderColor: theme.dividerColor,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Password is required';
+                      return t('password_required', locale);
                     }
                     if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return t('password_min', locale);
                     }
                     return null;
                   },
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: Icon(Icons.lock_outline_rounded, size: 18, color: muted),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: muted),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 10),
+
                 // ─── Forgot password link ───
                 Align(
                   alignment: Alignment.centerRight,
-                  child: GestureDetector(
+                  child: MoonTextButton(
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Contact admin to reset password',
-                            style: GoogleFonts.inter(fontSize: 13),
-                          ),
-                          backgroundColor: const Color(0xFF0B1B2C),
-                        ),
-                      );
+                      HapticFeedback.lightImpact();
+                      AppToast.info(context, t('contact_admin_reset', locale));
                     },
-                    child: Text(
-                      'Forgot password?',
+                    label: Text(
+                      t('forgot_password', locale),
                       style: GoogleFonts.inter(
                         color: accent,
                         fontSize: 12.5,
@@ -174,28 +185,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ],
                 const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: authState.isLoading ? null : _login,
-                    child: authState.isLoading
-                        ? SizedBox(
-                            width: 18, height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 1.6, color: t.colorScheme.primary),
-                          )
-                        : const Text('Sign In', style: TextStyle(fontSize: 14.5, letterSpacing: 0.4)),
-                  ),
+
+                // ─── Sign In Button (Moon) ───
+                MoonFilledButton(
+                  isFullWidth: true,
+                  buttonSize: MoonButtonSize.lg,
+                  backgroundColor: accent,
+                  onTap: authState.isLoading ? null : _login,
+                  label: authState.isLoading
+                      ? SizedBox(
+                          width: 18, height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 1.6, color: theme.colorScheme.onPrimary),
+                        )
+                      : Text(
+                          t('sign_in_btn', locale),
+                          style: GoogleFonts.inter(
+                            fontSize: 14.5,
+                            letterSpacing: 0.4,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
                 const SizedBox(height: 28),
+
                 // ─── Hairline divider with brass tick ───
                 Row(children: [
-                  Expanded(child: Container(height: 1, color: t.dividerColor)),
+                  Expanded(child: Container(height: 1, color: theme.dividerColor)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Container(width: 4, height: 4, decoration: BoxDecoration(color: accent, shape: BoxShape.circle)),
+                    child: Container(width: 4, height: 4, decoration: const BoxDecoration(color: accent, shape: BoxShape.circle)),
                   ),
-                  Expanded(child: Container(height: 1, color: t.dividerColor)),
+                  Expanded(child: Container(height: 1, color: theme.dividerColor)),
                 ]),
                 const SizedBox(height: 24),
                 Center(
@@ -203,19 +224,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     alignment: WrapAlignment.center,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text("New to SAMs?  ", style: t.textTheme.bodyMedium),
+                      Text(t('new_to_sams', locale), style: theme.textTheme.bodyMedium),
                       InkWell(
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                        onTap: () { HapticFeedback.lightImpact(); Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())); },
                         borderRadius: BorderRadius.circular(4),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
-                          child: Text('Create an account',
+                          child: Text(t('create_account', locale),
                             style: GoogleFonts.inter(
                               color: accent,
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                               decoration: TextDecoration.underline,
-                              decorationColor: accent.withOpacity(0.4),
+                              decorationColor: accent.withValues(alpha: 0.4),
                             ),
                           ),
                         ),
