@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:toastification/toastification.dart';
 import 'config/moon_theme.dart';
 import 'providers/theme_provider.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/home/main_shell.dart';
+import 'screens/ManageAuth/login_screen.dart';
+import 'screens/ManageHome/main_shell.dart';
 import 'providers/auth_provider.dart';
 import 'services/fcm_service.dart';
 
@@ -43,7 +43,12 @@ class SAMsApp extends ConsumerWidget {
         ),
       );
     } else {
-      home = authState.isAuthenticated ? const MainShell() : const LoginScreen();
+      if (authState.isAuthenticated) {
+        final role = authState.user?['role'] ?? 'student';
+        home = MainShell(role: role);
+      } else {
+        home = const LoginScreen();
+      }
     }
 
     return ToastificationWrapper(

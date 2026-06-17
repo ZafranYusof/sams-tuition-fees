@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const Payment = require('../models/Payment');
+const Payment = require('../models/ManageTuitionFees/Payment');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 
@@ -29,7 +29,7 @@ router.post('/', auth, async (req, res) => {
   try {
     const { fee_id, feeId, amount, bank, student_id } = req.body;
     const crypto = require('crypto');
-    const Fee = require('../models/Fee');
+    const Fee = require('../models/ManageTuitionFees/Fee');
 
     const targetFeeId = fee_id || feeId;
     if (!targetFeeId || !mongoose.Types.ObjectId.isValid(targetFeeId)) {

@@ -3,8 +3,8 @@ const crypto = require('crypto');
 const https = require('https');
 const axios = require('axios');
 const mongoose = require('mongoose');
-const Fee = require('../models/Fee');
-const Payment = require('../models/Payment');
+const Fee = require('../models/ManageTuitionFees/Fee');
+const Payment = require('../models/ManageTuitionFees/Payment');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();

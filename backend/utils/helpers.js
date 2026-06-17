@@ -1,44 +1,32 @@
-const mongoose = require('mongoose');
+// Utility functions
 
-// Validate MongoDB ObjectId
-exports.isValidObjectId = (id) => {
-  return id && mongoose.Types.ObjectId.isValid(id);
+// Haversine distance in meters
+exports.haversine = (lat1, lon1, lat2, lon2) => {
+  const R = 6371000;
+  const toRad = x => x * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 };
 
-// Format currency (MYR)
-exports.formatCurrency = (amount) => {
-  return `RM ${Number(amount).toFixed(2)}`;
-};
-
-// Calculate fee status based on amounts
-exports.calculateFeeStatus = (totalAmount, paidAmount) => {
-  if (paidAmount >= totalAmount) return 'paid';
-  if (paidAmount > 0) return 'partial';
-  return 'unpaid';
-};
-
-// Generate transaction ID
-exports.generateTransactionId = (prefix = 'TXN') => {
+// Generate random hex code
+exports.generateCode = (length = 3) => {
   const crypto = require('crypto');
-  return prefix + crypto.randomBytes(8).toString('hex').toUpperCase();
+  return crypto.randomBytes(length).toString('hex').toUpperCase();
 };
 
-// Paginate query results
-exports.paginate = (page = 1, limit = 20) => {
-  const skip = (Math.max(1, page) - 1) * limit;
-  return { skip, limit: Math.min(limit, 100) };
+// Format date to Malaysian format
+exports.formatDate = (date) => {
+  return new Date(date).toLocaleDateString('en-MY', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 };
 
-// Sanitize user object (remove password)
-exports.sanitizeUser = (user) => {
-  if (!user) return null;
-  const obj = user.toObject ? user.toObject() : { ...user };
-  delete obj.password;
-  return obj;
-};
-
-// Check if date is overdue
-exports.isOverdue = (dueDate) => {
-  if (!dueDate) return false;
-  return new Date(dueDate) < new Date();
+// Calculate percentage
+exports.calculatePercentage = (value, total) => {
+  if (total === 0) return 0;
+  return Math.round((value / total) * 100);
 };
