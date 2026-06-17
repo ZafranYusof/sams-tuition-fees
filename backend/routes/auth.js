@@ -1,22 +1,72 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const Student = require('../models/Student');
+const Lecturer = require('../models/Lecturer');
+const FacultyRegistrar = require('../models/FacultyRegistrar');
+const PusatAdab = require('../models/PusatAdab');
 const { jwtSecret, jwtExpire } = require('../config');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Register
+// Helper: find user across all collections by email/studentId
+async function findUser(identifier) {
+  // Try Student
+  let user = await Student.findOne({ $or: [{ studEmail: identifier }, { studentId: identifier }] });
+  if (user) return { user, role: 'student', Model: Student };
+
+  // Try Lecturer
+  user = await Lecturer.findOne({ $or: [{ lectEmail: identifier }, { lectId: identifier }] });
+  if (user) return { user, role: 'lecturer', Model: Lecturer };
+
+  // Try FacultyRegistrar
+  user = await FacultyRegistrar.findOne({ $or: [{ facultyEmail: identifier }, { facultyId: identifier }] });
+  if (user) return { user, role: 'faculty', Model: FacultyRegistrar };
+
+  // Try PusatAdab
+  user = await PusatAdab.findOne({ $or: [{ staffEmail: identifier }, { paStaffId: identifier }] });
+  if (user) return { user, role: 'staff', Model: PusatAdab };
+
+  return null;
+}
+
+// Helper: get password field name by role
+function getPasswordField(role) {
+  switch (role) {
+    case 'student': return 'studPassword';
+    case 'lecturer': return 'lectPassword';
+    case 'faculty': return 'facultyPassword';
+    case 'staff': return 'staffPassword';
+    default: return 'password';
+  }
+}
+
+// Helper: format user response by role
+function formatUser(user, role) {
+  const base = { id: user._id, role };
+  switch (role) {
+    case 'student':
+      return { ...base, studentId: user.studentId, student_id: user.studentId, name: user.studName, email: user.studEmail, major: user.major };
+    case 'lecturer':
+      return { ...base, lectId: user.lectId, name: user.lectName, email: user.lectEmail, phoneNum: user.lectPhoneNum, experience: user.lectExperience };
+    case 'faculty':
+      return { ...base, facultyId: user.facultyId, name: 'Faculty Registrar', email: user.facultyEmail, phoneNum: user.facultyPhoneNumber };
+    case 'staff':
+      return { ...base, paStaffId: user.paStaffId, name: user.staffName, email: user.staffEmail, phoneNum: user.staffPhoneNumber };
+    default:
+      return base;
+  }
+}
+
+// Register (students only — CB##### format)
 router.post('/register', async (req, res) => {
   try {
     const studentId = req.body.studentId || req.body.student_id;
-    const { name, email, password, faculty, program } = req.body;
+    const { name, email, password, major } = req.body;
 
-    // [Bug #8] Input validation on registration
     if (!studentId || !name || !email || !password) {
       return res.status(400).json({ error: 'studentId, name, email, and password are required' });
     }
-    // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ error: 'Invalid email format' });
@@ -24,47 +74,70 @@ router.post('/register', async (req, res) => {
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
-    
-    const exists = await User.findOne({ $or: [{ email }, { studentId }] });
-    if (exists) return res.status(400).json({ error: 'User already exists' });
 
-    const user = new User({ studentId, name, email, password, faculty, program });
-    await user.save();
+    const exists = await Student.findOne({ $or: [{ studEmail: email }, { studentId }] });
+    if (exists) return res.status(400).json({ error: 'Student already exists' });
 
-    const token = jwt.sign({ id: user._id, role: user.role }, jwtSecret, { expiresIn: jwtExpire });
-    // [Bug #4] Include studentId in register response
-    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role, studentId: user.studentId, student_id: user.studentId } });
+    const student = new Student({ studentId, studName: name, studEmail: email, studPassword: password, major });
+    await student.save();
+
+    const token = jwt.sign({ id: student._id, role: 'student' }, jwtSecret, { expiresIn: jwtExpire });
+    res.status(201).json({ token, user: formatUser(student, 'student') });
   } catch (err) {
-    // [Bug #9] Don't leak internal errors
     console.error('Register error:', err.message);
     res.status(500).json({ error: 'Registration failed. Please try again.' });
   }
 });
 
-// Login
+// Login — searches across Student, Lecturer, FacultyRegistrar, PusatAdab
 router.post('/login', async (req, res) => {
   try {
-    const identifier = req.body.email || req.body.student_id || req.body.studentId;
+    const identifier = req.body.email || req.body.student_id || req.body.studentId || req.body.identifier;
     const { password } = req.body;
-    const user = await User.findOne({ $or: [{ email: identifier }, { studentId: identifier }] });
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
+    if (!identifier || !password) {
+      return res.status(400).json({ error: 'Email/ID and password are required' });
+    }
+
+    const result = await findUser(identifier);
+    if (!result) return res.status(401).json({ error: 'Invalid credentials' });
+
+    const { user, role } = result;
+    const passwordField = getPasswordField(role);
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user._id, role: user.role }, jwtSecret, { expiresIn: jwtExpire });
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role, studentId: user.studentId, student_id: user.studentId } });
+    const token = jwt.sign({ id: user._id, role }, jwtSecret, { expiresIn: jwtExpire });
+    res.json({ token, user: formatUser(user, role) });
   } catch (err) {
     console.error('Login error:', err.message);
     res.status(500).json({ error: 'Login failed. Please try again.' });
   }
 });
 
-// Get profile
+// Get profile — lookup from correct collection based on role in JWT
 router.get('/profile', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
-    res.json(user);
+    const { id, role } = req.user;
+    let user;
+    switch (role) {
+      case 'student':
+        user = await Student.findById(id).select('-studPassword');
+        break;
+      case 'lecturer':
+        user = await Lecturer.findById(id).select('-lectPassword');
+        break;
+      case 'faculty':
+        user = await FacultyRegistrar.findById(id).select('-facultyPassword');
+        break;
+      case 'staff':
+        user = await PusatAdab.findById(id).select('-staffPassword');
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid role' });
+    }
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ ...formatUser(user, role), createdAt: user.createdAt });
   } catch (err) {
     console.error('Profile error:', err.message);
     res.status(500).json({ error: 'Failed to fetch profile' });
@@ -74,8 +147,26 @@ router.get('/profile', auth, async (req, res) => {
 // Alias /me -> /profile
 router.get('/me', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
-    res.json(user);
+    const { id, role } = req.user;
+    let user;
+    switch (role) {
+      case 'student':
+        user = await Student.findById(id).select('-studPassword');
+        break;
+      case 'lecturer':
+        user = await Lecturer.findById(id).select('-lectPassword');
+        break;
+      case 'faculty':
+        user = await FacultyRegistrar.findById(id).select('-facultyPassword');
+        break;
+      case 'staff':
+        user = await PusatAdab.findById(id).select('-staffPassword');
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid role' });
+    }
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ ...formatUser(user, role), createdAt: user.createdAt });
   } catch (err) {
     console.error('Profile error:', err.message);
     res.status(500).json({ error: 'Failed to fetch profile' });
@@ -85,9 +176,26 @@ router.get('/me', auth, async (req, res) => {
 // Update profile
 router.put('/profile', auth, async (req, res) => {
   try {
-    const { name, phone, faculty, program } = req.body;
-    const user = await User.findByIdAndUpdate(req.user.id, { name, phone, faculty, program }, { new: true }).select('-password');
-    res.json(user);
+    const { id, role } = req.user;
+    let user;
+    switch (role) {
+      case 'student':
+        user = await Student.findByIdAndUpdate(id, { studName: req.body.name, major: req.body.major }, { new: true }).select('-studPassword');
+        break;
+      case 'lecturer':
+        user = await Lecturer.findByIdAndUpdate(id, { lectName: req.body.name, lectPhoneNum: req.body.phoneNum }, { new: true }).select('-lectPassword');
+        break;
+      case 'faculty':
+        user = await FacultyRegistrar.findByIdAndUpdate(id, { facultyPhoneNumber: req.body.phoneNum }, { new: true }).select('-facultyPassword');
+        break;
+      case 'staff':
+        user = await PusatAdab.findByIdAndUpdate(id, { staffName: req.body.name, staffPhoneNumber: req.body.phoneNum }, { new: true }).select('-staffPassword');
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid role' });
+    }
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ ...formatUser(user, role), createdAt: user.createdAt });
   } catch (err) {
     console.error('Update profile error:', err.message);
     res.status(500).json({ error: 'Failed to update profile' });
@@ -104,14 +212,29 @@ router.post('/change-password', auth, async (req, res) => {
     if (newPassword.length < 6) {
       return res.status(400).json({ error: 'New password must be at least 6 characters' });
     }
-    const user = await User.findById(req.user.id);
+
+    const { id, role } = req.user;
+    let user;
+    switch (role) {
+      case 'student': user = await Student.findById(id); break;
+      case 'lecturer': user = await Lecturer.findById(id); break;
+      case 'faculty': user = await FacultyRegistrar.findById(id); break;
+      case 'staff': user = await PusatAdab.findById(id); break;
+      default: return res.status(400).json({ error: 'Invalid role' });
+    }
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) return res.status(401).json({ error: 'Current password is incorrect' });
 
-    user.password = newPassword;
-    await user.save(); // pre-save hook will hash the password
+    // Update password field based on role
+    switch (role) {
+      case 'student': user.studPassword = newPassword; break;
+      case 'lecturer': user.lectPassword = newPassword; break;
+      case 'faculty': user.facultyPassword = newPassword; break;
+      case 'staff': user.staffPassword = newPassword; break;
+    }
+    await user.save();
 
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
