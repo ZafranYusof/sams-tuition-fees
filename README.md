@@ -75,5 +75,3 @@ flutter run
 ```
 
 ## License
-
-University project - UMPSA © 2025
