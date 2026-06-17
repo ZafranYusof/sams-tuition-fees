@@ -145,7 +145,7 @@ class FcmService {
       }
 
       final resp = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/users/fcm-token'),
+        Uri.parse('${ApiConfig.baseUrl}/auth/fcm-token'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $authToken',
