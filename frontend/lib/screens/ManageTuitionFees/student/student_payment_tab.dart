@@ -138,7 +138,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
   double get _balance {
     double total = 0;
     for (var f in _fees) {
-      total += ((f['totalAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble();
+      total += ((f['feeAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble();
     }
     return total;
   }
@@ -201,7 +201,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
           'description': item['description']?.toString() ?? 'Item',
           'category': item['category']?.toString() ?? 'other',
           'balance': bal,
-          'totalAmount': amount,
+          'feeAmount': amount,
           'paidAmount': paid,
         });
       }
@@ -226,7 +226,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
           'description': item['description']?.toString() ?? 'Item',
           'category': item['category']?.toString() ?? 'other',
           'balance': amount - paid,
-          'totalAmount': amount,
+          'feeAmount': amount,
           'paidAmount': paid,
         });
       }
@@ -240,7 +240,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
   String _currentFeeId() {
     if (_selFeeIndex == 0) {
       for (var f in _fees) {
-        final bal = ((f['totalAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble();
+        final bal = ((f['feeAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble();
         if (bal > 0) return f['_id']?.toString() ?? 'all';
       }
       return widget.targetFeeId ?? 'all';
@@ -318,7 +318,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
 
       if (_selFeeIndex == 0) {
         for (var f in _fees) {
-          final bal = ((f['totalAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble();
+          final bal = ((f['feeAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble();
           if (bal > 0) { targetFeeId = f['_id']; break; }
         }
       } else {
@@ -425,7 +425,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
 
     final daysLeft = _daysLeft;
     final isUrgent = daysLeft <= 14;
-    final unpaidCount = _fees.where((f) => ((f['totalAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble() > 0).length;
+    final unpaidCount = _fees.where((f) => ((f['feeAmount'] ?? 0) as num).toDouble() - ((f['paidAmount'] ?? 0) as num).toDouble() > 0).length;
 
     return Scaffold(
       appBar: AppBar(

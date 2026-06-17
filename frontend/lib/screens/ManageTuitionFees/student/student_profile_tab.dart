@@ -54,7 +54,7 @@ class _StudentProfileTabState extends ConsumerState<StudentProfileTab>
   }
 
   void _computeFees(List<dynamic> fees) {
-    final due = fees.fold<double>(0.0, (s, f) => s + ((f['totalAmount'] ?? 0) as num).toDouble());
+    final due = fees.fold<double>(0.0, (s, f) => s + ((f['feeAmount'] ?? 0) as num).toDouble());
     final paid = fees.fold<double>(0.0, (s, f) => s + ((f['paidAmount'] ?? 0) as num).toDouble());
     if (mounted) {
       setState(() {

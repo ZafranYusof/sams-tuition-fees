@@ -134,7 +134,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
     );
   }
 
-  double get _totalDue => _fees.fold(0.0, (s, f) => s + ((f['totalAmount'] ?? 0) as num).toDouble());
+  double get _totalDue => _fees.fold(0.0, (s, f) => s + ((f['feeAmount'] ?? 0) as num).toDouble());
   double get _totalPaid => _fees.fold(0.0, (s, f) => s + ((f['paidAmount'] ?? 0) as num).toDouble());
   double get _balance => _totalDue - _totalPaid;
   double get _pct => _totalDue > 0 ? (_totalPaid / _totalDue).clamp(0.0, 1.0) : 0.0;
@@ -149,7 +149,7 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
 
   DateTime? get _dueDate {
     for (var f in _fees) {
-      if ((f['status'] ?? '') != 'paid' && f['dueDate'] != null) {
+      if ((f['feeStatus'] ?? '') != 'paid' && f['dueDate'] != null) {
         return DateTime.tryParse(f['dueDate'].toString());
       }
     }
@@ -431,8 +431,8 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
             _fadeSlide(_staggerAnims[4], child: Builder(builder: (context) {
               // Compute outstanding fees once for both header and empty state.
               final outstanding = _fees.where((fee) {
-                final feeStatus = fee['status']?.toString() ?? '';
-                final totalAmt = ((fee['totalAmount'] ?? 0) as num).toDouble();
+                final feeStatus = fee['feeStatus']?.toString() ?? '';
+                final totalAmt = ((fee['feeAmount'] ?? 0) as num).toDouble();
                 final paidAmt = ((fee['paidAmount'] ?? 0) as num).toDouble();
                 return feeStatus != 'paid' && (totalAmt - paidAmt) > 0.01;
               }).toList();
@@ -479,10 +479,10 @@ class _StudentHomeTabState extends ConsumerState<StudentHomeTab> with TickerProv
                 // Filter out fully-paid fees - only show outstanding ones.
                 ...outstanding.map((fee) {
                   final feeId = fee['_id']?.toString() ?? '';
-                  final feeStatus = fee['status']?.toString() ?? '';
+                  final feeStatus = fee['feeStatus']?.toString() ?? '';
                   final isPaidFee = feeStatus == 'paid';
                   final items = (fee['items'] as List?) ?? [];
-                  final totalAmt = ((fee['totalAmount'] ?? 0) as num).toDouble();
+                  final totalAmt = ((fee['feeAmount'] ?? 0) as num).toDouble();
                   final paidAmt = ((fee['paidAmount'] ?? 0) as num).toDouble();
                   final balanceAmt = totalAmt - paidAmt;
                   final semLabel = 'Sem ${fee['semester'] ?? '-'}, ${fee['academicYear'] ?? ''}';

@@ -87,13 +87,13 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
   }
 
   int get _totalStudents => _fees.map((f) => f['student']?['_id'] ?? f['student']).toSet().length;
-  double get _totalDue => _fees.fold(0.0, (s, f) => s + ((f['totalAmount'] ?? 0) as num).toDouble());
+  double get _totalDue => _fees.fold(0.0, (s, f) => s + ((f['feeAmount'] ?? 0) as num).toDouble());
   double get _totalPaid => _fees.fold(0.0, (s, f) => s + ((f['paidAmount'] ?? 0) as num).toDouble());
   double get _outstanding => _totalDue - _totalPaid;
   double get _collectionRate => _totalDue > 0 ? (_totalPaid / _totalDue * 100) : 0;
-  int get _fullyPaid => _fees.where((f) => f['status'] == 'paid').length;
-  int get _partialPaid => _fees.where((f) => f['status'] == 'partial').length;
-  int get _unpaid => _fees.where((f) => f['status'] == 'unpaid' || f['status'] == 'overdue').length;
+  int get _fullyPaid => _fees.where((f) => f['feeStatus'] == 'paid').length;
+  int get _partialPaid => _fees.where((f) => f['feeStatus'] == 'partial').length;
+  int get _unpaid => _fees.where((f) => f['feeStatus'] == 'unpaid' || f['feeStatus'] == 'overdue').length;
   double get _pct => _totalDue > 0 ? (_totalPaid / _totalDue).clamp(0.0, 1.0) : 0.0;
 
   void _showAllPayments(BuildContext context) {
@@ -142,9 +142,9 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
               separatorBuilder: (_, __) => Container(height: 1, margin: const EdgeInsets.symmetric(vertical: 8), color: t.dividerColor),
               itemBuilder: (_, i) {
                 final f = _fees[i];
-                final status = f['status'] ?? 'unpaid';
+                final status = f['feeStatus'] ?? 'unpaid';
                 final studentName = f['student']?['name'] ?? f['student']?['studentId'] ?? 'Student';
-                final amount = ((f['totalAmount'] ?? 0) as num).toDouble();
+                final amount = ((f['feeAmount'] ?? 0) as num).toDouble();
                 final paid = ((f['paidAmount'] ?? 0) as num).toDouble();
                 final col = status == 'paid' ? SAMsTheme.success : (status == 'partial' ? SAMsTheme.warning : SAMsTheme.error);
                 return Row(children: [
@@ -290,7 +290,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
     final t = Theme.of(context);
     final locale = ref.read(lp.languageProvider).locale;
     final isDark = t.brightness == Brightness.dark;
-    final unpaidFees = _fees.where((f) => f['status'] == 'unpaid' || f['status'] == 'overdue').toList();
+    final unpaidFees = _fees.where((f) => f['feeStatus'] == 'unpaid' || f['feeStatus'] == 'overdue').toList();
     showMoonModalBottomSheet(
       context: context,
       backgroundColor: isDark ? const Color(0xFF1F1F1F) : t.cardColor,
@@ -316,7 +316,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                   child: Row(children: [
                     Container(width: 6, height: 6, decoration: const BoxDecoration(color: SAMsTheme.error, shape: BoxShape.circle)),
                     const SizedBox(width: 8),
-                    Text('${f['student']?['name'] ?? 'Student'} — RM ${((f['totalAmount'] ?? 0) as num).toStringAsFixed(0)}', style: GoogleFonts.inter(fontSize: 11, color: isDark ? const Color(0xFF94989E) : Colors.grey)),
+                    Text('${f['student']?['name'] ?? 'Student'} — RM ${((f['feeAmount'] ?? 0) as num).toStringAsFixed(0)}', style: GoogleFonts.inter(fontSize: 11, color: isDark ? const Color(0xFF94989E) : Colors.grey)),
                   ]),
                 )),
                 if (unpaidFees.length > 3) Padding(
@@ -594,9 +594,9 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
                 ),
                 const SizedBox(height: 12),
                 ..._fees.take(5).map((f) {
-                  final status = f['status'] ?? 'unpaid';
+                  final status = f['feeStatus'] ?? 'unpaid';
                   final studentName = f['student']?['name'] ?? f['student']?['studentId'] ?? 'Student';
-                  final amount = ((f['totalAmount'] ?? 0) as num).toDouble();
+                  final amount = ((f['feeAmount'] ?? 0) as num).toDouble();
                   final paid = ((f['paidAmount'] ?? 0) as num).toDouble();
                   final col = status == 'paid' ? SAMsTheme.success : (status == 'partial' ? SAMsTheme.warning : SAMsTheme.error);
                   // Use updatedAt for paid/partial (last activity), createdAt for unpaid (when fee was created)

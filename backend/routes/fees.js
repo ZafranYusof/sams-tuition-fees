@@ -53,8 +53,8 @@ router.get('/:studentId', auth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
     const fees = await Fee.find({ student: student._id }).sort({ createdAt: -1 });
-    const totalDue = fees.reduce((s, f) => s + f.totalAmount, 0);
-    const totalPaid = fees.reduce((s, f) => s + f.paidAmount, 0);
+    const totalDue = fees.reduce((s, f) => s + (f.feeAmount || 0), 0);
+    const totalPaid = fees.reduce((s, f) => s + (f.paidAmount || 0), 0);
     res.json({ fees, summary: { total_due: totalDue, total_paid: totalPaid, balance: totalDue - totalPaid } });
   } catch (err) {
     console.error('Get fees error:', err.message);
@@ -73,8 +73,8 @@ router.get('/:studentId/summary', auth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
     const fees = await Fee.find({ student: student._id });
-    const totalDue = fees.reduce((s, f) => s + f.totalAmount, 0);
-    const totalPaid = fees.reduce((s, f) => s + f.paidAmount, 0);
+    const totalDue = fees.reduce((s, f) => s + (f.feeAmount || 0), 0);
+    const totalPaid = fees.reduce((s, f) => s + (f.paidAmount || 0), 0);
     res.json({ summary: { total_due: totalDue, total_paid: totalPaid, balance: totalDue - totalPaid } });
   } catch (err) {
     console.error('Fee summary error:', err.message);
@@ -99,10 +99,10 @@ router.post('/pay', auth, async (req, res) => {
     if (fee.student.toString() !== req.user.id) {
       return res.status(403).json({ error: 'You can only pay your own fees' });
     }
-    if (fee.status === 'paid') return res.status(400).json({ error: 'Already fully paid' });
+    if (fee.feeStatus === 'paid') return res.status(400).json({ error: 'Already fully paid' });
 
     // Cap amount at remaining balance to prevent overpayment
-    const remaining = fee.totalAmount - fee.paidAmount;
+    const remaining = (fee.feeAmount || 0) - (fee.paidAmount || 0);
     const actualAmount = Math.min(amount, remaining);
 
     const transactionId = 'FPX' + crypto.randomBytes(8).toString('hex').toUpperCase();
@@ -124,7 +124,7 @@ router.post('/pay', auth, async (req, res) => {
       { _id: feeId },
       { 
         $inc: { paidAmount: actualAmount },
-        $set: { status: (fee.paidAmount + actualAmount) >= fee.totalAmount ? 'paid' : 'partial' }
+        $set: { feeStatus: ((fee.paidAmount || 0) + actualAmount) >= (fee.feeAmount || 0) ? 'paid' : 'partial' }
       },
       { new: true }
     );
@@ -140,7 +140,7 @@ router.post('/pay', auth, async (req, res) => {
 router.post('/', auth, adminOnly, async (req, res) => {
   try {
     const Student = require('../models/Student');
-    let { student, studentId, items, semester, academicYear, dueDate } = req.body;
+    let { student, studentId, items, semester, academicYear, dueDate, feeType, feeDescription, feeAmount } = req.body;
 
     // Resolve studentId string to ObjectId
     if (!student && studentId) {
@@ -149,19 +149,38 @@ router.post('/', auth, adminOnly, async (req, res) => {
       student = studentDoc._id;
     }
     if (!student) return res.status(400).json({ error: 'Student ID required' });
-    if (!items || !items.length) return res.status(400).json({ error: 'Fee items required' });
 
-    const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0);
-    const fee = new Fee({
-      student,
-      items,
-      semester: semester || 1,
-      academicYear: academicYear || '2025/2026',
-      totalAmount,
-      paidAmount: 0,
-      status: 'unpaid',
-      dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-    });
+    // Support both items array and individual fields
+    let feeData;
+    if (items && items.length > 0) {
+      const firstItem = items[0];
+      feeData = {
+        student,
+        feeType: firstItem.category || 'Tuition',
+        feeDescription: firstItem.description || '',
+        feeAmount: items.reduce((sum, item) => sum + (item.amount || 0), 0),
+        feeSemester: semester || 1,
+        academicYear: academicYear || '2025/2026',
+        feeDueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        feeStatus: 'unpaid',
+        paidAmount: 0,
+      };
+    } else {
+      if (!feeAmount) return res.status(400).json({ error: 'Fee amount required' });
+      feeData = {
+        student,
+        feeType: feeType || 'Tuition',
+        feeDescription: feeDescription || '',
+        feeAmount,
+        feeSemester: semester || 1,
+        academicYear: academicYear || '2025/2026',
+        feeDueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        feeStatus: 'unpaid',
+        paidAmount: 0,
+      };
+    }
+
+    const fee = new Fee(feeData);
     await fee.save();
     res.status(201).json(fee);
   } catch (err) {

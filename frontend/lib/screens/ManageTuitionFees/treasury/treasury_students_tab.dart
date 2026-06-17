@@ -87,19 +87,19 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
       if (!grouped.containsKey(studentId)) {
         grouped[studentId] = {
           'student': student is Map ? student : {'_id': studentId, 'studentId': studentId},
-          'totalAmount': 0.0,
+          'feeAmount': 0.0,
           'paidAmount': 0.0,
           'feeCount': 0,
           'status': 'paid',
         };
       }
       
-      grouped[studentId]!['totalAmount'] = (grouped[studentId]!['totalAmount'] as double) + ((f['totalAmount'] ?? 0) as num).toDouble();
+      grouped[studentId]!['feeAmount'] = (grouped[studentId]!['feeAmount'] as double) + ((f['feeAmount'] ?? 0) as num).toDouble();
       grouped[studentId]!['paidAmount'] = (grouped[studentId]!['paidAmount'] as double) + ((f['paidAmount'] ?? 0) as num).toDouble();
       grouped[studentId]!['feeCount'] = (grouped[studentId]!['feeCount'] as int) + 1;
       
       // Determine worst status
-      final feeStatus = f['status'] ?? 'unpaid';
+      final feeStatus = f['feeStatus'] ?? 'unpaid';
       final currentStatus = grouped[studentId]!['status'] as String;
       if (feeStatus == 'unpaid' || feeStatus == 'overdue') {
         grouped[studentId]!['status'] = 'unpaid';
@@ -114,7 +114,7 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
     final student = s['student'] ?? {};
     final q = _query.toLowerCase();
     final matchQ = q.isEmpty || (student['name'] ?? '').toString().toLowerCase().contains(q) || (student['studentId'] ?? '').toString().toLowerCase().contains(q);
-    final status = s['status'] ?? 'unpaid';
+    final status = s['feeStatus'] ?? 'unpaid';
     final matchF = _filter == 'all' ||
         (_filter == 'paid' && status == 'paid') ||
         (_filter == 'partial' && status == 'partial') ||
@@ -132,7 +132,7 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
         '_id': 'skeleton_$i',
         'status': 'unpaid',
         'student': {'_id': 'stu_$i', 'name': 'Loading Student', 'studentId': 'CB00000', 'program': 'Computer Science'},
-        'totalAmount': 1234.0,
+        'feeAmount': 1234.0,
         'paidAmount': 0.0,
       }));
     }
@@ -248,8 +248,8 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
             final student = s['student'] ?? {};
             final studentId = student['_id'] ?? student['studentId'] ?? '';
             final studentName = student['name'] ?? 'Student';
-            final status = s['status'] ?? 'unpaid';
-            final balance = ((s['totalAmount'] ?? 0) as num).toDouble() - ((s['paidAmount'] ?? 0) as num).toDouble();
+            final status = s['feeStatus'] ?? 'unpaid';
+            final balance = ((s['feeAmount'] ?? 0) as num).toDouble() - ((s['paidAmount'] ?? 0) as num).toDouble();
             final isPaid = status == 'paid';
             final feeCount = s['feeCount'] ?? 0;
 
@@ -389,8 +389,8 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
     final bool isGrouped = data.containsKey('student') && data['student'] is Map;
     final Map student = isGrouped ? (data['student'] as Map) : data;
     final double totalDue = isGrouped
-        ? ((data['totalAmount'] ?? 0) as num).toDouble()
-        : ((data['fees'] as List?) ?? []).fold<double>(0, (s, f) => s + ((f['totalAmount'] ?? f['amount'] ?? 0) as num).toDouble());
+        ? ((data['feeAmount'] ?? 0) as num).toDouble()
+        : ((data['fees'] as List?) ?? []).fold<double>(0, (s, f) => s + ((f['feeAmount'] ?? f['amount'] ?? 0) as num).toDouble());
     final double totalPaid = isGrouped
         ? ((data['paidAmount'] ?? 0) as num).toDouble()
         : ((data['fees'] as List?) ?? []).fold<double>(0, (s, f) => s + ((f['paidAmount'] ?? 0) as num).toDouble());
