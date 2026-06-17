@@ -490,7 +490,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
                   child: Column(
                     children: [
-                      if (user?['role'] == 'student' || user?['role'] == 'admin') ...[
+                      if (user?['role'] == 'student') ...[
                         _ModuleRow(
                           index: '01',
                           title: 'Tuition Fees',
@@ -518,6 +518,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                           subtitle: 'Mark attendance, view history',
                           accent: accent,
                           onTap: () => Navigator.push(context, SlidePageRoute(page: const AttendanceScreen())),
+                        ),
+                      ] else if (user?['role'] == 'admin') ...[
+                        _ModuleRow(
+                          index: '01',
+                          title: 'Tuition Fees',
+                          subtitle: 'Manage student fees and payments',
+                          accent: accent,
+                          onTap: () => Navigator.push(context, SlidePageRoute(page: const FeesScreen())),
                         ),
                       ] else if (user?['role'] == 'lecturer') ...[
                         _ModuleRow(
