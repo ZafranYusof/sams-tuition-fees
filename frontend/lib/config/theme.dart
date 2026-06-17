@@ -19,6 +19,8 @@ class SAMsTheme {
   static const Color textMuted = Color(0xFF94989E);
   // Borders
   static const Color border = Color(0xFF292929); // beerus
+  // Cards
+  static const Color cardDark = Color(0xFF1F1F1F); // same as surface
   // Status
   static const Color success = Color(0xFF49B356); // roshi
   static const Color error = Color(0xFFFF4E64); // chichi
