@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const crypto = require('crypto');
-const Fee = require('../models/Fee');
-const Payment = require('../models/Payment');
+const Fee = require('../models/ManageTuitionFees/Fee');
+const Payment = require('../models/ManageTuitionFees/Payment');
 const User = require('../models/User');
 
 // Get my fees

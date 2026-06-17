@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const CurriculumActivity = require('../models/CurriculumActivity');
-const ActivityRegistration = require('../models/ActivityRegistration');
-const CreditClaim = require('../models/CreditClaim');
+const CurriculumActivity = require('../models/ManageCurriculumActivity/CurriculumActivity');
+const ActivityRegistration = require('../models/ManageCurriculumActivity/ActivityRegistration');
+const CreditClaim = require('../models/ManageCurriculumActivity/CreditClaim');
 const { auth } = require('../middleware/auth');
 
 // POST /activities — Create new activity (admin/PusatAdab)

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Campus = require('../models/Campus');
+const Campus = require('../models/ManageClassAttendance/Campus');
 const { auth } = require('../middleware/auth');
 
 // POST /campus — Create campus (admin)
