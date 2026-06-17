@@ -2,15 +2,15 @@ const mongoose = require('mongoose');
 const crypto = require('crypto');
 const Payment = require('../models/ManageTuitionFees/Payment');
 const Fee = require('../models/ManageTuitionFees/Fee');
-const User = require('../models/User');
+const Student = require('../models/Student');
 
 // Get payments by student ID
 exports.getPaymentsByStudentId = async (req, res) => {
   try {
-    const user = await User.findOne({ studentId: req.params.studentId });
-    if (!user) return res.json({ payments: [] });
+    const student = await Student.findOne({ studentId: req.params.studentId });
+    if (!student) return res.json({ payments: [] });
 
-    const payments = await Payment.find({ student: user._id }).populate('fee').sort({ paidAt: -1 });
+    const payments = await Payment.find({ student: student._id }).populate('fee').sort({ paidAt: -1 });
     res.json({ payments });
   } catch (err) {
     res.status(500).json({ error: err.message });

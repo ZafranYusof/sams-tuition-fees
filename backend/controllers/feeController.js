@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const crypto = require('crypto');
 const Fee = require('../models/ManageTuitionFees/Fee');
 const Payment = require('../models/ManageTuitionFees/Payment');
-const User = require('../models/User');
+const Student = require('../models/Student');
 
 // Get my fees
 exports.getMyFees = async (req, res) => {
@@ -24,9 +24,9 @@ exports.getFeesByStudentId = async (req, res) => {
       const payments = await Payment.find({ fee: sid }).sort({ paidAt: -1 });
       return res.json({ fee, payments });
     }
-    const user = await User.findOne({ studentId: sid });
-    if (!user) return res.json({ fees: [], summary: { total_due: 0, total_paid: 0, balance: 0 } });
-    const fees = await Fee.find({ student: user._id }).sort({ createdAt: -1 });
+    const student = await Student.findOne({ studentId: sid });
+    if (!student) return res.json({ fees: [], summary: { total_due: 0, total_paid: 0, balance: 0 } });
+    const fees = await Fee.find({ student: student._id }).sort({ createdAt: -1 });
     const totalDue = fees.reduce((s, f) => s + f.totalAmount, 0);
     const totalPaid = fees.reduce((s, f) => s + f.paidAmount, 0);
     res.json({ fees, summary: { total_due: totalDue, total_paid: totalPaid, balance: totalDue - totalPaid } });
@@ -38,9 +38,9 @@ exports.getFeesByStudentId = async (req, res) => {
 // Get summary
 exports.getFeeSummary = async (req, res) => {
   try {
-    const user = await User.findOne({ studentId: req.params.studentId });
-    if (!user) return res.json({ summary: { total_due: 0, total_paid: 0, balance: 0 } });
-    const fees = await Fee.find({ student: user._id });
+    const student = await Student.findOne({ studentId: req.params.studentId });
+    if (!student) return res.json({ summary: { total_due: 0, total_paid: 0, balance: 0 } });
+    const fees = await Fee.find({ student: student._id });
     const totalDue = fees.reduce((s, f) => s + f.totalAmount, 0);
     const totalPaid = fees.reduce((s, f) => s + f.paidAmount, 0);
     res.json({ summary: { total_due: totalDue, total_paid: totalPaid, balance: totalDue - totalPaid } });
@@ -104,9 +104,9 @@ exports.createFee = async (req, res) => {
     let { student, studentId, items, semester, academicYear, dueDate } = req.body;
 
     if (!student && studentId) {
-      const user = await User.findOne({ studentId });
-      if (!user) return res.status(404).json({ error: `Student ${studentId} not found` });
-      student = user._id;
+      const studentDoc = await Student.findOne({ studentId });
+      if (!studentDoc) return res.status(404).json({ error: `Student ${studentId} not found` });
+      student = studentDoc._id;
     }
     if (!student) return res.status(400).json({ error: 'Student ID required' });
     if (!items || !items.length) return res.status(400).json({ error: 'Fee items required' });

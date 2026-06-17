@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-const User = require('../models/User');
+const Student = require('../models/Student');
 
 let initialized = false;
 let initError = null; // Track init failure reason
@@ -60,8 +60,8 @@ async function sendToUser(userId, payload) {
   }
 
   try {
-    const user = await User.findById(userId).select('fcmTokens');
-    if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
+    const student = await Student.findById(userId).select('fcmTokens');
+    if (!student || !student.fcmTokens || student.fcmTokens.length === 0) {
       console.log(`[FCM] no tokens for user ${userId}`);
       return { success: false, reason: 'no_tokens' };
     }
@@ -75,11 +75,11 @@ async function sendToUser(userId, payload) {
         priority: 'high',
         notification: { channelId: 'sams_default', sound: 'default' },
       },
-      tokens: user.fcmTokens,
+      tokens: student.fcmTokens,
     };
 
     const response = await admin.messaging().sendEachForMulticast(message);
-    console.log(`[FCM] sent ${response.successCount}/${user.fcmTokens.length} to ${userId}`);
+    console.log(`[FCM] sent ${response.successCount}/${student.fcmTokens.length} to ${userId}`);
 
     // Cleanup invalid tokens
     if (response.failureCount > 0) {
@@ -89,11 +89,11 @@ async function sendToUser(userId, payload) {
           resp.error?.code === 'messaging/invalid-registration-token' ||
           resp.error?.code === 'messaging/registration-token-not-registered'
         )) {
-          invalidTokens.push(user.fcmTokens[idx]);
+          invalidTokens.push(student.fcmTokens[idx]);
         }
       });
       if (invalidTokens.length > 0) {
-        await User.findByIdAndUpdate(userId, {
+        await Student.findByIdAndUpdate(userId, {
           $pull: { fcmTokens: { $in: invalidTokens } },
         });
         console.log(`[FCM] cleaned ${invalidTokens.length} stale tokens`);
@@ -121,8 +121,8 @@ async function sendToUsers(userIds, payload) {
  * Send to all users with a specific role.
  */
 async function sendToRole(role, payload) {
-  const users = await User.find({ role, 'fcmTokens.0': { $exists: true } }).select('_id');
-  const ids = users.map(u => u._id.toString());
+  const students = await Student.find({ 'fcmTokens.0': { $exists: true } }).select('_id');
+  const ids = students.map(u => u._id.toString());
   return sendToUsers(ids, payload);
 }
 

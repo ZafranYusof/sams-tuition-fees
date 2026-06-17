@@ -8,6 +8,7 @@ const studentSchema = new mongoose.Schema({
   studEmail: { type: String, unique: true, required: true },    // StudEmail
   studPassword: { type: String, required: true },               // StudPassword
   major: { type: String },                                      // Major
+  fcmTokens: { type: [String], default: [] },                   // FCM push notification tokens
   createdAt: { type: Date, default: Date.now }
 });
 

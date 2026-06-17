@@ -263,3 +263,78 @@ router.post('/change-password', auth, async (req, res) => {
 });
 
 module.exports = router;
+
+// FCM Token Management (moved from routes/users.js)
+const fcm = require('../services/fcmService');
+
+/**
+ * Register or update FCM device token for authenticated student.
+ * POST /api/auth/fcm-token
+ * body: { fcmToken }
+ */
+router.post('/fcm-token', auth, async (req, res) => {
+  try {
+    const { fcmToken } = req.body;
+    if (!fcmToken || typeof fcmToken !== 'string') {
+      return res.status(400).json({ error: 'fcmToken required' });
+    }
+
+    // Only students have FCM tokens in this system
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ error: 'FCM tokens are only for students' });
+    }
+
+    // $addToSet prevents duplicates
+    await Student.findByIdAndUpdate(req.user.id, {
+      $addToSet: { fcmTokens: fcmToken },
+    });
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[auth/fcm-token]', e);
+    res.status(500).json({ error: 'Failed to register token' });
+  }
+});
+
+/**
+ * Remove FCM token (called on logout).
+ * DELETE /api/auth/fcm-token
+ * body: { fcmToken }
+ */
+router.delete('/fcm-token', auth, async (req, res) => {
+  try {
+    const { fcmToken } = req.body;
+    if (!fcmToken) {
+      return res.status(400).json({ error: 'fcmToken required' });
+    }
+    await Student.findByIdAndUpdate(req.user.id, {
+      $pull: { fcmTokens: fcmToken },
+    });
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[auth/fcm-token DELETE]', e);
+    res.status(500).json({ error: 'Failed to remove token' });
+  }
+});
+
+/**
+ * Send a test notification to self (debug/demo).
+ * POST /api/auth/test-notification
+ */
+router.post('/test-notification', auth, async (req, res) => {
+  try {
+    const result = await fcm.sendToUser(req.user.id, {
+      title: 'SAMS Test Notification',
+      body: 'Push notifications working. Backend → FCM → your device.',
+      data: { type: 'test', timestamp: Date.now().toString() },
+    });
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (e) {
+    console.error('[auth/test-notification]', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});

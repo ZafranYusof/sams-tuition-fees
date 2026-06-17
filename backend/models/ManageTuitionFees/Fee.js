@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const feeSchema = new mongoose.Schema({
-  student: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  student: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
   feeType: { type: String, required: true },  // contoh: "Tuition", "Asrama", "Insurance"
   feeDescription: { type: String },
   feeAmount: { type: Number, required: true },

@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const paymentSchema = new mongoose.Schema({
-  student: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  student: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
   fee: { type: mongoose.Schema.Types.ObjectId, ref: 'Fee', required: true },
   paymentAmount: { type: Number, required: true },
   paymentMethod: { type: String, enum: ['fpx', 'card', 'cash', 'scholarship'], default: 'fpx' },

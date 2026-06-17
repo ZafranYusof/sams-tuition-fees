@@ -8,7 +8,7 @@ const activitySchema = new mongoose.Schema({
   date: { type: Date },
   venue: { type: String },
   capacity: { type: Number, default: 100 },
-  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
   points: { type: Number, default: 0 },
   status: { type: String, enum: ['upcoming', 'ongoing', 'completed', 'cancelled'], default: 'upcoming' },
   image: { type: String },

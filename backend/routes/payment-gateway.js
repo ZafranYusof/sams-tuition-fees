@@ -21,13 +21,13 @@ router.post('/fpx/create', auth, async (req, res) => {
     if (!amount || amount <= 0) {
       return res.status(400).json({ error: 'Invalid amount' });
     }
-    const User = require('../models/User');
+    const Student = require('../models/Student');
     
     const fee = await Fee.findById(feeId);
     if (!fee) return res.status(404).json({ error: 'Fee not found' });
 
     // Get full user info from DB
-    const user = await User.findById(req.user.id);
+    const student = await Student.findById(req.user.id);
 
     const billData = new URLSearchParams({
       userSecretKey: process.env.TOYYIBPAY_SECRET_KEY,
@@ -40,9 +40,9 @@ router.post('/fpx/create', auth, async (req, res) => {
       billReturnUrl: `${process.env.APP_URL || 'https://sams-app-vasb.onrender.com'}/api/payment/fpx/callback`,
       billCallbackUrl: `${process.env.APP_URL || 'https://sams-app-vasb.onrender.com'}/api/payment/fpx/webhook`,
       billExternalReferenceNo: `FPX-${feeId}-${Date.now()}`,
-      billTo: user?.name || 'Student',
-      billEmail: user?.email || 'student@umpsa.edu.my',
-      billPhone: user?.phone || '0111111111',
+      billTo: student?.studName || 'Student',
+      billEmail: student?.studEmail || 'student@umpsa.edu.my',
+      billPhone: student?.phone || '0111111111',
       billPaymentChannel: 0, // FPX only
     });
 

@@ -45,14 +45,14 @@ router.get('/:studentId', auth, async (req, res) => {
       return res.json({ fee, payments });
     }
     // Otherwise find by studentId string
-    const User = require('../models/User');
-    const user = await User.findOne({ studentId: sid });
-    if (!user) return res.json({ fees: [], summary: { total_due: 0, total_paid: 0, balance: 0 } });
+    const Student = require('../models/Student');
+    const student = await Student.findOne({ studentId: sid });
+    if (!student) return res.json({ fees: [], summary: { total_due: 0, total_paid: 0, balance: 0 } });
     // Authorization: only own data or admin
-    if (user._id.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (student._id.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
-    const fees = await Fee.find({ student: user._id }).sort({ createdAt: -1 });
+    const fees = await Fee.find({ student: student._id }).sort({ createdAt: -1 });
     const totalDue = fees.reduce((s, f) => s + f.totalAmount, 0);
     const totalPaid = fees.reduce((s, f) => s + f.paidAmount, 0);
     res.json({ fees, summary: { total_due: totalDue, total_paid: totalPaid, balance: totalDue - totalPaid } });
@@ -65,14 +65,14 @@ router.get('/:studentId', auth, async (req, res) => {
 // Get summary by student ID
 router.get('/:studentId/summary', auth, async (req, res) => {
   try {
-    const User = require('../models/User');
-    const user = await User.findOne({ studentId: req.params.studentId });
-    if (!user) return res.json({ summary: { total_due: 0, total_paid: 0, balance: 0 } });
+    const Student = require('../models/Student');
+    const student = await Student.findOne({ studentId: req.params.studentId });
+    if (!student) return res.json({ summary: { total_due: 0, total_paid: 0, balance: 0 } });
     // Authorization: only own data or admin
-    if (user._id.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (student._id.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
-    const fees = await Fee.find({ student: user._id });
+    const fees = await Fee.find({ student: student._id });
     const totalDue = fees.reduce((s, f) => s + f.totalAmount, 0);
     const totalPaid = fees.reduce((s, f) => s + f.paidAmount, 0);
     res.json({ summary: { total_due: totalDue, total_paid: totalPaid, balance: totalDue - totalPaid } });
@@ -139,14 +139,14 @@ router.post('/pay', auth, async (req, res) => {
 // Admin: Create fee for student
 router.post('/', auth, adminOnly, async (req, res) => {
   try {
-    const User = require('../models/User');
+    const Student = require('../models/Student');
     let { student, studentId, items, semester, academicYear, dueDate } = req.body;
 
     // Resolve studentId string to ObjectId
     if (!student && studentId) {
-      const user = await User.findOne({ studentId });
-      if (!user) return res.status(404).json({ error: `Student ${studentId} not found` });
-      student = user._id;
+      const studentDoc = await Student.findOne({ studentId });
+      if (!studentDoc) return res.status(404).json({ error: `Student ${studentId} not found` });
+      student = studentDoc._id;
     }
     if (!student) return res.status(400).json({ error: 'Student ID required' });
     if (!items || !items.length) return res.status(400).json({ error: 'Fee items required' });

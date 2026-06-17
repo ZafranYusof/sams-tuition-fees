@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const registrationSchema = new mongoose.Schema({
-  student: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  student: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
   course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
   semester: { type: Number, required: true },
   academicYear: { type: String, required: true },

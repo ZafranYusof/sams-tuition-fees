@@ -63,9 +63,9 @@ router.post('/send-reminder', auth, adminOnly, async (req, res) => {
 router.put('/read-all/:studentId', auth, async (req, res) => {
   try {
     // Authorization: only own notifications or admin
-    const User = require('../models/User');
-    const user = await User.findById(req.user.id);
-    if (user.studentId !== req.params.studentId && req.user.role !== 'admin') {
+    const Student = require('../models/Student');
+    const student = await Student.findById(req.user.id);
+    if (student.studentId !== req.params.studentId && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
     await Notification.updateMany({ studentId: req.params.studentId }, { read: true });
@@ -85,9 +85,9 @@ router.put('/:id/read', auth, async (req, res) => {
     const notif = await Notification.findById(req.params.id);
     if (!notif) return res.status(404).json({ error: 'Notification not found' });
     // Authorization: only own notification or admin
-    const User = require('../models/User');
-    const user = await User.findById(req.user.id);
-    if (notif.studentId !== user.studentId && req.user.role !== 'admin') {
+    const Student = require('../models/Student');
+    const student = await Student.findById(req.user.id);
+    if (notif.studentId !== student.studentId && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
     await Notification.findByIdAndUpdate(req.params.id, { read: true });
@@ -102,9 +102,9 @@ router.put('/:id/read', auth, async (req, res) => {
 router.get('/:studentId', auth, async (req, res) => {
   try {
     // Authorization: only own notifications or admin
-    const User = require('../models/User');
-    const user = await User.findById(req.user.id);
-    if (user.studentId !== req.params.studentId && req.user.role !== 'admin') {
+    const Student = require('../models/Student');
+    const student = await Student.findById(req.user.id);
+    if (student.studentId !== req.params.studentId && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
     const notifications = await Notification.find({ studentId: req.params.studentId }).sort({ createdAt: -1 });
