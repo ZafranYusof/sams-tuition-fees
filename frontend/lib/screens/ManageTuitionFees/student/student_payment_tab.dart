@@ -183,54 +183,42 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
   }
 
   /// Flatten unpaid items across all fees into a list of pickable rows.
-  /// Each row carries: feeId, itemIndex (within fee.items[]), description, balance.
+  /// Each row carries: feeId, description, balance.
+  /// Since our Fee model doesn't have items array, each fee is treated as one item.
   List<Map<String, dynamic>> get _unpaidItems {
     final List<Map<String, dynamic>> out = [];
     for (var fee in _fees) {
       final feeId = fee['_id']?.toString() ?? '';
-      final items = (fee['items'] as List?) ?? [];
-      for (var idx = 0; idx < items.length; idx++) {
-        final item = items[idx] as Map?;
-        if (item == null) continue;
-        final amount = ((item['amount'] ?? 0) as num).toDouble();
-        final paid = ((item['paidAmount'] ?? 0) as num).toDouble();
-        final bal = amount - paid;
-        if (bal <= 0.01) continue; // skip fully paid items
-        out.add({
-          'feeId': feeId,
-          'itemIndex': idx,
-          'description': item['description']?.toString() ?? 'Item',
-          'category': item['category']?.toString() ?? 'other',
-          'balance': bal,
-          'feeAmount': amount,
-          'paidAmount': paid,
-        });
-      }
+      final amount = ((fee['feeAmount'] ?? 0) as num).toDouble();
+      final paid = ((fee['paidAmount'] ?? 0) as num).toDouble();
+      final bal = amount - paid;
+      if (bal <= 0.01) continue; // skip fully paid fees
+      out.add({
+        'feeId': feeId,
+        'description': fee['feeType']?.toString() ?? fee['feeDescription']?.toString() ?? 'Fee',
+        'balance': bal,
+        'feeAmount': amount,
+        'paidAmount': paid,
+      });
     }
     return out;
   }
 
   /// ALL items including paid (for display in "Pay for" chips).
+  /// Since our Fee model doesn't have items array, each fee is treated as one item.
   List<Map<String, dynamic>> get _allItems {
     final List<Map<String, dynamic>> out = [];
     for (var fee in _fees) {
       final feeId = fee['_id']?.toString() ?? '';
-      final items = (fee['items'] as List?) ?? [];
-      for (var idx = 0; idx < items.length; idx++) {
-        final item = items[idx] as Map?;
-        if (item == null) continue;
-        final amount = ((item['amount'] ?? 0) as num).toDouble();
-        final paid = ((item['paidAmount'] ?? 0) as num).toDouble();
-        out.add({
-          'feeId': feeId,
-          'itemIndex': idx,
-          'description': item['description']?.toString() ?? 'Item',
-          'category': item['category']?.toString() ?? 'other',
-          'balance': amount - paid,
-          'feeAmount': amount,
-          'paidAmount': paid,
-        });
-      }
+      final amount = ((fee['feeAmount'] ?? 0) as num).toDouble();
+      final paid = ((fee['paidAmount'] ?? 0) as num).toDouble();
+      out.add({
+        'feeId': feeId,
+        'description': fee['feeType']?.toString() ?? fee['feeDescription']?.toString() ?? 'Fee',
+        'balance': amount - paid,
+        'feeAmount': amount,
+        'paidAmount': paid,
+      });
     }
     return out;
   }
