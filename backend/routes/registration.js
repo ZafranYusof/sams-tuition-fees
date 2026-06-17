@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Enrollment = require('../models/ManageOpenRegistration/Enrollment');
-const Session = require('../models/Session');
+const Session = require('../models/ManageClassAttendance/Session');
 const Course = require('../models/ManageOpenRegistration/Course');
 const FacultyRegistrar = require('../models/FacultyRegistrar');
 const { auth } = require('../middleware/auth');

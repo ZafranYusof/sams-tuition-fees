@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Session = require('../models/Session');
+const Session = require('../models/ManageClassAttendance/Session');
 const { auth } = require('../middleware/auth');
 
 // POST /sessions — Create session (lecturer/admin)
