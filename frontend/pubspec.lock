@@ -766,6 +766,9 @@ packages:
     source: hosted
     version: "0.7.10"
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
   timezone:
     dependency: transitive
     description:
@@ -947,6 +950,9 @@ packages:
 sdks:
   dart: ">=3.9.0 <4.0.0"
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
   flutter: ">=3.38.0"
 =======
   flutter: ">=3.35.0"
