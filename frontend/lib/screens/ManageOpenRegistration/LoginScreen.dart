@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../config/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
-import '../screens/student_page/StudentDashboard.dart';
-import '../screens/registrar_page/RegistrarDashboard.dart';
+import 'student_page/StudentDashboard.dart';
+import 'registrar_page/RegistrarDashboard.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -123,7 +123,7 @@ class LoginScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+          color: isDark ? SAMsTheme.surfaceLight : SAMsTheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: brass.withOpacity(0.3)),
         ),

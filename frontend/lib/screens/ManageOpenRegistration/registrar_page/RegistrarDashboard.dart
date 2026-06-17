@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../config/theme.dart';
+import '../../widgets/glass_card.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
-import '../registrar_page/RegistrationSession.dart';
-import '../registrar_page/SubjectQuotaManagement.dart';
+import 'RegistrationSession.dart';
+import 'SubjectQuotaManagement.dart';
 
 class RegistrarDashboard extends StatelessWidget {
   const RegistrarDashboard({super.key});
@@ -10,61 +12,126 @@ class RegistrarDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final isDark = t.brightness == Brightness.dark;
+    final muted = SAMsTheme.textMuted;
+    final brass = SAMsTheme.primary;
     
     return Scaffold(
       backgroundColor: t.colorScheme.surface,
       appBar: AppBar(
-        title: Text('Registrar Hub', style: TextStyle(fontFamily: 'Inter', fontSize: 20)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Administrative Tools', style: TextStyle(fontFamily: 'Inter', fontSize: 28)),
-            const SizedBox(height: 24),
-            
-            // Navigate to Registration Session (SessionManagement + SubjectQuotaManagement)
-            _buildAdminCard(
-              context,
-              title: 'Registration Session',
-              subtitle: 'Configure timelines and system status.',
-              icon: Iconsax.clock_copy,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SetupRegistrationScreen()),
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Navigate to Quota/Catalog Management
-            _buildAdminCard(
-              context,
-              title: 'Course Catalog & Quotas',
-              subtitle: 'Update course lists and adjust enrollment caps.',
-              icon: Iconsax.setting_5_copy,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SubjectQuotaManagement()),
-              ),
-            ),
-          ],
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Iconsax.arrow_left_copy, color: t.colorScheme.onSurface, size: 20),
+          onPressed: () => Navigator.pop(context),
         ),
+        title: Text(
+          'REGISTRAR HUB',
+          style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: muted),
+        ),
+        centerTitle: true,
       ),
-    );
-  }
-
-  Widget _buildAdminCard(BuildContext context, {required String title, required String subtitle, required IconData icon, required VoidCallback onTap}) {
-    final t = Theme.of(context);
-    return Card(
-      child: ListTile(
-        leading: Icon(icon, color: SAMsTheme.primary),
-        title: Text(title, style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Iconsax.arrow_right_3_copy),
-        onTap: onTap,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Administrative\nTools.', style: TextStyle(fontFamily: 'Inter', fontSize: 28, fontWeight: FontWeight.w400, height: 1.15, color: t.colorScheme.onSurface)),
+              const SizedBox(height: 8),
+              Text('Manage registration sessions, course quotas, and system configurations.', style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: muted, height: 1.4)),
+              const SizedBox(height: 32),
+              
+              // Registration Session
+              GlassCard(
+                padding: EdgeInsets.zero,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SetupRegistrationScreen()),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44, height: 44,
+                          decoration: BoxDecoration(
+                            color: brass.withAlpha(25),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: brass.withAlpha(50)),
+                          ),
+                          child: Icon(Iconsax.clock_copy, color: brass, size: 20),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Registration Session', style: TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w500, color: t.colorScheme.onSurface)),
+                              const SizedBox(height: 2),
+                              Text('Configure timelines and system status.', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: muted)),
+                            ],
+                          ),
+                        ),
+                        Icon(Iconsax.arrow_right_3_copy, color: muted, size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              
+              // Course Catalog & Quotas
+              GlassCard(
+                padding: EdgeInsets.zero,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SubjectQuotaManagement()),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44, height: 44,
+                          decoration: BoxDecoration(
+                            color: brass.withAlpha(25),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: brass.withAlpha(50)),
+                          ),
+                          child: Icon(Iconsax.setting_5_copy, color: brass, size: 20),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Course Catalog & Quotas', style: TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w500, color: t.colorScheme.onSurface)),
+                              const SizedBox(height: 2),
+                              Text('Update course lists and adjust enrollment caps.', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: muted)),
+                            ],
+                          ),
+                        ),
+                        Icon(Iconsax.arrow_right_3_copy, color: muted, size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

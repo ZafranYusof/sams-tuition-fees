@@ -16,7 +16,8 @@ import '../../providers/language_provider.dart' as lp;
 import '../../services/api_service.dart';
 import '../ManageAuth/login_screen.dart';
 import '../ManageTuitionFees/fees_screen.dart';
-import '../ManageOpenRegistration/registration_screen.dart';
+import '../ManageOpenRegistration/student_page/StudentDashboard.dart';
+import '../ManageOpenRegistration/registrar_page/RegistrarDashboard.dart';
 import '../ManageCurriculumActivity/curriculum_screen.dart';
 import '../ManageClassAttendance/attendance_screen.dart';
 import 'profile_screen.dart';
@@ -503,7 +504,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                           title: 'Course Registration',
                           subtitle: 'Register courses, view enrollment',
                           accent: accent,
-                          onTap: () => Navigator.push(context, SlidePageRoute(page: const RegistrationScreen())),
+                          onTap: () => Navigator.push(context, SlidePageRoute(page: const StudentDashboard())),
                         ),
                         _ModuleRow(
                           index: '03',
@@ -541,7 +542,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                           title: 'Open Registration',
                           subtitle: 'Manage course registration',
                           accent: accent,
-                          onTap: () => Navigator.push(context, SlidePageRoute(page: const RegistrationScreen())),
+                          onTap: () => Navigator.push(context, SlidePageRoute(page: const RegistrarDashboard())),
                         ),
                       ] else if (user?['role'] == 'staff') ...[
                         _ModuleRow(

@@ -26,7 +26,7 @@ class _SetupRegistrationScreenState extends State<SetupRegistrationScreen> {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Theme(
           data: isDark 
-            ? ThemeData.dark().copyWith(colorScheme: const ColorScheme.dark(primary: SAMsTheme.primary, onPrimary: Colors.black, surface: SAMsTheme.cardDark))
+            ? ThemeData.dark().copyWith(colorScheme: const ColorScheme.dark(primary: SAMsTheme.primary, onPrimary: SAMsTheme.textPrimary, surface: SAMsTheme.cardDark))
             : ThemeData.light().copyWith(colorScheme: const ColorScheme.light(primary: SAMsTheme.primary)),
           child: child!,
         );
@@ -201,7 +201,7 @@ class _SetupRegistrationScreenState extends State<SetupRegistrationScreen> {
                 width: double.infinity,
                 height: 50,
                 child: Material(
-                  color: isTimelineInvalid ? Colors.grey.withAlpha(51) : t.colorScheme.onSurface,
+                  color: isTimelineInvalid ? SAMsTheme.textMuted.withAlpha(51) : t.colorScheme.onSurface,
                   borderRadius: BorderRadius.circular(12),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
@@ -214,8 +214,8 @@ class _SetupRegistrationScreenState extends State<SetupRegistrationScreen> {
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          backgroundColor: Colors.green,
-                          content: Text('Open Registration timeline sequence confirmed successfully.', style: TextStyle(fontFamily: 'Inter', color: Colors.white)),
+                          backgroundColor: SAMsTheme.success,
+                          content: Text('Open Registration timeline sequence confirmed successfully.', style: TextStyle(fontFamily: 'Inter', color: SAMsTheme.textPrimary)),
                         ),
                       );
 

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
+import '../../providers/auth_provider.dart';
 import 'SubjectRegistration.dart';
 
 class StudentDashboard extends ConsumerStatefulWidget {
@@ -19,11 +20,21 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> with Ticker
   late Animation<double> _flipAnim;
   bool _isFlipped = false;
 
+  String _userName = 'Student';
+
   @override
   void initState() {
     super.initState();
     _flipController = AnimationController(duration: const Duration(milliseconds: 400), vsync: this);
     _flipAnim = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _flipController, curve: Curves.easeInOut));
+    _loadUserName();
+  }
+
+  void _loadUserName() {
+    final user = ref.read(authProvider).user;
+    if (user != null) {
+      setState(() => _userName = user['name'] ?? 'Student');
+    }
   }
 
   @override
@@ -80,7 +91,7 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> with Ticker
             const SizedBox(height: 24),
             Text(DateFormat('EEEE, d MMMM').format(DateTime.now()).toUpperCase(), style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: muted)),
             const SizedBox(height: 6),
-            Text('Good morning,\nMuhammad.', style: TextStyle(fontFamily: 'Inter', fontSize: 36, fontWeight: FontWeight.w400, height: 1.15, color: t.colorScheme.onSurface)),
+            Text('Welcome,\n${_userName.split(' ').first}.', style: TextStyle(fontFamily: 'Inter', fontSize: 36, fontWeight: FontWeight.w400, height: 1.15, color: t.colorScheme.onSurface)),
             const SizedBox(height: 28),
             
             // 🌟 ACADEMIC MODULES
@@ -216,8 +227,8 @@ Widget _buildWorkspaceCard({required BuildContext context, required String numbe
           children: [
             Icon(icon, size: 20, color: SAMsTheme.primary),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 16)), Text(subtitle, style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: Colors.grey))])),
-            const Icon(Iconsax.arrow_right_3_copy, size: 14, color: Colors.grey),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 16)), Text(subtitle, style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: muted))])),
+            const Icon(Iconsax.arrow_right_3_copy, size: 14, color: SAMsTheme.textMuted),
           ],
         ),
       ),

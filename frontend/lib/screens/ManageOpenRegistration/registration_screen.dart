@@ -35,6 +35,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> with Si
         _loading = false;
       });
     } catch (e) {
+      print('Registration load error: $e');
       setState(() => _loading = false);
     }
   }
