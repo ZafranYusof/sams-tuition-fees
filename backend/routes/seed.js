@@ -1,9 +1,9 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const Student = require('../models/ManageAuth/Student');
-const Lecturer = require('../models/ManageAuth/Lecturer');
-const FacultyRegistrar = require('../models/ManageAuth/FacultyRegistrar');
-const PusatAdab = require('../models/ManageAuth/PusatAdab');
+const Student = require('../models/Student');
+const Lecturer = require('../models/Lecturer');
+const FacultyRegistrar = require('../models/FacultyRegistrar');
+const PusatAdab = require('../models/PusatAdab');
 const Treasury = require('../models/ManageTuitionFees/Treasury');
 const Fee = require('../models/ManageTuitionFees/Fee');
 
