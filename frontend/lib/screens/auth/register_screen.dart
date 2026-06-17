@@ -137,8 +137,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     // Navigate to home when authenticated after registration
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (next.isAuthenticated && !(prev?.isAuthenticated ?? false)) {
+        final role = next.user?['role'] ?? 'student';
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainShell()),
+          MaterialPageRoute(builder: (_) => MainShell(role: role)),
           (route) => false,
         );
       }

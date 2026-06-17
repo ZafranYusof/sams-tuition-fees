@@ -15,26 +15,23 @@ import '../../providers/language_provider.dart';
 import '../../providers/language_provider.dart' as lp;
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
+import '../home/profile_screen.dart';
 import '../fees/fees_screen.dart';
-import '../registration/registration_screen.dart';
-import '../curriculum/curriculum_screen.dart';
-import '../attendance/attendance_screen.dart';
-import 'profile_screen.dart';
 import '../../widgets/page_transitions.dart';
 import '../../widgets/premium_widgets.dart';
 import '../../widgets/pressable_card.dart';
 import '../../widgets/shimmer_loading.dart';
 
-class DashboardScreen extends ConsumerStatefulWidget {
-  const DashboardScreen({super.key});
+class LecturerDashboard extends ConsumerStatefulWidget {
+  const LecturerDashboard({super.key});
 
   @override
-  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<LecturerDashboard> createState() => _LecturerDashboardState();
 }
 
-class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerProviderStateMixin {
+class _LecturerDashboardState extends ConsumerState<LecturerDashboard> with TickerProviderStateMixin {
   String? _profileImage;
-  Map<String, dynamic>? _feeSummary;
+  Map<String, dynamic>? _stats;
 
   late AnimationController _staggerController;
   late AnimationController _balancePulse;
@@ -60,7 +57,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
       CurvedAnimation(parent: _flipController, curve: Curves.easeInOutBack),
     );
     
-    // 5 staggered items: header, greeting, info card, balance, quick access
+    // 5 staggered items: header, greeting, info card, stats, quick access
     _staggerAnims = List.generate(5, (i) => CurvedAnimation(
       parent: _staggerController,
       curve: Interval(i * 0.15, 0.4 + i * 0.15, curve: Curves.easeOutCubic),
@@ -68,7 +65,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
     
     _loadAll();
     _staggerController.forward();
-
   }
 
   @override
@@ -82,36 +78,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
   }
 
   Future<void> _loadAll() async {
-    await Future.wait([_loadProfileImage(), _loadFeeSummary()]);
+    await Future.wait([_loadProfileImage(), _loadStats()]);
   }
 
   Future<void> _loadProfileImage() async {
     final prefs = await SharedPreferences.getInstance();
     final user = ref.read(authProvider).user;
-    final id = user?['studentId'] ?? user?['student_id'] ?? user?['_id'] ?? user?['id'] ?? 'guest';
+    final id = user?['lecturerId'] ?? user?['lecturer_id'] ?? user?['_id'] ?? user?['id'] ?? 'guest';
     final path = prefs.getString('profile_image_$id');
-    // Verify file exists before setting
     if (path != null && File(path).existsSync()) {
       setState(() => _profileImage = path);
     }
   }
 
-  Future<void> _loadFeeSummary() async {
+  Future<void> _loadStats() async {
     try {
       final user = ref.read(authProvider).user;
-      final sid = user?['studentId'] ?? user?['student_id'] ?? '';
-      // Skip for admin users
-      if (sid.isNotEmpty && user?['role'] != 'admin') {
-        final data = await ApiService.get('/fees/$sid/summary');
+      final lid = user?['lecturerId'] ?? user?['lecturer_id'] ?? user?['_id'] ?? user?['id'] ?? '';
+      if (lid.isNotEmpty) {
+        final data = await ApiService.get('/lecturers/$lid/stats');
         setState(() {
-          _feeSummary = data['summary'];
-          _hasUnread = true; // Simulate unread for demo
+          _stats = data['stats'] ?? data;
+          _hasUnread = true;
         });
-        // #3 Animated counter
         _countController.reset();
         _countController.forward();
       }
-    } catch (_) {}
+    } catch (_) {
+      // Gracefully handle — stats are optional
+    }
   }
 
   Future<void> _refresh() async {
@@ -133,99 +128,93 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
     );
   }
 
-  Widget _buildBalanceFront(bool isDark, Color accent, Color muted, ThemeData t) {
-    final user = ref.watch(authProvider).user;
-    final isAdmin = user?['role'] == 'admin';
+  Widget _buildStatsFront(bool isDark, Color accent, Color muted, ThemeData t) {
+    final totalStudents = (_stats?['totalStudents'] ?? 0) is num
+        ? (_stats?['totalStudents'] ?? 0) as num
+        : 0;
+    final totalClasses = (_stats?['totalClasses'] ?? 0) is num
+        ? (_stats?['totalClasses'] ?? 0) as num
+        : 0;
 
-    final balance = ((_feeSummary?['balance'] ?? 0) is num
-        ? (_feeSummary?['balance'] ?? 0) as num
-        : 0).toDouble();
-
-    final innerChild = isAdmin
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(width: 18, height: 1, color: accent),
-                  const SizedBox(width: 8),
-                  Text('FEE MANAGEMENT',
-                    style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
-                  ),
-                  const Spacer(),
-                  Icon(Icons.admin_panel_settings_outlined, size: 14, color: muted.withValues(alpha: 0.5)),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Text('Treasury Portal',
-                style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 24, fontWeight: FontWeight.w500, height: 1.2),
-              ),
-              const SizedBox(height: 8),
-              Text('Manage fees, view collection stats, and send reminders.',
-                style: t.textTheme.bodyMedium?.copyWith(fontSize: 13, color: muted),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text('Tap module above to manage',
-                      style: GoogleFonts.inter(color: accent, fontSize: 12, fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                  Icon(Icons.arrow_forward_rounded, size: 18, color: accent),
-                ],
-              ),
-            ],
-          )
-        : Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(width: 18, height: 1, color: accent),
-              const SizedBox(width: 8),
-              Text('OUTSTANDING BALANCE',
-                style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
-              ),
-              const Spacer(),
-              Icon(Icons.flip_rounded, size: 14, color: muted.withValues(alpha: 0.5)),
-            ],
-          ),
-          const SizedBox(height: 14),
-          // #3 Animated counter — premium odometer-style flip per digit
-          FlipCurrencyText(
-            value: balance,
-            prefix: 'RM ',
-            style: GoogleFonts.inter(
-              color: t.colorScheme.onSurface,
-              fontSize: 40,
-              fontWeight: FontWeight.w400,
-              letterSpacing: -1.2,
-              height: 1,
+    final innerChild = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(width: 18, height: 1, color: accent),
+            const SizedBox(width: 8),
+            Text('OVERVIEW',
+              style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _feeSummary != null && balance <= 0
-                    ? 'Fully settled. Tap to see breakdown.'
-                    : 'Tap to flip. Double-tap to pay.',
-                  style: t.textTheme.bodyMedium?.copyWith(fontSize: 13),
+            const Spacer(),
+            Icon(Icons.flip_rounded, size: 14, color: muted.withValues(alpha: 0.5)),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('My Students',
+                  style: GoogleFonts.inter(color: muted, fontSize: 11, fontWeight: FontWeight.w500),
                 ),
+                const SizedBox(height: 4),
+                FlipCurrencyText(
+                  value: totalStudents.toDouble(),
+                  prefix: '',
+                  style: GoogleFonts.inter(
+                    color: t.colorScheme.onSurface,
+                    fontSize: 40,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: -1.2,
+                    height: 1,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text('Active Classes',
+                  style: GoogleFonts.inter(color: muted, fontSize: 11, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 4),
+                Text(totalClasses.toString(),
+                  style: GoogleFonts.inter(
+                    color: accent,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: -0.8,
+                    height: 1,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                _stats != null
+                  ? 'Tap to see fee collection details.'
+                  : 'Loading statistics...',
+                style: t.textTheme.bodyMedium?.copyWith(fontSize: 13),
               ),
-              Icon(Icons.arrow_forward_rounded, size: 18, color: accent),
-            ],
-          ),
-        ],
-      );
+            ),
+            Icon(Icons.arrow_forward_rounded, size: 18, color: accent),
+          ],
+        ),
+      ],
+    );
 
     return AnimatedBuilder(
       animation: _balancePulse,
       builder: (_, child) => Stack(
         children: [
-          // Gradient backdrop for the glass blur to read against
           Positioned.fill(child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
@@ -255,11 +244,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
     );
   }
 
-  Widget _buildBalanceBack(bool isDark, Color accent, Color muted, ThemeData t) {
-    final totalFees = (_feeSummary?['total_due'] ?? 0) is num ? (_feeSummary?['total_due'] ?? 0) as num : 0;
-    final totalPaid = (_feeSummary?['total_paid'] ?? 0) is num ? (_feeSummary?['total_paid'] ?? 0) as num : 0;
-    final balance = (_feeSummary?['balance'] ?? 0) is num ? (_feeSummary?['balance'] ?? 0) as num : 0;
-    final paidPercent = totalFees > 0 ? (totalPaid / totalFees) : 0.0;
+  Widget _buildStatsBack(bool isDark, Color accent, Color muted, ThemeData t) {
+    final totalFeesCollected = (_stats?['totalFeesCollected'] ?? 0) is num
+        ? (_stats?['totalFeesCollected'] ?? 0) as num
+        : 0;
+    final outstandingFees = (_stats?['outstandingFees'] ?? 0) is num
+        ? (_stats?['outstandingFees'] ?? 0) as num
+        : 0;
+    final paidStudents = (_stats?['paidStudents'] ?? 0) is num
+        ? (_stats?['paidStudents'] ?? 0) as num
+        : 0;
+    final totalStudents = (_stats?['totalStudents'] ?? 0) is num
+        ? (_stats?['totalStudents'] ?? 0) as num
+        : 0;
+    final paidPercent = totalStudents > 0 ? (paidStudents / totalStudents) : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(22),
@@ -275,7 +273,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
             children: [
               Container(width: 18, height: 1, color: accent),
               const SizedBox(width: 8),
-              Text('FEE BREAKDOWN',
+              Text('FEE COLLECTION',
                 style: GoogleFonts.inter(color: muted, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w600),
               ),
               const Spacer(),
@@ -283,13 +281,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
             ],
           ),
           const SizedBox(height: 16),
-          _breakdownRow('Total Fees', 'RM ${totalFees.toStringAsFixed(2)}', muted, t),
+          _breakdownRow('Collected', 'RM ${totalFeesCollected.toStringAsFixed(2)}', const Color(0xFF4CAF50), t),
           const SizedBox(height: 8),
-          _breakdownRow('Paid', 'RM ${totalPaid.toStringAsFixed(2)}', const Color(0xFF4CAF50), t),
+          _breakdownRow('Outstanding', 'RM ${outstandingFees.toStringAsFixed(2)}', outstandingFees > 0 ? const Color(0xFFE53935) : const Color(0xFF4CAF50), t),
           const SizedBox(height: 8),
-          _breakdownRow('Remaining', 'RM ${balance.toStringAsFixed(2)}', balance > 0 ? const Color(0xFFE53935) : const Color(0xFF4CAF50), t),
+          _breakdownRow('Students Paid', '${paidStudents.toStringAsFixed(0)} / ${totalStudents.toStringAsFixed(0)}', accent, t),
           const SizedBox(height: 14),
-          // Progress bar
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
@@ -300,7 +297,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
             ),
           ),
           const SizedBox(height: 8),
-          Text('${(paidPercent * 100).toStringAsFixed(0)}% settled',
+          Text('${(paidPercent * 100).toStringAsFixed(0)}% students settled',
             style: GoogleFonts.inter(color: muted, fontSize: 11, fontWeight: FontWeight.w500),
           ),
         ],
@@ -328,7 +325,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
-    final name = user?['name'] ?? 'Student';
+    final name = user?['name'] ?? 'Lecturer';
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
     const accent = SAMsTheme.accent;
@@ -366,12 +363,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                         children: [
                           _IconBtn(icon: Icons.notifications_none_rounded, onTap: () {
                             setState(() => _hasUnread = false);
-                            if (user?['role'] == 'student') {
-                              Navigator.pushNamed(context, '/fees', arguments: {'initialTab': 3});
-                            } else {
-                              // For non-student roles, navigate to profile
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
-                            }
+                            Navigator.pushNamed(context, '/fees', arguments: {'initialTab': 3});
                           }),
                           if (_hasUnread) Positioned(
                             right: 2, top: 2,
@@ -404,7 +396,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                           ),
                           child: _profileImage == null
                               ? Center(child: Text(
-                                  name.isNotEmpty ? name[0].toUpperCase() : 'S',
+                                  name.isNotEmpty ? name[0].toUpperCase() : 'L',
                                   style: GoogleFonts.inter(color: accent, fontSize: 15, fontWeight: FontWeight.w600),
                                 ))
                               : null,
@@ -434,7 +426,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                   ),
                 )),
 
-                // ─── STUDENT INFO STRIP ───
+                // ─── LECTURER INFO STRIP ───
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 26, 24, 0),
                   child: Container(
@@ -454,15 +446,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (user?['role'] == 'student') ...[
-                                Text((user?['program'] ?? 'Software Engineering').toString().toUpperCase(),
-                                  style: GoogleFonts.inter(color: muted, fontSize: 9.5, letterSpacing: 1.6, fontWeight: FontWeight.w600),
-                                ),
-                              ] else ...[
-                                Text((user?['role'] ?? 'Staff').toString().toUpperCase(),
-                                  style: GoogleFonts.inter(color: muted, fontSize: 9.5, letterSpacing: 1.6, fontWeight: FontWeight.w600),
-                                ),
-                              ],
+                              Text((user?['faculty'] ?? 'Faculty of Computing').toString().toUpperCase(),
+                                style: GoogleFonts.inter(color: muted, fontSize: 9.5, letterSpacing: 1.6, fontWeight: FontWeight.w600),
+                              ),
                               const SizedBox(height: 4),
                               Text(name,
                                 style: GoogleFonts.inter(color: t.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
@@ -470,15 +456,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                             ],
                           ),
                         ),
-                        if (user?['role'] == 'student') ...[
-                          Text(user?['studentId']?.toString() ?? user?['student_id']?.toString() ?? '—',
-                            style: GoogleFonts.jetBrainsMono(color: muted, fontSize: 12, letterSpacing: 0.5),
-                          ),
-                        ] else ...[
-                          Text(user?['email']?.toString() ?? '—',
-                            style: GoogleFonts.jetBrainsMono(color: muted, fontSize: 12, letterSpacing: 0.5),
-                          ),
-                        ],
+                        Text(user?['lecturerId']?.toString() ?? user?['lecturer_id']?.toString() ?? user?['_id']?.toString() ?? '—',
+                          style: GoogleFonts.jetBrainsMono(color: muted, fontSize: 12, letterSpacing: 0.5),
+                        ),
                       ],
                     ),
                   ),
@@ -490,75 +470,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
                   child: Column(
                     children: [
-                      if (user?['role'] == 'student' || user?['role'] == 'admin') ...[
-                        _ModuleRow(
-                          index: '01',
-                          title: 'Tuition Fees',
-                          subtitle: 'Balance, payments, receipts',
-                          accent: accent,
-                          onTap: () => Navigator.push(context, SlidePageRoute(page: const FeesScreen())),
-                        ),
-                        _ModuleRow(
-                          index: '02',
-                          title: 'Course Registration',
-                          subtitle: 'Register courses, view enrollment',
-                          accent: accent,
-                          onTap: () => Navigator.push(context, SlidePageRoute(page: const RegistrationScreen())),
-                        ),
-                        _ModuleRow(
-                          index: '03',
-                          title: 'Curriculum Activities',
-                          subtitle: 'Activities, credit claims, sign up',
-                          accent: accent,
-                          onTap: () => Navigator.push(context, SlidePageRoute(page: const CurriculumScreen())),
-                        ),
-                        _ModuleRow(
-                          index: '04',
-                          title: 'Attendance',
-                          subtitle: 'Mark attendance, view history',
-                          accent: accent,
-                          onTap: () => Navigator.push(context, SlidePageRoute(page: const AttendanceScreen())),
-                        ),
-                      ] else if (user?['role'] == 'lecturer') ...[
-                        _ModuleRow(
-                          index: '01',
-                          title: 'Class Attendance',
-                          subtitle: 'Manage student attendance',
-                          accent: accent,
-                          onTap: () => Navigator.push(context, SlidePageRoute(page: const AttendanceScreen())),
-                        ),
-                      ] else if (user?['role'] == 'faculty' || user?['role'] == 'registrar') ...[
-                        _ModuleRow(
-                          index: '01',
-                          title: 'Open Registration',
-                          subtitle: 'Manage course registration',
-                          accent: accent,
-                          onTap: () => Navigator.push(context, SlidePageRoute(page: const RegistrationScreen())),
-                        ),
-                      ] else if (user?['role'] == 'staff') ...[
-                        _ModuleRow(
-                          index: '01',
-                          title: 'Curriculum Activity',
-                          subtitle: 'Manage activities and credits',
-                          accent: accent,
-                          onTap: () => Navigator.push(context, SlidePageRoute(page: const CurriculumScreen())),
-                        ),
-                      ],
+                      _ModuleRow(
+                        index: '01',
+                        title: 'Class Attendance',
+                        subtitle: 'Mark and manage student attendance',
+                        accent: accent,
+                        onTap: () {},
+                      ),
                     ],
                   ),
                 ),
 
-                // ─── FEE SUMMARY: editorial composition (student only) ───
-                Builder(builder: (context) {
-                  final user = ref.read(authProvider).user;
-                  final isAdmin = user?['role'] == 'admin';
-                  final isStudent = user?['role'] == 'student';
-                  // Hide fee summary for non-student roles (admin, lecturer, faculty, staff)
-                  if (!isStudent) return const SizedBox.shrink();
-                  return _fadeSlide(_staggerAnims[3], child: Padding(
+                // ─── STATS: editorial composition ───
+                _fadeSlide(_staggerAnims[3], child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
-                  child: _feeSummary == null
-                    ? const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  child: _stats == null
+                    ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
                         SkeletonStatCard(height: 150),
                         SizedBox(height: 12),
                         Row(children: [
@@ -566,38 +493,36 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                         ]),
                       ])
                     : GestureDetector(
-                    onTap: () {
-                      setState(() => _isFlipped = !_isFlipped);
-                      if (_isFlipped) {
-                        _flipController.forward();
-                      } else {
-                        _flipController.reverse();
-                      }
-                    },
-                    onDoubleTap: () => Navigator.push(context, SlidePageRoute(page: const FeesScreen())),
-                    child: AnimatedBuilder(
-                      animation: _flipAnim,
-                      builder: (_, __) {
-                        final angle = _flipAnim.value * math.pi;
-                        final isFront = angle < math.pi / 2;
-                        return Transform(
-                          alignment: Alignment.center,
-                          transform: Matrix4.identity()
-                            ..setEntry(3, 2, 0.001) // perspective
-                            ..rotateY(angle),
-                          child: isFront
-                            ? _buildBalanceFront(isDark, accent, muted, t)
-                            : Transform(
-                                alignment: Alignment.center,
-                                transform: Matrix4.identity()..rotateY(math.pi),
-                                child: _buildBalanceBack(isDark, accent, muted, t),
-                              ),
-                        );
-                      },
-                    ),
-                  ),
-                ));
-                }),
+                        onTap: () {
+                          setState(() => _isFlipped = !_isFlipped);
+                          if (_isFlipped) {
+                            _flipController.forward();
+                          } else {
+                            _flipController.reverse();
+                          }
+                        },
+                        child: AnimatedBuilder(
+                          animation: _flipAnim,
+                          builder: (_, __) {
+                            final angle = _flipAnim.value * math.pi;
+                            final isFront = angle < math.pi / 2;
+                            return Transform(
+                              alignment: Alignment.center,
+                              transform: Matrix4.identity()
+                                ..setEntry(3, 2, 0.001) // perspective
+                                ..rotateY(angle),
+                              child: isFront
+                                ? _buildStatsFront(isDark, accent, muted, t)
+                                : Transform(
+                                    alignment: Alignment.center,
+                                    transform: Matrix4.identity()..rotateY(math.pi),
+                                    child: _buildStatsBack(isDark, accent, muted, t),
+                                  ),
+                            );
+                          },
+                        ),
+                      ),
+                )),
 
                 // ─── QUICK ACCESS ───
                 _SectionLabel(text: 'QUICK ACCESS', muted: muted, accent: accent, top: 32),
@@ -611,44 +536,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                     crossAxisSpacing: 4,
                     mainAxisSpacing: 14,
                     children: [
-                      if (user?['role'] == 'student') ...[
-                        _QuickItem(icon: Iconsax.ticket_discount, label: 'e-Kupon', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.hospital, label: 'Emergency', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.monitor, label: 'EDasar', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.teacher, label: 'Alumni', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.bus, label: 'Bus', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.message_question, label: 'FAQ', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.cloud, label: 'Weather', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.map, label: 'Map', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.calendar_1, label: 'Calendar', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.coffee, label: 'Cafetaria', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.document_text, label: 'News', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.moon, label: 'Prayer', accent: accent, muted: muted, onTap: () {}),
-                      ] else if (user?['role'] == 'lecturer') ...[
-                        _QuickItem(icon: Iconsax.teacher, label: 'Attendance', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.document_text, label: 'Reports', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.calendar_1, label: 'Schedule', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.message_question, label: 'FAQ', accent: accent, muted: muted, onTap: () {}),
-                      ] else if (user?['role'] == 'faculty' || user?['role'] == 'registrar') ...[
-                        _QuickItem(icon: Iconsax.document_text, label: 'Registration', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.teacher, label: 'Students', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.calendar_1, label: 'Schedule', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.message_question, label: 'FAQ', accent: accent, muted: muted, onTap: () {}),
-                      ] else if (user?['role'] == 'staff') ...[
-                        _QuickItem(icon: Iconsax.activity, label: 'Activities', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.teacher, label: 'Students', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.calendar_1, label: 'Schedule', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.message_question, label: 'FAQ', accent: accent, muted: muted, onTap: () {}),
-                      ] else ...[
-                        _QuickItem(icon: Iconsax.ticket_discount, label: 'e-Kupon', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.hospital, label: 'Emergency', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.monitor, label: 'EDasar', accent: accent, muted: muted, onTap: () {}),
-                        _QuickItem(icon: Iconsax.teacher, label: 'Alumni', accent: accent, muted: muted, onTap: () {}),
-                      ],
+                      _QuickItem(icon: Iconsax.user_search, label: 'Students', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.document_text, label: 'Reports', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.message_question, label: 'FAQ', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.calendar_1, label: 'Calendar', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.notification, label: 'Alerts', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.chart_2, label: 'Analytics', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.sms, label: 'Messages', accent: accent, muted: muted, onTap: () {}),
+                      _QuickItem(icon: Iconsax.setting_2, label: 'Settings', accent: accent, muted: muted, onTap: () {}),
                     ],
                   ),
                 ),
-
 
                 const SizedBox(height: 36),
                 // Footer mark

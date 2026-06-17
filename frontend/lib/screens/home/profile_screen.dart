@@ -185,26 +185,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           )),
           const SizedBox(height: 10),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _statusChip(_statusLabel(studentStatus), _statusColor(studentStatus), t),
-              _statusChip(_financingLabel(financingType), accent.withValues(alpha: 0.85), t),
-            ],
-          ),
+          if (role == 'student') ...[
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _statusChip(_statusLabel(studentStatus), _statusColor(studentStatus), t),
+                _statusChip(_financingLabel(financingType), accent.withValues(alpha: 0.85), t),
+              ],
+            ),
+          ],
 
           const SizedBox(height: 36),
           _SectionHead(lp.t('personal', locale), accent: accent, muted: muted),
           const SizedBox(height: 12),
-          _infoRow(lp.t('student_id', locale), studentId.toString(), t),
-          _infoRow(lp.t('faculty', locale), faculty.toString(), t),
-          _infoRow(lp.t('program', locale), program.toString(), t),
-          _infoRow('Financing', _financingLabel(financingType), t),
-          _infoRow('Academic Status', _statusLabel(studentStatus), t),
-          _infoRow(lp.t('semester', locale), semester, t),
-          _infoRow(lp.t('email', locale), email.toString(), t, isLast: true),
+          if (role == 'student') ...[
+            _infoRow(lp.t('student_id', locale), studentId.toString(), t),
+            _infoRow(lp.t('faculty', locale), faculty.toString(), t),
+            _infoRow(lp.t('program', locale), program.toString(), t),
+            _infoRow('Financing', _financingLabel(financingType), t),
+            _infoRow('Academic Status', _statusLabel(studentStatus), t),
+            _infoRow(lp.t('semester', locale), semester, t),
+            _infoRow(lp.t('email', locale), email.toString(), t, isLast: true),
+          ] else ...[
+            _infoRow(lp.t('email', locale), email.toString(), t),
+            _infoRow('Role', role.toString().toUpperCase(), t, isLast: true),
+          ],
 
           const SizedBox(height: 32),
           // ─── PREFERENCES ───

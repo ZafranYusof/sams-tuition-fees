@@ -43,7 +43,12 @@ class SAMsApp extends ConsumerWidget {
         ),
       );
     } else {
-      home = authState.isAuthenticated ? const MainShell() : const LoginScreen();
+      if (authState.isAuthenticated) {
+        final role = authState.user?['role'] ?? 'student';
+        home = MainShell(role: role);
+      } else {
+        home = const LoginScreen();
+      }
     }
 
     return ToastificationWrapper(

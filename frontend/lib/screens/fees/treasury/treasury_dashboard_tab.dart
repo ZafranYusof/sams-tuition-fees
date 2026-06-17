@@ -70,7 +70,7 @@ class _TreasuryDashboardTabState extends ConsumerState<TreasuryDashboardTab> wit
             if (mounted) _progressController.forward();
           });
         }
-      }));
+      });
     } catch (e) {
       if (mounted) setState(() => _loading = false);
     }

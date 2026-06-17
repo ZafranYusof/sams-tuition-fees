@@ -27,7 +27,7 @@ class RouteGenerator {
       case AppRoutes.register:
         return _buildRoute(const RegisterScreen());
       case AppRoutes.home:
-        return _buildRoute(const MainShell());
+        return _buildRoute(const MainShell(role: 'student'));
       case AppRoutes.dashboard:
         return _buildRoute(const DashboardScreen());
       case AppRoutes.profile:
