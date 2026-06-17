@@ -26,6 +26,23 @@ router.post('/fpx/create', auth, async (req, res) => {
     const fee = await Fee.findById(feeId);
     if (!fee) return res.status(404).json({ error: 'Fee not found' });
 
+    // Check for existing pending payment for this fee (avoid duplicate)
+    const existingPayment = await Payment.findOne({
+      student: req.user.id,
+      fee: feeId,
+      paymentStatus: 'pending',
+    });
+    
+    if (existingPayment) {
+      // Return existing payment URL instead of creating new one
+      const baseUrl = process.env.TOYYIBPAY_URL || 'https://dev.toyyibpay.com';
+      return res.json({
+        billCode: existingPayment.paymentTxnRef,
+        paymentUrl: `${baseUrl}/${existingPayment.paymentTxnRef}`,
+        payment: existingPayment,
+      });
+    }
+
     // Get full user info from DB
     const student = await Student.findById(req.user.id);
 
@@ -247,6 +264,22 @@ router.post('/card/create-intent', auth, async (req, res) => {
 
     const fee = await Fee.findById(feeId);
     if (!fee) return res.status(404).json({ error: 'Fee not found' });
+
+    // Check for existing pending payment for this fee (avoid duplicate)
+    const existingPayment = await Payment.findOne({
+      student: req.user.id,
+      fee: feeId,
+      paymentStatus: 'pending',
+    });
+    
+    if (existingPayment) {
+      // Return existing payment URL
+      return res.json({
+        paymentUrl: `https://checkout.stripe.com/pay/${existingPayment.paymentTxnRef}`,
+        paymentIntentId: existingPayment.paymentTxnRef,
+        payment: existingPayment,
+      });
+    }
 
     const appUrl = process.env.APP_URL || 'https://sams-app-vasb.onrender.com';
 
