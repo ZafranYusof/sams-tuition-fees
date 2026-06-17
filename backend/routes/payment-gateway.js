@@ -139,7 +139,7 @@ router.get('/fpx/callback', async (req, res) => {
             { _id: payment.fee },
             {
               $inc: { paidAmount: actualAmount },
-              { $set: { feeStatus: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
+              $set: { feeStatus: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
             }
           );
         }
@@ -220,7 +220,7 @@ router.post('/fpx/webhook', async (req, res) => {
             { _id: payment.fee },
             {
               $inc: { paidAmount: actualAmount },
-              { $set: { feeStatus: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
+              $set: { feeStatus: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
             }
           );
         }
@@ -343,7 +343,7 @@ router.get('/card/success', async (req, res) => {
           { _id: payment.fee },
           {
             $inc: { paidAmount: actualAmount },
-            { $set: { feeStatus: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
+            $set: { feeStatus: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
           }
         );
       }
@@ -386,7 +386,7 @@ router.post('/card/confirm', auth, async (req, res) => {
             { _id: payment.fee },
             {
               $inc: { paidAmount: actualAmount },
-              { $set: { feeStatus: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
+              $set: { feeStatus: (fee.paidAmount + actualAmount) >= fee.feeAmount ? 'paid' : 'partial' }
             }
           );
         }
