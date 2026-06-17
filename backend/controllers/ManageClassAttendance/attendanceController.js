@@ -1,6 +1,6 @@
 const Attendance = require('../models/ManageClassAttendance/Attendance');
 const AttendanceCode = require('../models/ManageClassAttendance/AttendanceCode');
-const Session = require('../models/ManageClassAttendance/Session');
+const Session = require('../models/ManageOpenRegistration/Session');
 
 // Generate attendance code (lecturer)
 exports.generateCode = async (req, res) => {
