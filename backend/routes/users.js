@@ -1,7 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
-const fcm = require('../services/fcmService');
+//const fcm = require('../services/fcmService');
 
 const router = express.Router();
 

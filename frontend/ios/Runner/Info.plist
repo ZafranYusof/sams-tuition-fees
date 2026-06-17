@@ -46,6 +46,6 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-<string>Location is needed to verify you are on campus for attendance.</string>
+	<string>Location is needed to verify you are on campus for attendance.</string>
 </dict>
 </plist>
