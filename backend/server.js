@@ -15,6 +15,9 @@ const attendanceRoutes = require('./routes/attendance');
 const sessionsRoutes = require('./routes/sessions');
 const campusRoutes = require('./routes/campus');
 const curriculumRoutes = require('./routes/curriculum');
+const validationRoutes = require('./routes/validation');
+const subjectRoutes = require('./routes/subject');
+const registrarRoutes = require('./routes/registrar');
 
 const seedRoutes = require('./routes/seed');
 
@@ -44,6 +47,9 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/campus', campusRoutes);
 app.use('/api/curriculum', curriculumRoutes);
+app.use('/api/validation', validationRoutes);
+app.use('/api/subject', subjectRoutes);
+app.use('/api/registrar', registrarRoutes);
 
 app.use('/api/seed', seedRoutes);
 
