@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../config/theme.dart';
+import '../../../config/theme.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 class RegistrationConfirmation extends StatelessWidget {

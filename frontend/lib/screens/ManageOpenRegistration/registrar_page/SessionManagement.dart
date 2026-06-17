@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../config/theme.dart';
-import '../../widgets/glass_card.dart';
+import '../../../config/theme.dart';
+import '../../../widgets/glass_card.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
 

@@ -1,11 +1,11 @@
 // lib/screens/student/StudentDashboard.dart
 import 'package:flutter/material.dart';
-import '../../config/theme.dart';
+import '../../../config/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
-import '../../providers/auth_provider.dart';
+import '../../../providers/auth_provider.dart';
 import 'SubjectRegistration.dart';
 
 class StudentDashboard extends ConsumerStatefulWidget {
@@ -227,7 +227,7 @@ Widget _buildWorkspaceCard({required BuildContext context, required String numbe
           children: [
             Icon(icon, size: 20, color: SAMsTheme.primary),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 16)), Text(subtitle, style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: muted))])),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 16)), Text(subtitle, style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: SAMsTheme.textMuted))])),
             const Icon(Iconsax.arrow_right_3_copy, size: 14, color: SAMsTheme.textMuted),
           ],
         ),
