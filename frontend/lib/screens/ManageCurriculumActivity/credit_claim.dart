@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../config/theme.dart';
 import '../../services/api_service.dart';
 import '../../widgets/glass_card.dart';
@@ -15,9 +14,9 @@ class CreditClaimScreen extends ConsumerStatefulWidget {
 }
 
 class _CreditClaimScreenState extends ConsumerState<CreditClaimScreen> {
-  List<Map<String, dynamic>> activities = [];
-  bool isLoading = true;
-  String? errorMessage;
+  List<Map<String, dynamic>> _activities = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -26,24 +25,20 @@ class _CreditClaimScreenState extends ConsumerState<CreditClaimScreen> {
   }
 
   Future<void> _loadActivities() async {
-    setState(() {
-      isLoading = true;
-      errorMessage = null;
-    });
+    setState(() { _isLoading = true; _errorMessage = null; });
     try {
       final data = await ApiService.get('/curriculum/my/joined');
       final List<dynamic> list = data is List ? data : (data['activities'] ?? []);
+      if (!mounted) return;
       setState(() {
-        activities = list
-            .where((a) => a['status'] == 'completed' || a['status'] == 'ongoing')
-            .map((a) => Map<String, dynamic>.from(a))
-            .toList();
-        isLoading = false;
+        _activities = list.map((a) => Map<String, dynamic>.from(a)).toList();
+        _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        errorMessage = e.toString().replaceAll('Exception: ', '');
-        isLoading = false;
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _isLoading = false;
       });
     }
   }
@@ -52,106 +47,158 @@ class _CreditClaimScreenState extends ConsumerState<CreditClaimScreen> {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return Scaffold(
+      backgroundColor: t.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Credit Claims'),
+        leading: IconButton(
+          icon: const Icon(Iconsax.arrow_left, color: SAMsTheme.ink),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Iconsax.refresh),
+            icon: const Icon(Iconsax.refresh, color: SAMsTheme.ink, size: 20),
             onPressed: _loadActivities,
           ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(errorMessage!,
-                          style: const TextStyle(color: SAMsTheme.error),
-                          textAlign: TextAlign.center),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _loadActivities,
-                        child: const Text('Retry'),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: SAMsTheme.accent))
+          : _errorMessage != null
+              ? _errorState()
+              : _activities.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No activities to claim.',
+                        style: TextStyle(color: SAMsTheme.muted, fontFamily: 'Inter'),
                       ),
-                    ],
-                  ),
-                )
-              : activities.isEmpty
-                  ? const Center(
-                      child: Text('No eligible activities to claim.'))
+                    )
                   : RefreshIndicator(
                       onRefresh: _loadActivities,
+                      color: SAMsTheme.accent,
                       child: ListView.builder(
                         padding: const EdgeInsets.all(16),
-                        itemCount: activities.length,
-                        itemBuilder: (context, index) {
-                          final activity = activities[index];
-                          final id = activity['_id'] ?? '';
-                          final name = activity['name'] ?? '-';
-                          final status = activity['status'] ?? 'upcoming';
-                          final isEligible = status == 'completed';
-
-                          Color color;
-                          IconData icon;
-
-                          if (isEligible) {
-                            color = SAMsTheme.accent;
-                            icon = Iconsax.clipboard_tick;
-                          } else if (status == 'ongoing') {
-                            color = SAMsTheme.warning;
-                            icon = Iconsax.timer_1;
-                          } else {
-                            color = SAMsTheme.primary;
-                            icon = Iconsax.calendar_1;
-                          }
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: GlassCard(
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.all(16),
-                                leading: Container(
-                                  width: 50,
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    color: color.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(icon, color: color),
-                                ),
-                                title: Text(name),
-                                subtitle: Text(
-                                  isEligible
-                                      ? 'Eligible for Claim'
-                                      : status[0].toUpperCase() +
-                                          status.substring(1),
-                                ),
-                                trailing: isEligible
-                                    ? ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  CreditClaimDetailScreen(
-                                                activityId: id,
-                                                activityName: name,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        child: const Text('Claim'),
-                                      )
-                                    : null,
-                              ),
-                            ),
-                          );
-                        },
+                        itemCount: _activities.length,
+                        itemBuilder: (ctx, i) => _claimCard(_activities[i]),
                       ),
                     ),
+    );
+  }
+
+  Widget _errorState() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(_errorMessage!, textAlign: TextAlign.center, style: const TextStyle(color: SAMsTheme.error, fontFamily: 'Inter')),
+          const SizedBox(height: 12),
+          ElevatedButton(onPressed: _loadActivities, child: const Text('Retry')),
+        ],
+      ),
+    );
+  }
+
+  // ── claim card ─────────────────────────────────────────
+  Widget _claimCard(Map<String, dynamic> activity) {
+    final id = activity['_id'] ?? '';
+    final name = activity['name'] ?? '-';
+    final status = (activity['status'] ?? 'upcoming').toString();
+    final isEligible = status == 'completed';
+
+    // icon + color per status (match groupmate's screenshots)
+    Color iconBg;
+    Color iconColor;
+    IconData icon;
+    String statusLabel;
+
+    if (isEligible) {
+      iconBg = SAMsTheme.accent.withValues(alpha: 0.15);
+      iconColor = SAMsTheme.accent;
+      icon = Iconsax.clipboard_tick;
+      statusLabel = 'Eligible for Claim';
+    } else if (status == 'ongoing') {
+      iconBg = SAMsTheme.warning.withValues(alpha: 0.15);
+      iconColor = SAMsTheme.warning;
+      icon = Iconsax.dollar_circle;
+      statusLabel = 'Ongoing';
+    } else {
+      iconBg = SAMsTheme.success.withValues(alpha: 0.15);
+      iconColor = SAMsTheme.success;
+      icon = Iconsax.calendar_1;
+      statusLabel = 'Upcoming';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GlassCard(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // ── icon square ──
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 14),
+              // ── name + status ──
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: SAMsTheme.ink,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      statusLabel,
+                      style: const TextStyle(
+                        color: SAMsTheme.muted,
+                        fontSize: 12,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // ── claim button ──
+              if (isEligible)
+                ElevatedButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CreditClaimDetailScreen(
+                        activityId: id,
+                        activityName: name,
+                      ),
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: SAMsTheme.accent,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Claim',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, fontFamily: 'Inter'),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
