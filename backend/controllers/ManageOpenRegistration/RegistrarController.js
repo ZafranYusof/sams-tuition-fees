@@ -57,7 +57,7 @@ class RegistrarController {
     }
   }
 
-  // Setup registration session
+  // Setup registration session — updates existing or creates new
   static async setupSession(req, res) {
     try {
       if (req.user.role !== 'admin' && req.user.role !== 'faculty') {
@@ -71,17 +71,29 @@ class RegistrarController {
 
       const status = (start <= now && now <= end) ? 'open' : 'scheduled';
 
-      const session = new RegistrationSession({
-        sessionName,
-        startDate: start,
-        endDate: end,
-        courses: courseIds || [],
-        status,
-        createdBy: req.user.id,
-        creatorModel: 'FacultyRegistrar'
-      });
+      // Find existing session and UPDATE it (don't create duplicates)
+      let session = await RegistrationSession.findOne().sort({ createdAt: -1 });
 
-      await session.save();
+      if (session) {
+        session.sessionName = sessionName || session.sessionName;
+        session.startDate = start;
+        session.endDate = end;
+        session.status = status;
+        if (courseIds) session.courses = courseIds;
+        await session.save();
+      } else {
+        session = new RegistrationSession({
+          sessionName,
+          startDate: start,
+          endDate: end,
+          courses: courseIds || [],
+          status,
+          createdBy: req.user.id,
+          creatorModel: 'FacultyRegistrar'
+        });
+        await session.save();
+      }
+
       res.json({ message: 'Session setup complete', session });
     } catch (err) {
       res.status(500).json({ message: err.message });
