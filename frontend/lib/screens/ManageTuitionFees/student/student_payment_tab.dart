@@ -327,8 +327,14 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
             builder: (_) => _PaymentWebView(url: paymentUrl, title: 'FPX Payment'),
           ));
           if (webResult == true || webResult == null) {
-            final status = await ApiService.get('/payment/fpx/status/$billCode');
-            if (status['paymentStatus'] == 'completed') { success = true; txnId = billCode; }
+            // Poll for status (callback may be delayed)
+            Map<String, dynamic>? status;
+            for (int attempt = 0; attempt < 5; attempt++) {
+              if (attempt > 0) await Future.delayed(const Duration(seconds: 2));
+              status = await ApiService.get('/payment/fpx/status/$billCode');
+              if (status['paymentStatus'] == 'completed') break;
+            }
+            if (status?['paymentStatus'] == 'completed') { success = true; txnId = billCode; }
             else { if (mounted) AppToast.warning(context, 'Payment pending or failed'); }
           }
         }
@@ -980,7 +986,7 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
         onPageFinished: (_) => setState(() => _loading = false),
         onWebResourceError: (error) { setState(() { _hasError = true; _loading = false; _errorMessage = error.description; }); },
         onNavigationRequest: (request) {
-          if (request.url.contains('samsapp://') || request.url.contains('/payment/success') || request.url.contains('/payment/failed')) {
+          if (request.url.contains('samsapp://') || request.url.contains('/payment/success') || request.url.contains('/payment/failed') || request.url.contains('/fpx/callback') || request.url.contains('/card/callback')) {
             _done = true;
             Navigator.pop(context, request.url.contains('success') || request.url.contains('status_id=1'));
             return NavigationDecision.prevent;
