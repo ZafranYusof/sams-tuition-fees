@@ -37,7 +37,7 @@ router.get('/my/joined', auth, async (req, res) => {
 router.get('/my/claims', auth, async (req, res) => {
   try {
     const claims = await CreditClaim.find({ student: req.user.id })
-      .populate('activity', 'name category status')
+      .populate('activity', 'name category status points creditHours')
       .sort({ createdAt: -1 });
     res.json(claims);
   } catch (err) {
