@@ -79,7 +79,7 @@ router.post('/:id/join', auth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid activity ID' });
     }
     const activity = await Activity.findOneAndUpdate(
-      { _id: req.params.id, participants: { $ne: req.user.id }, $expr: { $lt: [{ $size: '$participants' }, '$capacity'] } },
+      { _id: req.params.id, participants: { $ne: req.user.id }, $expr: { $lt: [{ $size: { $ifNull: ['$participants', []] } }, '$capacity'] } },
       { $addToSet: { participants: req.user.id } },
       { new: true }
     );
