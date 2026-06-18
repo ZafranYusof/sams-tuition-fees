@@ -22,7 +22,7 @@ class GlassCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: SAMsTheme.border.withOpacity(0.3), width: 0.5),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.3), width: 0.5),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),

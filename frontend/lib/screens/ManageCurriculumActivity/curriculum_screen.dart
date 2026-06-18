@@ -55,7 +55,7 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
       appBar: AppBar(
         title: const Text('Curriculum Module'),
         leading: IconButton(
-          icon: const Icon(Iconsax.arrow_left, color: SAMsTheme.ink),
+          Icon(Iconsax.refresh, color: t.colorScheme.onSurface
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -87,7 +87,7 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
                       style: t.textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.8,
-                        color: SAMsTheme.ink,
+                        color: t.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -147,7 +147,7 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
               style: const TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w700,
-                color: SAMsTheme.ink,
+                color: t.colorScheme.onSurface,
                 fontFamily: 'Inter',
               ),
             ),
@@ -160,7 +160,7 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 11,
-                color: SAMsTheme.textMuted,
+                TextStyle(color: t.textTheme.bodySmall?.color
                 fontFamily: 'Inter',
               ),
             ),
@@ -208,7 +208,7 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: SAMsTheme.ink,
+                        color: t.colorScheme.onSurface,
                         fontFamily: 'Inter',
                       ),
                     ),
@@ -216,7 +216,7 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
                     Text(
                       subtitle,
                       style: const TextStyle(
-                        color: SAMsTheme.textMuted,
+                        TextStyle(color: t.textTheme.bodySmall?.color
                         fontSize: 12,
                         fontFamily: 'Inter',
                       ),
@@ -224,7 +224,7 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
                   ],
                 ),
               ),
-              const Icon(Iconsax.arrow_right_3, color: SAMsTheme.textMuted, size: 18),
+              Icon(Iconsax.arrow_right_3, color: t.textTheme.bodySmall?.color, size: 18),
             ],
           ),
         ),

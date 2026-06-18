@@ -54,12 +54,13 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
         'evidence': _selectedFileName ?? '',
       });
       if (!mounted) return;
+      final t = Theme.of(context);
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          backgroundColor: SAMsTheme.surface,
-          title: const Text('Success', style: TextStyle(fontFamily: 'Inter', color: SAMsTheme.ink)),
-          content: const Text('Credit claim submitted successfully.', style: TextStyle(fontFamily: 'Inter', color: SAMsTheme.textMuted)),
+          backgroundColor: t.colorScheme.surface,
+          title: Text('Success', style: TextStyle(fontFamily: 'Inter', color: t.colorScheme.onSurface)),
+          content: Text('Credit claim submitted successfully.', style: TextStyle(fontFamily: 'Inter', color: t.textTheme.bodySmall?.color)),
           actions: [
             TextButton(
               onPressed: () {
@@ -89,7 +90,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
       appBar: AppBar(
         title: const Text('Submit Credit Claim'),
         leading: IconButton(
-          icon: const Icon(Iconsax.arrow_left, color: SAMsTheme.ink),
+          Icon(Iconsax.refresh, color: t.colorScheme.onSurface
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -104,7 +105,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
-                color: SAMsTheme.ink,
+                color: t.colorScheme.onSurface,
                 fontFamily: 'Inter',
               ),
             ),
@@ -115,7 +116,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
-                color: SAMsTheme.ink,
+                color: t.colorScheme.onSurface,
                 fontFamily: 'Inter',
               ),
             ),
@@ -124,20 +125,20 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
             TextField(
               controller: _claimController,
               maxLines: 4,
-              style: const TextStyle(fontFamily: 'Inter', color: SAMsTheme.ink),
+              style: TextStyle(fontFamily: 'Inter', color: t.colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: 'Enter supporting claim...',
-                hintStyle: const TextStyle(color: SAMsTheme.textMuted, fontFamily: 'Inter'),
+                TextStyle(color: t.textTheme.bodySmall?.color, fontSize: 12, fontFamily: 'Inter')
                 filled: true,
                 fillColor: SAMsTheme.surface,
                 contentPadding: const EdgeInsets.all(14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: SAMsTheme.border),
+                  borderSide: BorderSide(color: t.dividerColor),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: SAMsTheme.border),
+                  borderSide: BorderSide(color: t.dividerColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -152,7 +153,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
-                color: SAMsTheme.ink,
+                color: t.colorScheme.onSurface,
                 fontFamily: 'Inter',
               ),
             ),
@@ -161,7 +162,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
             Text(
               _selectedFileName ?? 'No file selected',
               style: const TextStyle(
-                color: SAMsTheme.textMuted,
+                color: t.textTheme.bodySmall?.color,
                 fontSize: 12,
                 fontFamily: 'Inter',
               ),
@@ -180,7 +181,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: SAMsTheme.border),
+                    side: BorderSide(color: t.dividerColor),
                   ),
                   elevation: 0,
                   textStyle: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 13),

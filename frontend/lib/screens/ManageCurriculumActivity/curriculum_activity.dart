@@ -77,7 +77,7 @@ class _CurriculumActivityScreenState
       appBar: AppBar(
         title: const Text('Curriculum Activities'),
         leading: IconButton(
-          icon: const Icon(Iconsax.arrow_left, color: SAMsTheme.ink),
+          Icon(Iconsax.refresh, color: t.colorScheme.onSurface
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -88,21 +88,21 @@ class _CurriculumActivityScreenState
             // ── search bar ──
             TextField(
               controller: _searchController,
-              style: const TextStyle(fontFamily: 'Inter', color: SAMsTheme.ink),
+              style: TextStyle(fontFamily: 'Inter', color: t.colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: 'Search activity...',
-                hintStyle: const TextStyle(color: SAMsTheme.textMuted, fontFamily: 'Inter'),
-                prefixIcon: const Icon(Iconsax.search_normal_1, color: SAMsTheme.textMuted, size: 18),
+                hintStyle: TextStyle(color: t.textTheme.bodySmall?.color, fontFamily: 'Inter'),
+                prefixIcon: Icon(Iconsax.search_normal_1, color: t.textTheme.bodySmall?.color, size: 18),
                 filled: true,
                 fillColor: SAMsTheme.surface,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: SAMsTheme.border),
+                  borderSide: BorderSide(color: t.dividerColor),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: SAMsTheme.border),
+                  borderSide: BorderSide(color: t.dividerColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -133,7 +133,7 @@ class _CurriculumActivityScreenState
                   : _errorMessage != null
                       ? _errorState()
                       : _filtered.isEmpty
-                          ? Center(child: Text('No activities found.', style: TextStyle(color: SAMsTheme.textMuted, fontFamily: 'Inter')))
+                          ? Center(child: Text('No activities found.', style: TextStyle(color: t.textTheme.bodySmall?.color, fontFamily: 'Inter')))
                           : RefreshIndicator(
                               onRefresh: _fetchActivities,
                               color: SAMsTheme.accent,
@@ -216,7 +216,7 @@ class _CurriculumActivityScreenState
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
-                  color: SAMsTheme.ink,
+                  color: t.colorScheme.onSurface,
                   fontFamily: 'Inter',
                 ),
               ),
@@ -226,12 +226,12 @@ class _CurriculumActivityScreenState
                 children: [
                   Text(
                     'Category: ${category.isEmpty ? "-" : category}',
-                    style: const TextStyle(color: SAMsTheme.textMuted, fontSize: 12, fontFamily: 'Inter'),
+                    style: TextStyle(color: t.textTheme.bodySmall?.color, fontSize: 12, fontFamily: 'Inter'),
                   ),
                   const SizedBox(width: 14),
                   Text(
                     'Available Slots: $slots',
-                    style: const TextStyle(color: SAMsTheme.textMuted, fontSize: 12, fontFamily: 'Inter'),
+                    style: TextStyle(color: t.textTheme.bodySmall?.color, fontSize: 12, fontFamily: 'Inter'),
                   ),
                 ],
               ),
@@ -314,7 +314,7 @@ class _CurriculumActivityScreenState
         selected: selected,
         selectedColor: SAMsTheme.accent,
         backgroundColor: SAMsTheme.surface,
-        side: BorderSide(color: selected ? SAMsTheme.accent : SAMsTheme.border),
+        side: BorderSide(color: selected ? SAMsTheme.accent : t.dividerColor),
         showCheckmark: false,
         onSelected: (_) {
           setState(() => _selectedCategory = category);

@@ -51,12 +51,12 @@ class _CreditClaimScreenState extends ConsumerState<CreditClaimScreen> {
       appBar: AppBar(
         title: const Text('Credit Claims'),
         leading: IconButton(
-          icon: const Icon(Iconsax.arrow_left, color: SAMsTheme.ink),
+          icon: Icon(Iconsax.arrow_left, color: t.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Iconsax.refresh, color: SAMsTheme.ink, size: 20),
+            icon: Icon(Iconsax.refresh, color: t.colorScheme.onSurface, size: 20),
             onPressed: _loadActivities,
           ),
         ],
@@ -69,7 +69,7 @@ class _CreditClaimScreenState extends ConsumerState<CreditClaimScreen> {
                   ? Center(
                       child: Text(
                         'No activities to claim.',
-                        style: TextStyle(color: SAMsTheme.textMuted, fontFamily: 'Inter'),
+                        TextStyle(color: t.textTheme.bodySmall?.color, fontSize: 12, fontFamily: 'Inter')
                       ),
                     )
                   : RefreshIndicator(
@@ -155,7 +155,7 @@ class _CreditClaimScreenState extends ConsumerState<CreditClaimScreen> {
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
-                        color: SAMsTheme.ink,
+                        color: t.colorScheme.onSurface,
                         fontFamily: 'Inter',
                       ),
                     ),
@@ -163,7 +163,7 @@ class _CreditClaimScreenState extends ConsumerState<CreditClaimScreen> {
                     Text(
                       statusLabel,
                       style: const TextStyle(
-                        color: SAMsTheme.textMuted,
+                        color: t.textTheme.bodySmall?.color,
                         fontSize: 12,
                         fontFamily: 'Inter',
                       ),
