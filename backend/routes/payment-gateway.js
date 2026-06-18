@@ -492,7 +492,6 @@ router.get('/card/config', (req, res) => {
   res.json({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY });
 });
 
-module.exports = router;
 
 // ADMIN: Reset all fees to unpaid (for testing)
 router.post('/reset-fees', auth, async (req, res) => {
@@ -518,3 +517,5 @@ router.post('/reset-fees', auth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+module.exports = router;
