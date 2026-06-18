@@ -29,11 +29,23 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
   Future<void> _loadStats() async {
     try {
       final my = await ApiService.get('/curriculum/my/joined');
+      final claimData = await ApiService.get('/curriculum/my/claims');
       final List<dynamic> list = my is List ? my : (my['activities'] ?? []);
-      final hours = list
-          .where((a) => a['status'] == 'completed')
-          .fold<int>(0, (s, a) => s + ((a['points'] ?? a['creditHours'] ?? 0) as num).toInt());
-      final pending = list.where((a) => a['claimStatus'] == 'pending').length;
+      final List<dynamic> claims = claimData is List ? claimData : (claimData['claims'] ?? []);
+
+      // Credit hours only from APPROVED claims
+      final approvedClaims = claims.where((c) => c['claimStatus'] == 'approved');
+      int hours = 0;
+      for (final c in approvedClaims) {
+        final activity = c['activity'];
+        if (activity is Map) {
+          hours += ((activity['points'] ?? activity['creditHours'] ?? 0) as num).toInt();
+        }
+      }
+
+      // Pending claims count
+      final pending = claims.where((c) => c['claimStatus'] == 'pending').length;
+
       if (!mounted) return;
       setState(() {
         _activitiesJoined = list.length;
