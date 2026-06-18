@@ -17,6 +17,7 @@ import '../../widgets/premium_widgets.dart';
 import '../../widgets/pressable_card.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/app_toast.dart';
+import '../ManageCurriculumActivity/pusat_adab/pusat_adab_curriculum.dart';
 
 class PusatAdabDashboard extends ConsumerStatefulWidget {
   final VoidCallback? onViewStudents;
@@ -360,7 +361,7 @@ class _PusatAdabDashboardState extends ConsumerState<PusatAdabDashboard> with Ti
                         title: 'Curriculum Activity',
                         subtitle: 'Manage curriculum activities and credit claims',
                         accent: accent,
-                        onTap: () => widget.onViewStudents?.call(),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PusatAdabCurriculumScreen())),
                       ),
                     ],
                   ),

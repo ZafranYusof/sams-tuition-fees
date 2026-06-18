@@ -8,6 +8,7 @@ const PusatAdab = require('../models/PusatAdab');
 const Treasury = require('../models/ManageTuitionFees/Treasury');
 const Fee = require('../models/ManageTuitionFees/Fee');
 const Course = require('../models/ManageOpenRegistration/Course');
+const Activity = require('../models/ManageCurriculumActivity/Activity');
 
 const router = express.Router();
 
@@ -161,9 +162,25 @@ router.post('/', async (req, res) => {
       results.push(`Seeded ${courses.length} courses`);
     } else {
       results.push(`${existingCourses} courses already exist`);
-    }
+          }
 
-    res.json({ message: 'Seed completed', results, fees: feesResult });
+          // 8. Seed curriculum activities
+          const activitiesData = [
+            { name: 'Football Tournament 2026', description: 'Inter-faculty football tournament', category: 'sport', organizer: 'Sports Centre', date: new Date('2026-07-15'), venue: 'UMPSA Stadium', capacity: 200, points: 3, status: 'upcoming' },
+            { name: 'Coding Workshop: Flutter', description: 'Mobile app development with Flutter', category: 'workshop', organizer: 'Faculty of Computing', date: new Date('2026-07-20'), venue: 'Lab A101', capacity: 50, points: 2, status: 'upcoming' },
+            { name: 'Community Service - Kampung Bersih', description: 'Gotong-royong at nearby village', category: 'community', organizer: 'Student Affairs', date: new Date('2026-06-10'), venue: 'Kg. Permatang Badak', capacity: 100, points: 4, status: 'completed' },
+            { name: 'Leadership Camp', description: '3-day leadership development camp', category: 'event', organizer: 'Student Council', date: new Date('2026-08-05'), venue: 'Tanjung Lumpur Campsite', capacity: 80, points: 5, status: 'upcoming' },
+            { name: 'Photography Club Exhibition', description: 'Annual photography exhibition', category: 'club', organizer: 'Photography Club', date: new Date('2026-07-01'), venue: 'Main Lobby', capacity: 300, points: 2, status: 'ongoing' },
+          ];
+          const existingActivities = await Activity.countDocuments();
+          if (existingActivities === 0) {
+            const activities = await Activity.insertMany(activitiesData);
+            results.push(`Seeded ${activities.length} curriculum activities`);
+          } else {
+            results.push(`${existingActivities} activities already exist`);
+          }
+
+          res.json({ message: 'Seed completed', results, fees: feesResult });
   } catch (err) {
     console.error('Seed error:', err.message);
     res.status(500).json({ error: err.message });

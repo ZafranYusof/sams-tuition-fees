@@ -1,0 +1,150 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../config/theme.dart';
+import '../../services/api_service.dart';
+import '../../widgets/glass_card.dart';
+
+class ActivityDetailScreen extends ConsumerStatefulWidget {
+  final String activityId;
+  final String title;
+  final String category;
+  final String location;
+  final int creditHours;
+  final int slots;
+
+  const ActivityDetailScreen({
+    super.key,
+    required this.activityId,
+    required this.title,
+    required this.category,
+    required this.location,
+    required this.creditHours,
+    required this.slots,
+  });
+
+  @override
+  ConsumerState<ActivityDetailScreen> createState() =>
+      _ActivityDetailScreenState();
+}
+
+class _ActivityDetailScreenState extends ConsumerState<ActivityDetailScreen> {
+  bool isRegistering = false;
+  bool alreadyJoined = false;
+
+  Future<void> _register() async {
+    setState(() => isRegistering = true);
+    try {
+      // POST /api/curriculum/:id/join — adds student to participants in DB
+      await ApiService.post('/curriculum/${widget.activityId}/join', {});
+
+      if (mounted) {
+        setState(() => alreadyJoined = true);
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Success'),
+            content: Text('${widget.title} registered successfully.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // close dialog
+                  Navigator.pop(context); // back to activity list
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isRegistering = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Activity Details'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            GlassCard(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _infoRow(Icons.category, 'Category', widget.category),
+                    const SizedBox(height: 12),
+                    _infoRow(Icons.location_on, 'Location', widget.location),
+                    const SizedBox(height: 12),
+                    _infoRow(Icons.workspace_premium, 'Credit Hours',
+                        widget.creditHours.toString()),
+                    const SizedBox(height: 12),
+                    _infoRow(
+                        Icons.people, 'Available Slots', widget.slots.toString()),
+                  ],
+                ),
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: Icon(
+                    alreadyJoined ? Icons.check : Icons.check_circle),
+                label: Text(
+                    alreadyJoined ? 'Registered' : 'Register Activity'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      alreadyJoined ? SAMsTheme.textSecondary : SAMsTheme.accent,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                // Disable button if already joined or currently loading
+                onPressed: alreadyJoined || isRegistering ? null : _register,
+                // Show loading spinner inside button while calling API
+              ),
+            ),
+            if (isRegistering) ...[
+              const SizedBox(height: 12),
+              const Center(child: CircularProgressIndicator()),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, color: SAMsTheme.accent),
+        const SizedBox(width: 10),
+        Text('$label: ',
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        Expanded(child: Text(value)),
+      ],
+    );
+  }
+}
