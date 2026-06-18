@@ -332,9 +332,9 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
             for (int attempt = 0; attempt < 5; attempt++) {
               if (attempt > 0) await Future.delayed(const Duration(seconds: 2));
               status = await ApiService.get('/payment/fpx/status/$billCode');
-              if (status?['paymentStatus'] == 'completed') break;
+              if (status?['status'] == 'completed') break;
             }
-            if (status?['paymentStatus'] == 'completed') { success = true; txnId = billCode; }
+            if (status?['status'] == 'completed') { success = true; txnId = billCode; }
             else { if (mounted) AppToast.warning(context, 'Payment pending or failed'); }
           }
         }
