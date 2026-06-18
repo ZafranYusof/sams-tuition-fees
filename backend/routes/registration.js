@@ -21,11 +21,41 @@ router.get('/session', auth, async (req, res) => {
   }
 });
 
-// GET /registration/courses — List all available courses
+// GET /registration/courses — List all available courses with enrollment counts
 router.get('/courses', auth, async (req, res) => {
   try {
     const courses = await Course.find({}).sort({ courseId: 1 });
-    res.json(courses);
+
+    // Get active session for enrollment count
+    const now = new Date();
+    const activeSession = await RegistrationSession.findOne({
+      status: 'open',
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    });
+
+    // Count enrollments per course for active session
+    const courseIds = courses.map(c => c._id);
+    const matchQuery = { course: { $in: courseIds }, status: 'active' };
+    if (activeSession) matchQuery.session = activeSession._id;
+
+    const enrollmentCounts = await Enrollment.aggregate([
+      { $match: matchQuery },
+      { $group: { _id: '$course', count: { $sum: 1 } } }
+    ]);
+
+    const countMap = {};
+    for (const ec of enrollmentCounts) {
+      countMap[ec._id.toString()] = ec.count;
+    }
+
+    const result = courses.map(c => ({
+      ...c.toObject(),
+      enrolledCount: countMap[c._id.toString()] || 0,
+      availableSlots: c.capacity - (countMap[c._id.toString()] || 0),
+    }));
+
+    res.json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

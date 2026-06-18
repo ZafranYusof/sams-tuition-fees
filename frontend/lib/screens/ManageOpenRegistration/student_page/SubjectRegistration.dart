@@ -59,6 +59,8 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
             'name': c['courseName'] ?? c['name'] ?? '',
             'credits': c['creditHours'] ?? c['credits'] ?? 0,
             'quota': c['capacity'] ?? c['quota'] ?? 0,
+            'enrolled': c['enrolledCount'] ?? 0,
+            'available': c['availableSlots'] ?? (c['capacity'] ?? 0),
           }));
           _loading = false;
         });
@@ -254,7 +256,7 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
                                         children: [
                                           Text(course['name'], style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w500, color: t.colorScheme.onSurface)),
                                           const SizedBox(height: 2),
-                                          Text('${course['code']}  •  ${course['credits']} Credits  •  Quota: ${course['quota']}', style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: muted)),
+                                          Text('${course['code']}  •  ${course['credits']} Credits  •  ${course['enrolled'] ?? 0}/${course['quota']}', style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: muted)),
                                         ],
                                       ),
                                     ),

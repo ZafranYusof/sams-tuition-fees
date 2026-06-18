@@ -975,7 +975,7 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
       final d = DateTime.parse(dateValue.toString());
       return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
     } catch (_) {
-      return dateValue.toString().substring(0, min(16, dateValue.toString().length));
+      return dateValue.toString().substring(0, dateValue.toString().length < 16 ? dateValue.toString().length : 16);
     }
   }
 
