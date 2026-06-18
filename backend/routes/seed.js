@@ -34,14 +34,28 @@ router.post('/', async (req, res) => {
     // Drop stale enrollment index (student_1_course_1 without session)
     try {
       const enrollmentsCol = mongoose.connection.db.collection("enrollments");
-      await enrollmentsCol.dropIndex("student_1_course_1");
-      results.push("Dropped stale student_1_course_1 enrollment index");
-    } catch (e) {
-      if (e.codeName === "IndexNotFound") {
-        results.push("student_1_course_1 index already gone");
+      const indexes = await enrollmentsCol.indexes();
+      const hasOld = indexes.some(i => i.name === "student_1_course_1");
+      if (hasOld) {
+        await enrollmentsCol.dropIndex("student_1_course_1");
+        results.push("Dropped stale student_1_course_1 enrollment index");
       } else {
-        results.push("Enrollment index drop: " + e.message);
+        results.push("student_1_course_1 index already gone");
       }
+      // Ensure new index exists
+      await enrollmentsCol.createIndex({ student: 1, course: 1, session: 1 }, { unique: true });
+      results.push("Ensured student_1_course_1_session_1 index");
+    } catch (e) {
+      results.push("Enrollment index: " + e.message);
+    }
+
+    // Drop ALL non-system enrollment records to start clean
+    try {
+      const Enrollment = require('../models/ManageOpenRegistration/Enrollment');
+      const deleteResult = await Enrollment.deleteMany({});
+      results.push(`Cleared ${deleteResult.deletedCount} stale enrollment records`);
+    } catch (e) {
+      results.push("Enrollment cleanup: " + e.message);
     }
 
     // 1. Student
