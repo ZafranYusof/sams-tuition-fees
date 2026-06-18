@@ -43,13 +43,17 @@ class _RegistrationResultState extends State<RegistrationResult> {
         }
         if (mounted) {
           if (failed.isEmpty) {
-            Navigator.push(
+            final result = await Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => RegistrationConfirmation(
                 codes: [...succeeded, ...skipped],
                 skipped: skipped,
               )),
             );
+            // If RegistrationConfirmation popped with true, pass it back to SubjectRegistration
+            if (result == true && mounted) {
+              Navigator.of(context).pop(true);
+            }
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed: ${failed.join(", ")}', style: TextStyle(fontFamily: 'Inter')), backgroundColor: SAMsTheme.error),
@@ -86,121 +90,79 @@ class _RegistrationResultState extends State<RegistrationResult> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'REVIEW REGISTRATION',
+          'CONFIRM REGISTRATION',
           style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: muted),
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Confirm Your\nSubjects.', style: TextStyle(fontFamily: 'Inter', fontSize: 28, fontWeight: FontWeight.w400, height: 1.15, color: t.colorScheme.onSurface)),
-                const SizedBox(height: 8),
-                Text('${widget.selectedCourses.length} subject(s) selected for registration.', style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: muted)),
-              ],
-            ),
-          ),
-
-          // Subject List
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              itemCount: widget.selectedCourses.length,
-              itemBuilder: (ctx, i) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: GlassCard(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 36, height: 36,
-                        decoration: BoxDecoration(
-                          color: brass.withAlpha(25),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Text('${i + 1}', style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w600, color: brass)),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Review Selected Subjects', style: TextStyle(fontFamily: 'Inter', fontSize: 20, fontWeight: FontWeight.w500, color: t.colorScheme.onSurface)),
+              const SizedBox(height: 8),
+              Text('Please confirm the following course registration:', style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: muted)),
+              const SizedBox(height: 24),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: widget.selectedCourses.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final course = widget.selectedCourses[index];
+                    return GlassCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
                           children: [
-                            Text(widget.selectedCourses[i]['code'] ?? '', style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w500, color: t.colorScheme.onSurface)),
-                            Text(widget.selectedCourses[i]['name'] ?? '', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: muted)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: brass.withAlpha(25),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(course['code'] ?? '', style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w700, color: brass)),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(course['name'] ?? 'Unknown Course', style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w500, color: t.colorScheme.onSurface)),
+                                  const SizedBox(height: 3),
+                                  Text('${course['credits'] ?? 0} Credit Hours', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: muted)),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      Icon(Iconsax.tick_circle_copy, color: SAMsTheme.success, size: 18),
-                    ],
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: Material(
+                  color: _submitting ? muted : brass,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: _submitting ? null : _confirmRegistration,
+                    child: Center(
+                      child: _submitting
+                          ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : Text('Confirm Registration', style: TextStyle(fontFamily: 'Inter', color: Colors.white, fontWeight: FontWeight.w600)),
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-
-          // Footer
-          Container(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            decoration: BoxDecoration(
-              color: t.colorScheme.surface,
-              border: Border(top: BorderSide(color: t.dividerColor)),
-            ),
-            child: SafeArea(
-              top: false,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 48,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: SAMsTheme.border),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                        child: Text('Back', style: TextStyle(fontFamily: 'Inter', color: t.colorScheme.onSurface, fontWeight: FontWeight.w500)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: SizedBox(
-                      height: 48,
-                      child: Material(
-                        color: _submitting ? muted.withAlpha(100) : brass,
-                        borderRadius: BorderRadius.circular(12),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: _submitting ? null : _confirmRegistration,
-                          child: Center(
-                            child: _submitting
-                              ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text('Confirm', style: TextStyle(fontFamily: 'Inter', color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-                                    const SizedBox(width: 6),
-                                    Icon(Iconsax.arrow_right_3_copy, color: Colors.white, size: 16),
-                                  ],
-                                ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

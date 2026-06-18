@@ -5,8 +5,8 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 class RegistrationConfirmation extends StatelessWidget {
   final List<String> codes;
-    final List<String> skipped;
-    const RegistrationConfirmation({super.key, required this.codes, this.skipped = const []});
+  final List<String> skipped;
+  const RegistrationConfirmation({super.key, required this.codes, this.skipped = const []});
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +75,8 @@ class RegistrationConfirmation extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       onTap: () {
                         HapticFeedback.mediumImpact();
-                        Navigator.of(context).popUntil((route) => route.isFirst);
+                        // Pop back to RegistrationResult, which will then pop back to SubjectRegistration
+                        Navigator.of(context).pop(true);
                       },
                       child: Center(
                         child: Text('Return to Dashboard', style: TextStyle(fontFamily: 'Inter', color: Colors.white, fontWeight: FontWeight.w600)),

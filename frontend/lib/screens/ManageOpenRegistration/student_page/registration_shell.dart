@@ -18,12 +18,11 @@ class _RegistrationShellState extends State<RegistrationShell>
     with TickerProviderStateMixin {
   int _currentIndex = 0;
   late final PageController _pageController;
+  int _refreshKey = 0;
 
-  late final List<Widget> _screens = [
-    const StudentDashboard(),
-    const SubjectRegistration(),
-    const _MyCoursesTab(),
-  ];
+  void _onRegistrationSuccess() {
+    setState(() => _refreshKey++);
+  }
 
   @override
   void initState() {
@@ -55,7 +54,11 @@ class _RegistrationShellState extends State<RegistrationShell>
         controller: _pageController,
         physics: const BouncingScrollPhysics(),
         onPageChanged: (i) => setState(() => _currentIndex = i),
-        children: _screens,
+        children: [
+          StudentDashboard(key: ValueKey('home_$_refreshKey')),
+          SubjectRegistration(onRegistrationSuccess: _onRegistrationSuccess),
+          _MyCoursesTab(key: ValueKey('courses_$_refreshKey')),
+        ],
       ),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
@@ -90,7 +93,7 @@ class _RegistrationShellState extends State<RegistrationShell>
 // ─── My Courses Tab ──────────────────────────────────────────────────────────
 
 class _MyCoursesTab extends StatefulWidget {
-  const _MyCoursesTab();
+  const _MyCoursesTab({super.key});
 
   @override
   State<_MyCoursesTab> createState() => _MyCoursesTabState();
@@ -202,12 +205,12 @@ class _MyCoursesTabState extends State<_MyCoursesTab> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50).withValues(alpha: 0.12),
+              color: const Color(0xFF10B981).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Text(status, style: const TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF4CAF50))),
+            child: Text(status, style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF10B981))),
           ),
         ],
       ),
@@ -215,24 +218,21 @@ class _MyCoursesTabState extends State<_MyCoursesTab> {
   }
 }
 
-// ─── Section Label ────────────────────────────────────────────────────────────
+// ─── Section Label ───────────────────────────────────────────────────────────
 
 class _SectionLabel extends StatelessWidget {
   final String text;
   final Color muted;
   final Color accent;
-
   const _SectionLabel({required this.text, required this.muted, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(width: 18, height: 1, color: accent),
-        const SizedBox(width: 8),
-        Text(text, style: TextStyle(fontFamily: 'Inter', color: muted, fontSize: 10.5, letterSpacing: 2.4, fontWeight: FontWeight.w600)),
-      ],
-    );
+    return Row(children: [
+      Container(width: 3, height: 14, color: accent),
+      const SizedBox(width: 8),
+      Text(text, style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5, color: muted)),
+    ]);
   }
 }
 
@@ -240,101 +240,55 @@ class _SectionLabel extends StatelessWidget {
 
 class _EditorialBottomNav extends StatelessWidget {
   final int currentIndex;
-  final ValueChanged<int> onTap;
-
+  final Function(int) onTap;
   const _EditorialBottomNav({required this.currentIndex, required this.onTap});
-
-  static const _moonBlack = Color(0xFF000000);
-  static const _piccolo = Color(0xFF5C33CF);
-
-  static const _items = <_NavItemData>[
-    _NavItemData(icon: Iconsax.home_2, activeIcon: Iconsax.home_2_copy, label: 'Home'),
-    _NavItemData(icon: Iconsax.add_square, activeIcon: Iconsax.add_square_copy, label: 'Register'),
-    _NavItemData(icon: Iconsax.book_1, activeIcon: Iconsax.book_1_copy, label: 'My Courses'),
-  ];
 
   @override
   Widget build(BuildContext context) {
-    final double navWidth = MediaQuery.of(context).size.width;
-    final double tabWidth = navWidth / _items.length;
-    const double indicatorWidth = 32.0;
+    final t = Theme.of(context);
+    final isDark = t.brightness == Brightness.dark;
 
     return Container(
-      decoration: BoxDecoration(
-        color: _moonBlack,
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, -2)),
+      padding: const EdgeInsets.only(bottom: 20, top: 8),
+      color: isDark ? const Color(0xFF0A0A0A) : Colors.white,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _navItem(Iconsax.home_2, Iconsax.home_2_copy, 'Home', 0, isDark),
+          _navItem(Iconsax.book_1, Iconsax.book_1_copy, 'Register', 1, isDark),
+          _navItem(Iconsax.clipboard_text, Iconsax.clipboard_text_copy, 'My Courses', 2, isDark),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 64,
-          child: Stack(
-            children: [
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeOutCubic,
-                top: 0,
-                left: (tabWidth * currentIndex) + (tabWidth - indicatorWidth) / 2,
-                child: Container(width: indicatorWidth, height: 3, decoration: BoxDecoration(color: _piccolo, borderRadius: BorderRadius.circular(2))),
+    );
+  }
+
+  Widget _navItem(IconData icon, IconData activeIcon, String label, int index, bool isDark) {
+    final isActive = currentIndex == index;
+    final activeColor = const Color(0xFF5C33CF);
+    final inactiveColor = isDark ? const Color(0xFF6B7280) : const Color(0xFF9CA3AF);
+
+    return GestureDetector(
+      onTap: () => onTap(index),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 72,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(isActive ? activeIcon : icon, size: 22, color: isActive ? activeColor : inactiveColor),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                color: isActive ? activeColor : inactiveColor,
               ),
-              Row(
-                children: List.generate(_items.length, (index) {
-                  final item = _items[index];
-                  final isActive = index == currentIndex;
-                  return Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => onTap(index),
-                      child: _NavItem(data: item, isActive: isActive),
-                    ),
-                  );
-                }),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
-
-class _NavItem extends StatelessWidget {
-  final _NavItemData data;
-  final bool isActive;
-
-  const _NavItem({required this.data, required this.isActive});
-
-  static const _piccolo = Color(0xFF5C33CF);
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isActive ? _piccolo : Colors.white.withValues(alpha: 0.45);
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedScale(
-            scale: isActive ? 1.1 : 1.0,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            child: Icon(isActive ? data.activeIcon : data.icon, color: color, size: 22),
-          ),
-          const SizedBox(height: 4),
-          Text(data.label, style: GoogleFonts.inter(fontSize: 10, fontWeight: isActive ? FontWeight.w600 : FontWeight.w400, color: color, letterSpacing: 0.6)),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItemData {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-
-  const _NavItemData({required this.icon, required this.activeIcon, required this.label});
 }

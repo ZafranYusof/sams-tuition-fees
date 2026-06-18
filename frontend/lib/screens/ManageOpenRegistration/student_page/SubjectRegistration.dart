@@ -7,7 +7,8 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'RegistrationResult.dart';
 
 class SubjectRegistration extends StatefulWidget {
-  const SubjectRegistration({super.key});
+  final VoidCallback? onRegistrationSuccess;
+  const SubjectRegistration({super.key, this.onRegistrationSuccess});
 
   @override
   State<SubjectRegistration> createState() => _SubjectRegistrationState();
@@ -296,12 +297,15 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
-                          onTap: (_selectedCodes.isEmpty || !_sessionActive) ? null : () {
+                          onTap: (_selectedCodes.isEmpty || !_sessionActive) ? null : () async {
                             HapticFeedback.mediumImpact();
-                            Navigator.push(
+                            final result = await Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => RegistrationResult(selectedCourses: _allCourses.where((c) => _selectedCodes.contains(c['code'])).toList())),
                             );
+                            if (result == true && mounted) {
+                              widget.onRegistrationSuccess?.call();
+                            }
                           },
                           child: Center(
                             child: Row(
