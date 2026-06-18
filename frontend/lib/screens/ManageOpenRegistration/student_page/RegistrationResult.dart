@@ -58,8 +58,9 @@ class _RegistrationResultState extends State<RegistrationResult> {
         }
       } catch (e) {
         if (mounted) {
+          final msg = e.toString().replaceAll('Exception: ', '');
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Registration failed. Please try again.', style: TextStyle(fontFamily: 'Inter')), backgroundColor: SAMsTheme.error),
+            SnackBar(content: Text('Registration failed: $msg', style: TextStyle(fontFamily: 'Inter')), backgroundColor: SAMsTheme.error, duration: const Duration(seconds: 5)),
           );
         }
       } finally {
