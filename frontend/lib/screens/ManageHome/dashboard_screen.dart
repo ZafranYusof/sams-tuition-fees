@@ -16,7 +16,7 @@ import '../../providers/language_provider.dart' as lp;
 import '../../services/api_service.dart';
 import '../ManageAuth/login_screen.dart';
 import '../ManageTuitionFees/fees_screen.dart';
-import '../ManageOpenRegistration/student_page/StudentDashboard.dart';
+import '../ManageOpenRegistration/student_page/registration_shell.dart';
 import '../ManageOpenRegistration/registrar_page/RegistrarDashboard.dart';
 import '../ManageCurriculumActivity/curriculum_screen.dart';
 import '../ManageClassAttendance/attendance_screen.dart';
@@ -504,7 +504,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                           title: 'Course Registration',
                           subtitle: 'Register courses, view enrollment',
                           accent: accent,
-                          onTap: () => Navigator.push(context, SlidePageRoute(page: const StudentDashboard())),
+                          onTap: () => Navigator.push(context, SlidePageRoute(page: const RegistrationShell())),
                         ),
                         _ModuleRow(
                           index: '03',
