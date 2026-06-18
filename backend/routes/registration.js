@@ -101,7 +101,6 @@ router.post('/enroll', auth, async (req, res) => {
 
     // Check duplicate
     const existing = await Enrollment.findOne({ student: req.user.id, course: courseId, session: activeSession._id, status: 'active' });
-    console.log('[ENROLL DEBUG]', JSON.stringify({ studentId: req.user.id, courseId, sessionId: activeSession._id.toString(), existing: !!existing }));
     if (existing) return res.status(400).json({ message: 'Already enrolled' });
 
     const enrollment = await Enrollment.create({
@@ -114,7 +113,6 @@ router.post('/enroll', auth, async (req, res) => {
 
     res.status(201).json({ message: 'Enrolled successfully', enrollment });
   } catch (err) {
-    console.log('[ENROLL ERROR]', err.code, err.message);
     if (err.code === 11000) return res.status(400).json({ message: 'Already enrolled' });
     res.status(500).json({ message: err.message });
   }
