@@ -19,6 +19,7 @@ import '../ManageTuitionFees/fees_screen.dart';
 import '../ManageOpenRegistration/student_page/registration_shell.dart';
 import '../ManageOpenRegistration/registrar_page/RegistrarDashboard.dart';
 import '../ManageCurriculumActivity/curriculum_screen.dart';
+import '../ManageCurriculumActivity/pusat_adab/pusat_adab_curriculum.dart';
 import '../ManageClassAttendance/attendance_screen.dart';
 import 'profile_screen.dart';
 import '../../widgets/page_transitions.dart';
@@ -548,9 +549,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                         _ModuleRow(
                           index: '01',
                           title: 'Curriculum Activity',
-                          subtitle: 'Manage activities and credits',
-                          accent: accent,
-                          onTap: () => Navigator.push(context, SlidePageRoute(page: const CurriculumScreen())),
+                                                    subtitle: 'Manage activities and credits',
+                                                    accent: accent,
+                                                    onTap: () => Navigator.push(context, SlidePageRoute(page: const PusatAdabCurriculumScreen())),
                         ),
                       ],
                     ],
