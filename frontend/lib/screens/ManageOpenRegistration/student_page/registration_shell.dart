@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../services/api_service.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
@@ -88,8 +89,39 @@ class _RegistrationShellState extends State<RegistrationShell>
 
 // ─── My Courses Tab ──────────────────────────────────────────────────────────
 
-class _MyCoursesTab extends StatelessWidget {
+class _MyCoursesTab extends StatefulWidget {
   const _MyCoursesTab();
+
+  @override
+  State<_MyCoursesTab> createState() => _MyCoursesTabState();
+}
+
+class _MyCoursesTabState extends State<_MyCoursesTab> {
+  List<Map<String, dynamic>> _enrollments = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEnrollments();
+  }
+
+  Future<void> _loadEnrollments() async {
+    setState(() => _loading = true);
+    try {
+      final data = await ApiService.get('/registration/my');
+      if (data is List) {
+        setState(() {
+          _enrollments = data.map((e) => Map<String, dynamic>.from(e)).toList();
+          _loading = false;
+        });
+      } else {
+        setState(() => _loading = false);
+      }
+    } catch (_) {
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,21 +143,35 @@ class _MyCoursesTab extends StatelessWidget {
             const SizedBox(height: 24),
             _SectionLabel(text: 'MY REGISTERED COURSES', muted: muted, accent: const Color(0xFF5C33CF)),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: t.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: t.dividerColor),
-              ),
-              child: Column(
-                children: [
-                  _courseRow('BCS3133', 'Software Engineering Project', '3 hrs', 'Accepted', t),
-                  Divider(color: t.dividerColor, height: 1),
-                  _courseRow('BCS3233', 'Mobile App Development', '3 hrs', 'Accepted', t),
-                ],
-              ),
-            ),
+            _loading
+              ? Center(child: CircularProgressIndicator(color: const Color(0xFF5C33CF), strokeWidth: 2))
+              : _enrollments.isEmpty
+                ? Center(child: Padding(
+                    padding: const EdgeInsets.all(40),
+                    child: Text('No courses enrolled yet.', style: TextStyle(fontFamily: 'Inter', color: muted)),
+                  ))
+                : Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: t.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: t.dividerColor),
+                    ),
+                    child: Column(
+                      children: [
+                        for (int i = 0; i < _enrollments.length; i++) ...[
+                          if (i > 0) Divider(color: t.dividerColor, height: 1),
+                          _courseRow(
+                            _enrollments[i]['course']?['courseId'] ?? '',
+                            _enrollments[i]['course']?['courseName'] ?? 'Unknown',
+                            '${_enrollments[i]['course']?['creditHours'] ?? 0} hrs',
+                            _enrollments[i]['status'] == 'active' ? 'Accepted' : _enrollments[i]['status'] ?? '',
+                            t,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
           ],
         ),
       ),
