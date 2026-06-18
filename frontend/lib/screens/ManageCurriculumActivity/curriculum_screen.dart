@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme.dart';
 import '../../services/api_service.dart';
 import '../../widgets/glass_card.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 class CurriculumScreen extends ConsumerStatefulWidget {
   const CurriculumScreen({super.key});
@@ -54,6 +55,7 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> with Single
 
   @override
   Widget build(BuildContext context) {
+    final t = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Curriculum Activities'),
@@ -95,7 +97,7 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> with Single
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: SAMsTheme.accent.withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
+                        decoration: BoxDecoration(color: SAMsTheme.accent.withValues(alpha:0.15), borderRadius: BorderRadius.circular(6)),
                         child: Text((activity['category'] ?? '').toUpperCase(), style: const TextStyle(color: SAMsTheme.accent, fontSize: 10, fontWeight: FontWeight.w600)),
                       ),
                       const Spacer(),
@@ -111,14 +113,14 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> with Single
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Icon(Icons.people_outline, size: 14, color: Theme.of(context).textTheme.bodySmall?.color),
+                      Icon(Iconsax.people, size: 14, color: Theme.of(context).textTheme.bodySmall?.color),
                       const SizedBox(width: 4),
                       Text('${(activity['participants'] as List?)?.length ?? 0}/${activity['capacity']}', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 12)),
                       const Spacer(),
                       ElevatedButton(
                         onPressed: () => _joinActivity(activity['_id']),
                         style: ElevatedButton.styleFrom(backgroundColor: SAMsTheme.accent, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
-                        child: const Text('Join', style: TextStyle(fontSize: 12, color: Colors.black)),
+                        child: const Text('Join', style: TextStyle(fontSize: 12, color: SAMsTheme.ink)),
                       ),
                     ],
                   ),
@@ -147,8 +149,8 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> with Single
               contentPadding: const EdgeInsets.all(16),
               leading: Container(
                 width: 40, height: 40,
-                decoration: BoxDecoration(color: SAMsTheme.accent.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.emoji_events, color: SAMsTheme.accent, size: 20),
+                decoration: BoxDecoration(color: SAMsTheme.accent.withValues(alpha:0.15), borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Iconsax.cup, color: SAMsTheme.accent, size: 20),
               ),
               title: Text(activity['name'] ?? '', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w500)),
               subtitle: Text(activity['category'] ?? '', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 12)),

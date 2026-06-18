@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../services/api_service.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 class CreditClaimDetailScreen extends StatefulWidget {
   final String activityId;
@@ -90,6 +91,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Submit Credit Claim'),
@@ -144,7 +146,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
 
             ElevatedButton.icon(
               onPressed: _pickFile,
-              icon: const Icon(Icons.upload_file),
+              icon: const Icon(Iconsax.document_upload),
               label: const Text('Upload Proof'),
             ),
 

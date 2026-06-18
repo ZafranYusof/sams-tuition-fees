@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
+import '../../../widgets/glass_card.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 class ReviewClaimScreen extends StatefulWidget {
   const ReviewClaimScreen({super.key});
@@ -115,12 +117,13 @@ class _ReviewClaimScreenState extends State<ReviewClaimScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Review Credit Claims'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Iconsax.refresh),
             onPressed: _fetchClaims,
           ),
         ],
@@ -188,8 +191,7 @@ class _ReviewClaimScreenState extends State<ReviewClaimScreen> {
                             } catch (_) {}
                           }
 
-                          return Card(
-                            elevation: 3,
+                          return GlassCard(
                             margin:
                                 const EdgeInsets.only(bottom: 16),
                             child: Padding(
@@ -265,7 +267,7 @@ class _ReviewClaimScreenState extends State<ReviewClaimScreen> {
                                             studentName,
                                           ),
                                           icon:
-                                              const Icon(Icons.check),
+                                              const Icon(Iconsax.tick_circle),
                                           label: const Text('Approve'),
                                           style:
                                               ElevatedButton.styleFrom(
@@ -286,7 +288,7 @@ class _ReviewClaimScreenState extends State<ReviewClaimScreen> {
                                             studentName,
                                           ),
                                           icon:
-                                              const Icon(Icons.close),
+                                              const Icon(Iconsax.close_circle),
                                           label: const Text('Reject'),
                                           style:
                                               ElevatedButton.styleFrom(

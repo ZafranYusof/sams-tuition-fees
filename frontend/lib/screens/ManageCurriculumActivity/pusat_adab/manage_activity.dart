@@ -122,6 +122,7 @@ class _ManageActivityScreenState extends State<ManageActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manage Activities'),
@@ -131,7 +132,7 @@ class _ManageActivityScreenState extends State<ManageActivityScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Add Activity'),
         backgroundColor: SAMsTheme.accent,
-        foregroundColor: Colors.black,
+        foregroundColor: SAMsTheme.ink,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())

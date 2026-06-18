@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/theme.dart';
 import '../../widgets/glass_card.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'credit_claim_detail.dart';
 
 class CreditClaimScreen extends ConsumerStatefulWidget {
@@ -38,6 +39,7 @@ class _CreditClaimScreenState extends ConsumerState<CreditClaimScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Credit Claims'),
@@ -57,13 +59,13 @@ class _CreditClaimScreenState extends ConsumerState<CreditClaimScreen> {
 
           if (isEligible) {
             color = SAMsTheme.accent;
-            icon = Icons.assignment;
+            icon = Iconsax.clipboard_tick;
           } else if (status == 'ongoing') {
             color = SAMsTheme.warning;
-            icon = Icons.pending_actions;
+            icon = Iconsax.timer_1;
           } else {
             color = SAMsTheme.primary;
-            icon = Icons.event;
+            icon = Iconsax.calendar_1;
           }
 
           return Padding(

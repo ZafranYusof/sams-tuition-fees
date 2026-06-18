@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme.dart';
 import '../../services/api_service.dart';
 import '../../widgets/glass_card.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 class ActivityDetailScreen extends ConsumerStatefulWidget {
   final String activityId;
@@ -72,6 +73,7 @@ class _ActivityDetailScreenState extends ConsumerState<ActivityDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Activity Details'),
@@ -94,15 +96,15 @@ class _ActivityDetailScreenState extends ConsumerState<ActivityDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    _infoRow(Icons.category, 'Category', widget.category),
+                    _infoRow(Iconsax.category, 'Category', widget.category),
                     const SizedBox(height: 12),
-                    _infoRow(Icons.location_on, 'Location', widget.location),
+                    _infoRow(Iconsax.location, 'Location', widget.location),
                     const SizedBox(height: 12),
-                    _infoRow(Icons.workspace_premium, 'Credit Hours',
+                    _infoRow(Iconsax.medal_star, 'Credit Hours',
                         widget.creditHours.toString()),
                     const SizedBox(height: 12),
                     _infoRow(
-                        Icons.people, 'Available Slots', widget.slots.toString()),
+                        Iconsax.people, 'Available Slots', widget.slots.toString()),
                   ],
                 ),
               ),
@@ -112,13 +114,13 @@ class _ActivityDetailScreenState extends ConsumerState<ActivityDetailScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 icon: Icon(
-                    alreadyJoined ? Icons.check : Icons.check_circle),
+                    alreadyJoined ? Iconsax.tick_circle : Iconsax.tick_circle),
                 label: Text(
                     alreadyJoined ? 'Registered' : 'Register Activity'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
                       alreadyJoined ? SAMsTheme.textSecondary : SAMsTheme.accent,
-                  foregroundColor: Colors.black,
+                  foregroundColor: SAMsTheme.ink,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 // Disable button if already joined or currently loading
