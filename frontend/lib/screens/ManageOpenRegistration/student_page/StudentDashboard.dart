@@ -89,12 +89,7 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> with Ticker
               ],
             ),
             const SizedBox(height: 24),
-            Text(DateFormat('EEEE, d MMMM').format(DateTime.now()).toUpperCase(), style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: muted)),
-            const SizedBox(height: 6),
-            Text('Welcome,\n${_userName.split(' ').first}.', style: TextStyle(fontFamily: 'Inter', fontSize: 36, fontWeight: FontWeight.w400, height: 1.15, color: t.colorScheme.onSurface)),
-            const SizedBox(height: 28),
-            
-            // 🌟 ACADEMIC MODULES
+            // ─── ACADEMIC MODULES ───
             _SectionLabel(text: 'ACADEMIC MODULES', muted: muted, accent: brass, top: 32),
             const SizedBox(height: 16),
             Container(
@@ -131,72 +126,6 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> with Ticker
               ),
             ),
             const SizedBox(height: 32),
-
-            // Financial Card
-            GestureDetector(
-              onTap: () {
-                setState(() => _isFlipped = !_isFlipped);
-                _isFlipped ? _flipController.forward() : _flipController.reverse();
-              },
-              child: AnimatedBuilder(
-                animation: _flipAnim,
-                builder: (context, child) {
-                  return Transform(
-                    transform: Matrix4.identity()..setEntry(3, 2, 0.001)..rotateX(_flipAnim.value * 3.14159265),
-                    alignment: Alignment.center,
-                    child: _flipAnim.value < 0.5
-                        ? _buildFinancialCardFront(t, isDark, brass, muted)
-                        : Transform(transform: Matrix4.identity()..rotateX(3.14159265), alignment: Alignment.center, child: _buildFinancialCardBack(t, isDark, brass, muted)),
-                  );
-                },
-              ),
-            ),
-            
-            // Quick Access Section
-            _SectionLabel(text: 'QUICK ACCESS', muted: muted, accent: brass),
-            // ... (Add your _QuickItem Grid here as per original)
-            Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: GridView.count(
-                    crossAxisCount: 4,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    childAspectRatio: 0.95,
-                    crossAxisSpacing: 4,
-                    mainAxisSpacing: 14,
-                    children: [
-                      _QuickItem(
-                        icon: Iconsax.calendar_1_copy,
-                        label: 'Calendar',
-                        accent: brass,
-                        muted: muted,
-                        onTap: () {},
-                      ),
-                      _QuickItem(
-                        icon: Iconsax.message_question_copy,
-                        label: 'FAQ',
-                        accent: brass,
-                        muted: muted,
-                        onTap: () {},
-                      ),
-                      _QuickItem(
-                        icon: Iconsax.document_text_copy,
-                        label: 'News',
-                        accent: brass,
-                        muted: muted,
-                        onTap: () {},
-                      ),
-                      _QuickItem(
-                        icon: Iconsax.map_copy,
-                        label: 'Map',
-                        accent: brass,
-                        muted: muted,
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 32),
           ],
         ),
       ),
