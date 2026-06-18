@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'activity_detail.dart';
 
 import '../../config/theme.dart';
@@ -77,9 +78,10 @@ class _CurriculumActivityScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Curriculum Activities'),
+    final t = Theme.of(context);
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Curriculum Activities'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -137,15 +139,16 @@ class _CurriculumActivityScreenState
                               itemCount: filteredActivities.length,
                               itemBuilder: (context, index) {
                                 final activity = filteredActivities[index];
-                                // Backend uses either 'name' or 'activityName'
                                 final name = activity['name'] ?? activity['activityName'] ?? '-';
                                 final category = activity['category'] ?? activity['activityCategory'] ?? '-';
                                 final status = activity['status'] ?? activity['activityStatus'] ?? '-';
                                 final slots = activity['capacity'] ?? activity['availableSlots'] ?? 0;
-                                final creditHours = activity['points'] ?? activity['creditHours'] ?? 0;
+                                final points = activity['points'] ?? activity['creditHours'] ?? 0;
+                                final description = activity['description'] ?? '';
                                 final location = activity['venue'] ?? activity['activityLocation'] ?? '-';
-                                // Backend _id is the real MongoDB id
                                 final id = activity['_id'] ?? activity['id'] ?? '';
+                                final participants = activity['participants'];
+                                final participantCount = participants is List ? participants.length : 0;
 
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 12),
@@ -155,63 +158,72 @@ class _CurriculumActivityScreenState
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
+                                          // Top row: category tag + points
                                           Row(
                                             children: [
-                                              Expanded(
-                                                child: Text(
-                                                  name,
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                              ),
                                               Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 10,
-                                                  vertical: 4,
-                                                ),
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                                 decoration: BoxDecoration(
                                                   color: SAMsTheme.accent,
-                                                  borderRadius: BorderRadius.circular(20),
+                                                  borderRadius: BorderRadius.circular(6),
                                                 ),
                                                 child: Text(
-                                                  status,
-                                                  style: const TextStyle(color: Colors.black),
+                                                  category.toString().toUpperCase(),
+                                                  style: const TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5),
                                                 ),
+                                              ),
+                                              const Spacer(),
+                                              Text(
+                                                '$points pts',
+                                                style: TextStyle(color: SAMsTheme.accent, fontSize: 13, fontWeight: FontWeight.w600),
                                               ),
                                             ],
                                           ),
-                                          const SizedBox(height: 8),
-                                          Text('Category: $category'),
-                                          const SizedBox(height: 4),
-                                          Text('Available Slots: $slots'),
-                                          const SizedBox(height: 12),
-                                          SizedBox(
-                                            width: double.infinity,
-                                            child: ElevatedButton(
-                                              onPressed: () {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) =>
-                                                        ActivityDetailScreen(
-                                                      activityId: id,
-                                                      title: name,
-                                                      category: category,
-                                                      location: location,
-                                                      creditHours: creditHours is int
-                                                          ? creditHours
-                                                          : (creditHours as num).toInt(),
-                                                      slots: slots is int
-                                                          ? slots
-                                                          : (slots as num).toInt(),
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                              child: const Text('View Details'),
+                                          const SizedBox(height: 10),
+                                          // Title
+                                          Text(
+                                            name,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                          ),
+                                          if (description.isNotEmpty) ...[
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              description,
+                                              style: TextStyle(color: t.textTheme.bodySmall?.color, fontSize: 13),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
+                                          ],
+                                          const SizedBox(height: 12),
+                                          // Bottom row: participant count + view details
+                                          Row(
+                                            children: [
+                                              Icon(Iconsax.people, size: 16, color: t.textTheme.bodySmall?.color),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                '$participantCount/$slots',
+                                                style: TextStyle(color: t.textTheme.bodySmall?.color, fontSize: 13),
+                                              ),
+                                              const Spacer(),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (_) => ActivityDetailScreen(
+                                                        activityId: id,
+                                                        title: name,
+                                                        category: category,
+                                                        location: location,
+                                                        creditHours: points is int ? points : (points as num).toInt(),
+                                                        slots: slots is int ? slots : (slots as num).toInt(),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                child: const Text('View Details'),
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),
