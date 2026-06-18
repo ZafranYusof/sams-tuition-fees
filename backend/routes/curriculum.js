@@ -33,6 +33,18 @@ router.get('/my/joined', auth, async (req, res) => {
   }
 });
 
+// Get my credit claims (MUST be before /:id)
+router.get('/my/claims', auth, async (req, res) => {
+  try {
+    const claims = await CreditClaim.find({ student: req.user.id })
+      .populate('activity', 'name category status')
+      .sort({ createdAt: -1 });
+    res.json(claims);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get pending credit claims (MUST be before /:id)
 router.get('/claims/pending', auth, async (req, res) => {
   try {

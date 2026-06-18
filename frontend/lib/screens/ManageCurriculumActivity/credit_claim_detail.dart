@@ -64,8 +64,8 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
+                Navigator.pop(context); // close dialog
+                Navigator.pop(context, true); // go back + refresh
               },
               child: const Text('OK', style: TextStyle(color: SAMsTheme.accent, fontFamily: 'Inter')),
             ),
