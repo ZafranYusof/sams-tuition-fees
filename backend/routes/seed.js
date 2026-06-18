@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const Student = require('../models/Student');
 const Lecturer = require('../models/Lecturer');
@@ -15,6 +16,19 @@ router.post('/', async (req, res) => {
   try {
     const results = [];
     let feesResult = null;
+
+    // Drop stale transactionId index from old schema
+    try {
+      const paymentsCol = mongoose.connection.db.collection("payments");
+      await paymentsCol.dropIndex("transactionId_1");
+      results.push("Dropped stale transactionId_1 index");
+    } catch (e) {
+      if (e.codeName === "IndexNotFound") {
+        results.push("transactionId_1 index already gone");
+      } else {
+        results.push("Index drop: " + e.message);
+      }
+    }
 
     // 1. Student
     const studentExists = await Student.findOne({ studentId: 'CB23109' });
