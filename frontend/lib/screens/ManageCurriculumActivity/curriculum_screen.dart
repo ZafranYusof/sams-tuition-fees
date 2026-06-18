@@ -65,14 +65,14 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
     return Scaffold(
       backgroundColor: t.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Curriculum Module'),
+        title: Text('Curriculum Module', style: TextStyle(color: t.colorScheme.onSurface)),
         leading: IconButton(
-          Icon(Iconsax.refresh, color: t.colorScheme.onSurface
+          icon: Icon(Iconsax.arrow_left, color: t.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: SAMsTheme.accent))
+          ? Center(child: CircularProgressIndicator(color: SAMsTheme.accent))
           : RefreshIndicator(
               onRefresh: _loadStats,
               color: SAMsTheme.accent,
@@ -96,10 +96,11 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
                     // ── section header ──
                     Text(
                       'WHAT WOULD YOU LIKE TO DO?',
-                      style: t.textTheme.labelSmall?.copyWith(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.8,
-                        color: t.colorScheme.onSurface,
+                        fontSize: 12,
+                        color: t.textTheme.bodySmall?.color,
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -135,14 +136,13 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
     );
   }
 
-  // ── stat card ──────────────────────────────────────────
   Widget _statCard(IconData icon, String label, int value) {
+    final t = Theme.of(context);
     return GlassCard(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 10),
         child: Column(
           children: [
-            // icon bg
             Container(
               width: 36,
               height: 36,
@@ -153,10 +153,9 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
               child: Icon(icon, color: SAMsTheme.accent, size: 18),
             ),
             const SizedBox(height: 12),
-            // number
             Text(
               '$value',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w700,
                 color: t.colorScheme.onSurface,
@@ -164,15 +163,14 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
               ),
             ),
             const SizedBox(height: 4),
-            // label
             Text(
               label,
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
-                TextStyle(color: t.textTheme.bodySmall?.color
+                color: t.textTheme.bodySmall?.color,
                 fontFamily: 'Inter',
               ),
             ),
@@ -182,7 +180,6 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
     );
   }
 
-  // ── action card ────────────────────────────────────────
   Widget _actionCard({
     required IconData icon,
     required Color iconBg,
@@ -191,6 +188,7 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final t = Theme.of(context);
     return GlassCard(
       child: InkWell(
         onTap: onTap,
@@ -199,7 +197,6 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // icon square
               Container(
                 width: 40,
                 height: 40,
@@ -210,14 +207,13 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
                 child: Icon(icon, color: iconColor, size: 20),
               ),
               const SizedBox(width: 14),
-              // text
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
                         color: t.colorScheme.onSurface,
@@ -227,8 +223,8 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        TextStyle(color: t.textTheme.bodySmall?.color
+                      style: TextStyle(
+                        color: t.textTheme.bodySmall?.color,
                         fontSize: 12,
                         fontFamily: 'Inter',
                       ),
