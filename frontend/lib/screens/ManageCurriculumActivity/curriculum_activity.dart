@@ -91,8 +91,8 @@ class _CurriculumActivityScreenState
               style: const TextStyle(fontFamily: 'Inter', color: SAMsTheme.ink),
               decoration: InputDecoration(
                 hintText: 'Search activity...',
-                hintStyle: const TextStyle(color: SAMsTheme.muted, fontFamily: 'Inter'),
-                prefixIcon: const Icon(Iconsax.search_normal_1, color: SAMsTheme.muted, size: 18),
+                hintStyle: const TextStyle(color: SAMsTheme.textMuted, fontFamily: 'Inter'),
+                prefixIcon: const Icon(Iconsax.search_normal_1, color: SAMsTheme.textMuted, size: 18),
                 filled: true,
                 fillColor: SAMsTheme.surface,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -133,7 +133,7 @@ class _CurriculumActivityScreenState
                   : _errorMessage != null
                       ? _errorState()
                       : _filtered.isEmpty
-                          ? Center(child: Text('No activities found.', style: TextStyle(color: SAMsTheme.muted, fontFamily: 'Inter')))
+                          ? Center(child: Text('No activities found.', style: TextStyle(color: SAMsTheme.textMuted, fontFamily: 'Inter')))
                           : RefreshIndicator(
                               onRefresh: _fetchActivities,
                               color: SAMsTheme.accent,
@@ -226,12 +226,12 @@ class _CurriculumActivityScreenState
                 children: [
                   Text(
                     'Category: ${category.isEmpty ? "-" : category}',
-                    style: const TextStyle(color: SAMsTheme.muted, fontSize: 12, fontFamily: 'Inter'),
+                    style: const TextStyle(color: SAMsTheme.textMuted, fontSize: 12, fontFamily: 'Inter'),
                   ),
                   const SizedBox(width: 14),
                   Text(
                     'Available Slots: $slots',
-                    style: const TextStyle(color: SAMsTheme.muted, fontSize: 12, fontFamily: 'Inter'),
+                    style: const TextStyle(color: SAMsTheme.textMuted, fontSize: 12, fontFamily: 'Inter'),
                   ),
                 ],
               ),

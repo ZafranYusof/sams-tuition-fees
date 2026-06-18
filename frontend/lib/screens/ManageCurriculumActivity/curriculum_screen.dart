@@ -160,7 +160,7 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 11,
-                color: SAMsTheme.muted,
+                color: SAMsTheme.textMuted,
                 fontFamily: 'Inter',
               ),
             ),
@@ -216,7 +216,7 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
                     Text(
                       subtitle,
                       style: const TextStyle(
-                        color: SAMsTheme.muted,
+                        color: SAMsTheme.textMuted,
                         fontSize: 12,
                         fontFamily: 'Inter',
                       ),
@@ -224,7 +224,7 @@ class _CurriculumScreenState extends ConsumerState<CurriculumScreen> {
                   ],
                 ),
               ),
-              const Icon(Iconsax.arrow_right_3, color: SAMsTheme.muted, size: 18),
+              const Icon(Iconsax.arrow_right_3, color: SAMsTheme.textMuted, size: 18),
             ],
           ),
         ),

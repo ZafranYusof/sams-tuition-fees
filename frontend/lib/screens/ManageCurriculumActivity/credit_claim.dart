@@ -69,7 +69,7 @@ class _CreditClaimScreenState extends ConsumerState<CreditClaimScreen> {
                   ? Center(
                       child: Text(
                         'No activities to claim.',
-                        style: TextStyle(color: SAMsTheme.muted, fontFamily: 'Inter'),
+                        style: TextStyle(color: SAMsTheme.textMuted, fontFamily: 'Inter'),
                       ),
                     )
                   : RefreshIndicator(
@@ -163,7 +163,7 @@ class _CreditClaimScreenState extends ConsumerState<CreditClaimScreen> {
                     Text(
                       statusLabel,
                       style: const TextStyle(
-                        color: SAMsTheme.muted,
+                        color: SAMsTheme.textMuted,
                         fontSize: 12,
                         fontFamily: 'Inter',
                       ),

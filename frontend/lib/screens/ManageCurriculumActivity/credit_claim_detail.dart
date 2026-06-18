@@ -59,7 +59,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
         builder: (_) => AlertDialog(
           backgroundColor: SAMsTheme.surface,
           title: const Text('Success', style: TextStyle(fontFamily: 'Inter', color: SAMsTheme.ink)),
-          content: const Text('Credit claim submitted successfully.', style: TextStyle(fontFamily: 'Inter', color: SAMsTheme.muted)),
+          content: const Text('Credit claim submitted successfully.', style: TextStyle(fontFamily: 'Inter', color: SAMsTheme.textMuted)),
           actions: [
             TextButton(
               onPressed: () {
@@ -127,7 +127,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
               style: const TextStyle(fontFamily: 'Inter', color: SAMsTheme.ink),
               decoration: InputDecoration(
                 hintText: 'Enter supporting claim...',
-                hintStyle: const TextStyle(color: SAMsTheme.muted, fontFamily: 'Inter'),
+                hintStyle: const TextStyle(color: SAMsTheme.textMuted, fontFamily: 'Inter'),
                 filled: true,
                 fillColor: SAMsTheme.surface,
                 contentPadding: const EdgeInsets.all(14),
@@ -161,7 +161,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
             Text(
               _selectedFileName ?? 'No file selected',
               style: const TextStyle(
-                color: SAMsTheme.muted,
+                color: SAMsTheme.textMuted,
                 fontSize: 12,
                 fontFamily: 'Inter',
               ),
