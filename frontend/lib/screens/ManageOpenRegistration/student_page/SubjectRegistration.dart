@@ -44,6 +44,10 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
         _sessionActive = true;
       } else {
         _sessionActive = false;
+        // Show popup after build completes
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _showClosedDialog();
+        });
       }
 
       if (courseData is List) {
@@ -68,6 +72,32 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
   int get _totalCredits => _allCourses
       .where((c) => _selectedCodes.contains(c['code']))
       .fold(0, (sum, c) => sum + (c['credits'] as int));
+
+  void _showClosedDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Row(
+          children: [
+            Icon(Iconsax.lock, color: SAMsTheme.error, size: 20),
+            const SizedBox(width: 8),
+            const Text('Registration Closed', style: TextStyle(fontFamily: 'Inter', fontSize: 16)),
+          ],
+        ),
+        content: Text(
+          'Registration is currently closed. No active session available. Please check back during the next registration period.',
+          style: TextStyle(fontFamily: 'Inter', color: Theme.of(context).textTheme.bodySmall?.color),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: SAMsTheme.accent, fontFamily: 'Inter')),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

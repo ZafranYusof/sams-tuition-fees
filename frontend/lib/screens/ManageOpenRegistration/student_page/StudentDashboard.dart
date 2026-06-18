@@ -1,12 +1,11 @@
-// lib/screens/student/StudentDashboard.dart
 import 'package:flutter/material.dart';
-import '../../../config/theme.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
+import '../../../config/theme.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/api_service.dart';
+import '../../../widgets/glass_card.dart';
 import 'SubjectRegistration.dart';
 
 class StudentDashboard extends ConsumerStatefulWidget {
@@ -16,373 +15,445 @@ class StudentDashboard extends ConsumerStatefulWidget {
   ConsumerState<StudentDashboard> createState() => _StudentDashboardState();
 }
 
-class _StudentDashboardState extends ConsumerState<StudentDashboard> with TickerProviderStateMixin {
-  late AnimationController _flipController;
-  late Animation<double> _flipAnim;
-  bool _isFlipped = false;
-
-  String _userName = 'Student';
+class _StudentDashboardState extends ConsumerState<StudentDashboard> {
   List<Map<String, dynamic>> _enrollments = [];
-  bool _loadingEnrollments = false;
+  Map<String, dynamic>? _session;
+  bool _loading = true;
+  int _totalCredits = 0;
 
   @override
   void initState() {
     super.initState();
-    _flipController = AnimationController(duration: const Duration(milliseconds: 400), vsync: this);
-    _flipAnim = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _flipController, curve: Curves.easeInOut));
-    _loadUserName();
+    _loadData();
   }
 
-  void _loadUserName() {
-    final user = ref.read(authProvider).user;
-    if (user != null) {
-      setState(() => _userName = user['name'] ?? 'Student');
-    }
-  }
-
-  @override
-  void dispose() {
-    _flipController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadEnrollments() async {
-    setState(() => _loadingEnrollments = true);
+  Future<void> _loadData() async {
+    setState(() => _loading = true);
     try {
-      final data = await ApiService.get('/registration/my');
-      if (data is List) {
-        setState(() {
-          _enrollments = List<Map<String, dynamic>>.from(data.map((e) => {
-            'courseName': e['course']?['courseName'] ?? 'Unknown',
-            'courseId': e['course']?['courseId'] ?? '',
-            'status': e['status'] ?? '',
-          }));
-          _loadingEnrollments = false;
-        });
-      } else {
-        setState(() { _enrollments = []; _loadingEnrollments = false; });
-      }
-    } catch (e) {
-      setState(() { _enrollments = []; _loadingEnrollments = false; });
-    }
-  }
+      final results = await Future.wait([
+        ApiService.get('/registration/my'),
+        ApiService.get('/registration/session').catchError((_) => null),
+      ]);
 
-  void _showRegisteredSubjectsPopup(BuildContext context, bool isDark) {
-    _loadEnrollments();
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: isDark ? SAMsTheme.cardDark : SAMsTheme.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('MY REGISTERED SUBJECTS', style: TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: SAMsTheme.primary)),
-                  const SizedBox(height: 16),
-                  if (_loadingEnrollments)
-                    Center(child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: CircularProgressIndicator(color: SAMsTheme.primary, strokeWidth: 2),
-                    ))
-                  else if (_enrollments.isEmpty)
-                    Center(child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Text('No registered subjects found.', style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withAlpha(150))),
-                    ))
-                  else
-                    ..._enrollments.map((e) => _buildItemizedLine(
-                      e['courseName'] ?? 'Unknown',
-                      e['courseId'] ?? '',
-                      Theme.of(context).colorScheme.onSurface,
-                    )),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+      final enrollData = results[0];
+      final sessionData = results[1];
+
+      final List<dynamic> enrollList = enrollData is List ? enrollData : [];
+      final enrollments = enrollList.map((e) => Map<String, dynamic>.from(e)).toList();
+
+      int credits = 0;
+      for (final e in enrollments) {
+        final course = e['course'];
+        if (course is Map) {
+          credits += ((course['credits'] ?? 0) as num).toInt();
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _enrollments = enrollments;
+        _totalCredits = credits;
+        _session = (sessionData is Map && sessionData.isNotEmpty) ? Map<String, dynamic>.from(sessionData) : null;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
-    final muted = isDark ? SAMsTheme.textMuted : const Color(0xFF6B7280);
-    final brass = SAMsTheme.primary;
 
     return Scaffold(
-      backgroundColor: t.colorScheme.surface,
+      backgroundColor: t.scaffoldBackgroundColor,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(children: [Container(width: 12, height: 2, color: brass), const SizedBox(width: 8), Text('UMPSA • SAMs', style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 2.0, color: muted))]),
-              ],
-            ),
-            const SizedBox(height: 24),
-            // ─── ACADEMIC MODULES ───
-            _SectionLabel(text: 'ACADEMIC MODULES', muted: muted, accent: brass, top: 32),
-            const SizedBox(height: 16),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              decoration: BoxDecoration(
-                color: t.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: t.dividerColor),
+        child: _loading
+            ? Center(child: CircularProgressIndicator(color: SAMsTheme.accent))
+            : RefreshIndicator(
+                onRefresh: _loadData,
+                color: SAMsTheme.accent,
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    // ── header ──
+                    _header(t),
+                    const SizedBox(height: 24),
+
+                    // ── registration status ──
+                    _registrationStatusCard(t),
+                    const SizedBox(height: 20),
+
+                    // ── registered subjects ──
+                    _sectionTitle(t, 'REGISTERED SUBJECTS'),
+                    const SizedBox(height: 10),
+                    if (_enrollments.isEmpty)
+                      _emptyCard(t, 'No registered subjects yet.')
+                    else
+                      ..._enrollments.map((e) => _subjectCard(t, e)),
+
+                    // ── total credits ──
+                    if (_enrollments.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      _totalCreditsRow(t),
+                    ],
+
+                    const SizedBox(height: 24),
+
+                    // ── register button ──
+                    _registerButton(t),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
+      ),
+    );
+  }
+
+  // ── header ──────────────────────────────────────────
+  Widget _header(ThemeData t) {
+    return Row(
+      children: [
+        Container(width: 12, height: 2, color: SAMsTheme.accent),
+        const SizedBox(width: 8),
+        Text(
+          'UMPSA • SAMs',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 2.0,
+            color: t.textTheme.bodySmall?.color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── section title ───────────────────────────────────
+  Widget _sectionTitle(ThemeData t, String text) {
+    return Row(
+      children: [
+        Container(width: 18, height: 1, color: SAMsTheme.accent),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            color: t.textTheme.bodySmall?.color,
+            fontSize: 10.5,
+            letterSpacing: 2.4,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── registration status card ────────────────────────
+  Widget _registrationStatusCard(ThemeData t) {
+    final isOpen = _session != null;
+    final sessionName = _session?['sessionName'] ?? '';
+    final startDate = _session?['startDate'];
+    final endDate = _session?['endDate'];
+
+    String dateRange = '';
+    if (startDate != null && endDate != null) {
+      final start = DateTime.tryParse(startDate.toString());
+      final end = DateTime.tryParse(endDate.toString());
+      if (start != null && end != null) {
+        dateRange = '${DateFormat('d MMM').format(start)} - ${DateFormat('d MMM yyyy').format(end)}';
+      }
+    }
+
+    return GlassCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            // icon
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isOpen
+                    ? SAMsTheme.success.withValues(alpha: 0.12)
+                    : SAMsTheme.error.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                isOpen ? Iconsax.unlock : Iconsax.lock,
+                color: isOpen ? SAMsTheme.success : SAMsTheme.error,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 14),
+            // text
+            Expanded(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Registered Subjects (Popup)
-                  _buildSimpleCourseItem(
-                    title: 'Registered Courses',
-                    subtitle: 'View your accepted subjects',
-                    icon: Iconsax.book_1_copy,
-                    onTap: () => _showRegisteredSubjectsPopup(context, isDark),
+                  Row(
+                    children: [
+                      Text(
+                        'Registration ',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: t.colorScheme.onSurface,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isOpen
+                              ? SAMsTheme.success.withValues(alpha: 0.15)
+                              : SAMsTheme.error.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          isOpen ? 'Open' : 'Closed',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isOpen ? SAMsTheme.success : SAMsTheme.error,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Divider(color: t.dividerColor, height: 1, indent: 20, endIndent: 20),
-                  // 2. Registration (Navigate to StudentRegistration.dart)
-                  _buildSimpleCourseItem(
-                    title: 'Subject Registration',
-                    subtitle: 'Apply for new electives',
-                    icon: Iconsax.add_square_copy,
-                    onTap: () {
-                      // Navigates to your specified file
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SubjectRegistration()),
-                      );
-                    },
-                  ),
+                  if (sessionName.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      sessionName,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        color: t.textTheme.bodySmall?.color,
+                      ),
+                    ),
+                  ],
+                  if (dateRange.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      dateRange,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        color: t.textTheme.bodySmall?.color,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
-    );
-  }
-Widget _buildWorkspaceCard({required BuildContext context, required String number, required String title, required String subtitle, required VoidCallback onTap, required Color muted, required Color textColor}) {
-    return InkWell(
-      onTap: () { HapticFeedback.mediumImpact(); onTap(); },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
-        child: Row(
-          children: [
-            Text(number, style: TextStyle(fontFamily: 'Inter', fontSize: 18, color: SAMsTheme.primary)),
-            const SizedBox(width: 24),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 18, color: textColor)), Text(subtitle, style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: muted))])),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSimpleCourseItem({required String title, required String subtitle, required IconData icon, required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 20.0),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: SAMsTheme.primary),
-            const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 16)), Text(subtitle, style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: SAMsTheme.textMuted))])),
-            const Icon(Iconsax.arrow_right_3_copy, size: 14, color: SAMsTheme.textMuted),
-          ],
-        ),
-      ),
-    );
-  }
+  // ── subject card ────────────────────────────────────
+  Widget _subjectCard(ThemeData t, Map<String, dynamic> enrollment) {
+    final course = enrollment['course'];
+    final courseId = course is Map ? (course['courseId'] ?? '') : '';
+    final courseName = course is Map ? (course['courseName'] ?? 'Unknown') : 'Unknown';
+    final credits = course is Map ? ((course['credits'] ?? 0) as num).toInt() : 0;
+    final status = enrollment['status'] ?? 'active';
 
-  Widget _buildFinancialCardFront(ThemeData t, bool isDark, Color brass, Color muted) {
-    return Container(
-      width: double.infinity, padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(gradient: LinearGradient(colors: isDark ? [SAMsTheme.cardDark, SAMsTheme.cardDark] : [SAMsTheme.surface, SAMsTheme.surface], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(16), border: Border.all(color: brass.withAlpha(51))),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Row(children: [Container(width: 12, height: 1, color: brass), const SizedBox(width: 8), Text('OUTSTANDING BALANCE', style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1, color: t.colorScheme.onSurface))]),
-          Icon(Iconsax.wallet_3_copy, color: t.colorScheme.onSurface.withAlpha(100), size: 18),
-        ]),
-        const SizedBox(height: 20),
-        Row(textBaseline: TextBaseline.alphabetic, crossAxisAlignment: CrossAxisAlignment.baseline, children: [Text('RM ', style: TextStyle(fontFamily: 'Inter', fontSize: 18, color: muted)), Text('1250.00', style: TextStyle(fontFamily: 'Inter', fontSize: 38, fontWeight: FontWeight.w400, color: t.colorScheme.onSurface))]),
-        const SizedBox(height: 20),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Tap to flip breakdown statistics.', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: muted)), Icon(Iconsax.arrow_right_1_copy, size: 16, color: brass)]),
-      ]),
-    );
-  }
-
-  Widget _buildFinancialCardBack(ThemeData t, bool isDark, Color brass, Color muted) {
-    return Container(
-      width: double.infinity, padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: t.colorScheme.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: brass.withAlpha(51))),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('FEE DISTRIBUTION BREAKDOWN', style: TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.bold, color: brass, letterSpacing: 1)),
-        const SizedBox(height: 12),
-        _buildItemizedLine('Tuition Costs', 'RM 950.00', t.colorScheme.onSurface),
-        _buildItemizedLine('Amenities & Lab Access', 'RM 150.00', t.colorScheme.onSurface),
-        _buildItemizedLine('Digital Library Levy', 'RM 50.00', t.colorScheme.onSurface),
-        _buildItemizedLine('Campus Insurance Protection', 'RM 100.00', t.colorScheme.onSurface),
-      ]),
-    );
-  }
-
-  Widget _buildItemizedLine(String label, String value, Color textCol) {
-    return Padding(padding: const EdgeInsets.symmetric(vertical: 4.0), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: textCol.withAlpha(180))), Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.bold, color: textCol))]));
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  final Color muted;
-  final Color accent;
-  final double top;
-
-  const _SectionLabel({
-    required this.text,
-    required this.muted,
-    required this.accent,
-    this.top = 24,
-  });
-
-  @override
-  Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(24, top, 24, 0),
-      child: Row(
-        children: [
-          Container(
-            width: 18,
-            height: 1,
-            color: accent,
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GlassCard(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              // course code tag
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: SAMsTheme.accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  courseId,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: SAMsTheme.accent,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // name + credits
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      courseName,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: t.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$credits hrs',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        color: t.textTheme.bodySmall?.color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // status badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: SAMsTheme.success.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Accepted',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: SAMsTheme.success,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
+        ),
+      ),
+    );
+  }
+
+  // ── total credits row ───────────────────────────────
+  Widget _totalCreditsRow(ThemeData t) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
           Text(
-            text,
-            style: TextStyle(fontFamily: 'Inter', 
-              color: muted,
-              fontSize: 10.5,
-              letterSpacing: 2.4,
+            'Total Credits',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
               fontWeight: FontWeight.w600,
+              color: t.colorScheme.onSurface,
+            ),
+          ),
+          Text(
+            '$_totalCredits hrs',
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: SAMsTheme.accent,
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class _QuickItem extends StatefulWidget {
-  final IconData icon;
-  final String label;
-  final Color accent;
-  final Color muted;
-  final VoidCallback onTap;
-
-  const _QuickItem({
-    required this.icon,
-    required this.label,
-    required this.accent,
-    required this.muted,
-    required this.onTap,
-  });
-
-  @override
-  State<_QuickItem> createState() => _QuickItemState();
-}
-
-class _QuickItemState extends State<_QuickItem>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 100),
-    );
-
-    _scale = Tween<double>(
-      begin: 1.0,
-      end: 0.88,
-    ).animate(
-      CurvedAnimation(
-        parent: _ctrl,
-        curve: Curves.easeInOut,
+  // ── empty card ──────────────────────────────────────
+  Widget _emptyCard(ThemeData t, String message) {
+    return GlassCard(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            message,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              color: t.textTheme.bodySmall?.color,
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
+  // ── register button ─────────────────────────────────
+  Widget _registerButton(ThemeData t) {
+    final isOpen = _session != null;
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          if (!isOpen) {
+            _showClosedDialog();
+            return;
+          }
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SubjectRegistration()),
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isOpen ? SAMsTheme.accent : t.dividerColor,
+          foregroundColor: isOpen ? Colors.white : t.textTheme.bodySmall?.color,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(isOpen ? Iconsax.add_square : Iconsax.lock, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              isOpen ? 'Register New Subject' : 'Registration Closed',
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-
-    return GestureDetector(
-      onTapDown: (_) => _ctrl.forward(),
-      onTapUp: (_) {
-        _ctrl.reverse();
-        HapticFeedback.selectionClick();
-        widget.onTap();
-      },
-      onTapCancel: () => _ctrl.reverse(),
-      child: AnimatedBuilder(
-        animation: _scale,
-        builder: (_, __) => Transform.scale(
-          scale: _scale.value,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: t.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: t.dividerColor,
-                  ),
-                ),
-                child: Icon(
-                  widget.icon,
-                  color: t.colorScheme.onSurface,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                widget.label,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontFamily: 'Inter', 
-                  color: widget.muted,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
+  // ── closed dialog ───────────────────────────────────
+  void _showClosedDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Row(
+          children: [
+            Icon(Iconsax.lock, color: SAMsTheme.error, size: 20),
+            const SizedBox(width: 8),
+            const Text('Registration Closed', style: TextStyle(fontFamily: 'Inter', fontSize: 16)),
+          ],
         ),
+        content: Text(
+          'Registration is currently closed. Please check back during the next registration period.',
+          style: TextStyle(fontFamily: 'Inter', color: Theme.of(context).textTheme.bodySmall?.color),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: SAMsTheme.accent, fontFamily: 'Inter')),
+          ),
+        ],
       ),
     );
   }
