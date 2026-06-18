@@ -23,6 +23,7 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
     with TickerProviderStateMixin {
   List<dynamic> _fees = [];
   bool _loading = true;
+  String? _errorMessage;
   String _query = '';
   String _filter = 'all';
   Timer? _debounce;
@@ -72,7 +73,7 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
         if (mounted) _playStagger(_filtered.length);
       });
     } catch (e) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() { _loading = false; _errorMessage = e.toString(); });
     }
   }
 
@@ -206,7 +207,20 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
         const SizedBox(height: 8),
         // Student list
         Expanded(
-          child: _filtered.isEmpty
+          child: _loading
+              ? const SizedBox()
+              : _errorMessage != null
+                  ? Center(child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Iconsax.warning_2, color: SAMsTheme.error, size: 32),
+                        const SizedBox(height: 12),
+                        Text(_errorMessage!, textAlign: TextAlign.center, style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: SAMsTheme.error)),
+                        const SizedBox(height: 12),
+                        TextButton(onPressed: _load, child: Text('Retry', style: TextStyle(fontFamily: 'Inter', color: SAMsTheme.accent))),
+                      ]),
+                    ))
+                  : _filtered.isEmpty
               ? (_query.isNotEmpty
                   ? EmptyState(
                       icon: Iconsax.search_status,
