@@ -31,6 +31,19 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Drop stale enrollment index (student_1_course_1 without session)
+    try {
+      const enrollmentsCol = mongoose.connection.db.collection("enrollments");
+      await enrollmentsCol.dropIndex("student_1_course_1");
+      results.push("Dropped stale student_1_course_1 enrollment index");
+    } catch (e) {
+      if (e.codeName === "IndexNotFound") {
+        results.push("student_1_course_1 index already gone");
+      } else {
+        results.push("Enrollment index drop: " + e.message);
+      }
+    }
+
     // 1. Student
     const studentExists = await Student.findOne({ studentId: 'CB23109' });
     if (!studentExists) {

@@ -11,6 +11,6 @@ const enrollmentSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-enrollmentSchema.index({ student: 1, course: 1 }, { unique: true });
+enrollmentSchema.index({ student: 1, course: 1, session: 1 }, { unique: true });
 
 module.exports = mongoose.model('Enrollment', enrollmentSchema);
