@@ -411,7 +411,7 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
     final now = DateTime.now();
     final buckets = List<double>.filled(30, 0);
     for (final p in _payments) {
-      if (p['paymentStatus'] != 'success') continue;
+      if (p['paymentStatus'] != 'completed') continue;
       final d = DateTime.tryParse(p['paymentDate']?.toString() ?? '')?.toLocal();
       if (d == null) continue;
       final daysAgo = now.difference(d).inDays;
@@ -674,7 +674,7 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
 
   // FILTER TABS - Moon TabBar
   Widget _buildFilterTabs(Color muted, Color accent, ThemeData t) {
-    final filters = ['all', 'success', 'failed', 'pending'];
+    final filters = ['all', 'completed', 'failed', 'pending'];
     final labels = ['All', 'Success', 'Failed', 'Pending'];
     final counts = filters.map((f) => f == 'all' ? _payments.length : _payments.where((p) => p['paymentStatus'] == f).length).toList();
     final currentIndex = filters.indexOf(_filter);
@@ -701,7 +701,7 @@ class _StudentHistoryTabState extends ConsumerState<StudentHistoryTab> with Tick
     final hasQuery = _query.isNotEmpty;
     final messages = {
       'all': {'title': 'No transactions yet', 'sub': 'Your payment history will appear here'},
-      'success': {'title': 'No successful payments', 'sub': 'Once you pay, they\'ll show up here'},
+      'completed': {'title': 'No successful payments', 'sub': 'Once you pay, they\'ll show up here'},
       'failed': {'title': 'No failed transactions', 'sub': 'You\'re all paid up'},
       'pending': {'title': 'No pending payments', 'sub': 'Everything is settled'},
     };

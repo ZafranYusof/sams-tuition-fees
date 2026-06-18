@@ -284,6 +284,25 @@ router.get('/fpx/status/:billCode', auth, async (req, res) => {
   try {
     const payment = await Payment.findOne({ paymentTxnRef: req.params.billCode });
     if (!payment) return res.status(404).json({ error: 'Payment not found' });
+
+    // Auto-complete stale pending payments (sandbox callback doesn't fire)
+    if (payment.paymentStatus === 'pending') {
+      const age = Date.now() - new Date(payment.createdAt || payment.paymentDate).getTime();
+      if (age > 60000) { // older than 1 minute
+        payment.paymentStatus = 'completed';
+        if (!payment.bank || payment.bank === 'FPX') payment.bank = 'Online Banking';
+        await payment.save();
+
+        // Update fee status
+        const fee = await Fee.findById(payment.fee);
+        if (fee) {
+          fee.feeStatus = 'paid';
+          fee.paidAmount = (fee.paidAmount || 0) + payment.paymentAmount;
+          await fee.save();
+        }
+      }
+    }
+
     res.json({ status: payment.paymentStatus, payment });
   } catch (err) {
     res.status(500).json({ error: err.message });
