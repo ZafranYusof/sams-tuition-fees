@@ -12,7 +12,7 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
-    final muted = isDark ? SAMsTheme.textMuted : SAMsTheme.textMuted;
+    final muted = isDark ? SAMsTheme.textMuted : const Color(0xFF6B7280);
     final brass = SAMsTheme.primary;
 
     return Scaffold(
@@ -123,7 +123,7 @@ class LoginScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isDark ? SAMsTheme.surfaceLight : SAMsTheme.surface,
+          color: isDark ? SAMsTheme.surfaceLight : t.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: brass.withOpacity(0.3)),
         ),

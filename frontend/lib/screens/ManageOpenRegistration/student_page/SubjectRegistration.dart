@@ -56,7 +56,7 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
-    final muted = SAMsTheme.textMuted;
+    final muted = isDark ? SAMsTheme.textMuted : const Color(0xFF6B7280);
     final brass = SAMsTheme.primary;
     final filteredCourses = _allCourses.where((c) =>
       c['name'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -100,9 +100,9 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Container(
               decoration: BoxDecoration(
-                color: isDark ? SAMsTheme.cardDark : SAMsTheme.surface,
+                color: t.colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: SAMsTheme.border),
+                border: Border.all(color: t.dividerColor),
               ),
               child: TextField(
                 onChanged: (val) => setState(() => _searchQuery = val),
@@ -198,8 +198,8 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
           Container(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
             decoration: BoxDecoration(
-              color: isDark ? SAMsTheme.cardDark : Colors.white,
-              border: Border(top: BorderSide(color: SAMsTheme.border)),
+              color: t.colorScheme.surface,
+              border: Border(top: BorderSide(color: t.dividerColor)),
             ),
             child: SafeArea(
               top: false,

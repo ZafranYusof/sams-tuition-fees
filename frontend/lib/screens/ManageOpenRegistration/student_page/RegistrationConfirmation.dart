@@ -11,7 +11,7 @@ class RegistrationConfirmation extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
-    final muted = SAMsTheme.textMuted;
+    final muted = isDark ? SAMsTheme.textMuted : const Color(0xFF6B7280);
     final brass = SAMsTheme.primary;
 
     return Scaffold(
@@ -56,9 +56,9 @@ class RegistrationConfirmation extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     decoration: BoxDecoration(
-                      color: isDark ? SAMsTheme.cardDark : SAMsTheme.surface,
+                      color: t.colorScheme.surface,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: SAMsTheme.border),
+                      border: Border.all(color: t.dividerColor),
                     ),
                     child: Text(code, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w500, color: t.colorScheme.onSurface)),
                   ),

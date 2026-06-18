@@ -72,7 +72,7 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> with Ticker
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
-    final muted = isDark ? SAMsTheme.textMuted : SAMsTheme.textMuted;
+    final muted = isDark ? SAMsTheme.textMuted : const Color(0xFF6B7280);
     final brass = SAMsTheme.primary;
 
     return Scaffold(
@@ -95,9 +95,9 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> with Ticker
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 24),
               decoration: BoxDecoration(
-                color: isDark ? SAMsTheme.cardDark : SAMsTheme.surface,
+                color: t.colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isDark ? SAMsTheme.border : SAMsTheme.border),
+                border: Border.all(color: t.dividerColor),
               ),
               child: Column(
                 children: [
@@ -108,7 +108,7 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> with Ticker
                     icon: Iconsax.book_1_copy,
                     onTap: () => _showRegisteredSubjectsPopup(context, isDark),
                   ),
-                  Divider(color: isDark ? SAMsTheme.border : SAMsTheme.border, height: 1, indent: 20, endIndent: 20),
+                  Divider(color: t.dividerColor, height: 1, indent: 20, endIndent: 20),
                   // 2. Registration (Navigate to StudentRegistration.dart)
                   _buildSimpleCourseItem(
                     title: 'Subject Registration',
@@ -184,7 +184,7 @@ Widget _buildWorkspaceCard({required BuildContext context, required String numbe
   Widget _buildFinancialCardBack(ThemeData t, bool isDark, Color brass, Color muted) {
     return Container(
       width: double.infinity, padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: isDark ? SAMsTheme.cardDark : SAMsTheme.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: brass.withAlpha(51))),
+      decoration: BoxDecoration(color: t.colorScheme.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: brass.withAlpha(51))),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('FEE DISTRIBUTION BREAKDOWN', style: TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.bold, color: brass, letterSpacing: 1)),
         const SizedBox(height: 12),

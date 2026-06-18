@@ -65,7 +65,7 @@ class _SetupRegistrationScreenState extends State<SetupRegistrationScreen> {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
-    final muted = isDark ? SAMsTheme.textMuted : SAMsTheme.textMuted;
+    final muted = isDark ? SAMsTheme.textMuted : const Color(0xFF6B7280);
     final brass = SAMsTheme.primary;
 
     // Configuration is only valid if dates and times are set
@@ -102,9 +102,9 @@ class _SetupRegistrationScreenState extends State<SetupRegistrationScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: isDark ? SAMsTheme.cardDark : SAMsTheme.surface,
+                  color: t.colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: isDark ? SAMsTheme.border : SAMsTheme.border),
+                  border: Border.all(color: t.dividerColor),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,7 +123,7 @@ class _SetupRegistrationScreenState extends State<SetupRegistrationScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildMetricColumn('START DATE', startDate != null ? DateFormat('dd MMM yyyy').format(startDate!) : 'Not Configured', muted, t.colorScheme.onSurface),
-                        Container(height: 30, width: 1, color: isDark ? SAMsTheme.border : SAMsTheme.border),
+                        Container(height: 30, width: 1, color: t.dividerColor),
                         _buildMetricColumn('END DATE', endDate != null ? DateFormat('dd MMM yyyy').format(endDate!) : 'Not Configured', muted, t.colorScheme.onSurface),
                       ],
                     ),
@@ -134,7 +134,7 @@ class _SetupRegistrationScreenState extends State<SetupRegistrationScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildMetricColumn('START TIME', startTime != null ? startTime!.format(context) : 'Not Configured', muted, t.colorScheme.onSurface),
-                        Container(height: 30, width: 1, color: isDark ? SAMsTheme.border : SAMsTheme.border),
+                        Container(height: 30, width: 1, color: t.dividerColor),
                         _buildMetricColumn('END TIME', endTime != null ? endTime!.format(context) : 'Not Configured', muted, t.colorScheme.onSurface),
                       ],
                     ),

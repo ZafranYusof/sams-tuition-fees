@@ -51,7 +51,7 @@ class _SessionManagementState extends State<SessionManagement> {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
-    final muted = SAMsTheme.textMuted;
+    final muted = isDark ? SAMsTheme.textMuted : const Color(0xFF6B7280);
     final brass = SAMsTheme.primary;
     final bool isTimelineInvalid = startDate == null || endDate == null || startTime == null || endTime == null;
 
@@ -93,7 +93,7 @@ class _SessionManagementState extends State<SessionManagement> {
                       onTap: () => _selectDateRange(context),
                       brass: brass, muted: muted, t: t,
                     ),
-                    Divider(color: SAMsTheme.border, height: 24),
+                    Divider(color: t.dividerColor, height: 24),
                     _buildSettingRow(
                       icon: Iconsax.clock_copy,
                       label: 'Start Time',
@@ -101,7 +101,7 @@ class _SessionManagementState extends State<SessionManagement> {
                       onTap: () => _selectTime(context, true),
                       brass: brass, muted: muted, t: t,
                     ),
-                    Divider(color: SAMsTheme.border, height: 24),
+                    Divider(color: t.dividerColor, height: 24),
                     _buildSettingRow(
                       icon: Iconsax.clock_copy,
                       label: 'End Time',

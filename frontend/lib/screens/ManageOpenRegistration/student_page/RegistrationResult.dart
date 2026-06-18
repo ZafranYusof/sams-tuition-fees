@@ -50,7 +50,7 @@ class _RegistrationResultState extends State<RegistrationResult> {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final isDark = t.brightness == Brightness.dark;
-    final muted = SAMsTheme.textMuted;
+    final muted = isDark ? SAMsTheme.textMuted : const Color(0xFF6B7280);
     final brass = SAMsTheme.primary;
 
     return Scaffold(
@@ -121,8 +121,8 @@ class _RegistrationResultState extends State<RegistrationResult> {
           Container(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
             decoration: BoxDecoration(
-              color: isDark ? SAMsTheme.cardDark : Colors.white,
-              border: Border(top: BorderSide(color: SAMsTheme.border)),
+              color: t.colorScheme.surface,
+              border: Border(top: BorderSide(color: t.dividerColor)),
             ),
             child: SafeArea(
               top: false,
