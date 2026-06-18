@@ -105,6 +105,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       userMap['id'] = userMap['id'] ?? userMap['_id'] ?? '';
       userMap['_id'] = userMap['_id'] ?? userMap['id'] ?? '';
       state = AuthState(isAuthenticated: true, user: userMap, isInitializing: false);
+      // Re-register FCM token on every app launch (ensures token stays fresh)
+      FcmService().registerTokenAfterLogin();
     } catch (e) {
       // If 401, ApiService already removed token — clear auth state too
       if (e.toString().contains('401') || e.toString().contains('Session expired')) {

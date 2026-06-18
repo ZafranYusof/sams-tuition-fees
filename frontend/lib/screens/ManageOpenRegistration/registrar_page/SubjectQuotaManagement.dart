@@ -62,6 +62,7 @@ class _SubjectQuotaManagementState extends State<SubjectQuotaManagement> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final isDark = t.brightness == Brightness.dark;
     final muted = isDark ? SAMsTheme.textMuted : const Color(0xFF6B7280);
     final brass = SAMsTheme.primary;
 
