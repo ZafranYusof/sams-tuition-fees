@@ -90,7 +90,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
       appBar: AppBar(
         title: const Text('Submit Credit Claim'),
         leading: IconButton(
-          Icon(Iconsax.refresh, color: t.colorScheme.onSurface
+          icon: Icon(Iconsax.refresh, color: t.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -102,7 +102,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
             // ── activity name ──
             Text(
               'Activity: ${widget.activityName}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
                 color: t.colorScheme.onSurface,
@@ -111,7 +111,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
             ),
             const SizedBox(height: 24),
             // ── supporting claim label ──
-            const Text(
+            Text(
               'Supporting Claim',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
@@ -128,9 +128,9 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
               style: TextStyle(fontFamily: 'Inter', color: t.colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: 'Enter supporting claim...',
-                TextStyle(color: t.textTheme.bodySmall?.color, fontSize: 12, fontFamily: 'Inter')
+                hintStyle: TextStyle(color: t.textTheme.bodySmall?.color, fontSize: 12, fontFamily: 'Inter'),
                 filled: true,
-                fillColor: SAMsTheme.surface,
+                fillColor: t.colorScheme.surface,
                 contentPadding: const EdgeInsets.all(14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -148,7 +148,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
             ),
             const SizedBox(height: 20),
             // ── proof document label ──
-            const Text(
+            Text(
               'Proof Document',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
@@ -161,7 +161,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
             // ── file status ──
             Text(
               _selectedFileName ?? 'No file selected',
-              style: const TextStyle(
+              style: TextStyle(
                 color: t.textTheme.bodySmall?.color,
                 fontSize: 12,
                 fontFamily: 'Inter',
@@ -176,7 +176,7 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
                 icon: const Icon(Iconsax.document_upload, size: 18),
                 label: const Text('Upload Proof'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: SAMsTheme.surface,
+                  backgroundColor: t.colorScheme.surface,
                   foregroundColor: SAMsTheme.accent,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -196,17 +196,17 @@ class _CreditClaimDetailScreenState extends State<CreditClaimDetailScreen> {
                 onPressed: _isSubmitting ? null : _submitClaim,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: SAMsTheme.accent,
-                  foregroundColor: Colors.black,
+                  foregroundColor: t.colorScheme.onSurface,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                   textStyle: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 14),
                 ),
                 child: _isSubmitting
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: t.colorScheme.onSurface),
                       )
                     : const Text('Submit Claim'),
               ),

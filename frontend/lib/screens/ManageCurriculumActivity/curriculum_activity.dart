@@ -1,27 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
-import 'activity_detail.dart';
+import 'package:flutter/services.dart';
 import '../../config/theme.dart';
 import '../../services/api_service.dart';
 import '../../widgets/glass_card.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'activity_detail.dart';
 
-class CurriculumActivityScreen extends ConsumerStatefulWidget {
+class CurriculumActivityScreen extends StatefulWidget {
   const CurriculumActivityScreen({super.key});
 
   @override
-  ConsumerState<CurriculumActivityScreen> createState() =>
-      _CurriculumActivityScreenState();
+  State<CurriculumActivityScreen> createState() => _CurriculumActivityScreenState();
 }
 
-class _CurriculumActivityScreenState
-    extends ConsumerState<CurriculumActivityScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  String _selectedCategory = 'All';
-  bool _isLoading = true;
-  String? _errorMessage;
+class _CurriculumActivityScreenState extends State<CurriculumActivityScreen> {
   List<Map<String, dynamic>> _activities = [];
   List<Map<String, dynamic>> _filtered = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+  String _selectedCategory = 'All';
+  final _searchController = TextEditingController();
+
+  // Backend enum: ['club', 'sport', 'event', 'workshop', 'community']
+  static const _categories = ['All', 'Sport', 'Event', 'Club', 'Workshop', 'Community'];
+  // Map display label → backend value for comparison
+  static const _catMap = {
+    'All': 'all',
+    'Sport': 'sport',
+    'Event': 'event',
+    'Club': 'club',
+    'Workshop': 'workshop',
+    'Community': 'community',
+  };
 
   @override
   void initState() {
@@ -58,12 +68,13 @@ class _CurriculumActivityScreenState
 
   void _applyFilter() {
     final q = _searchController.text.toLowerCase();
+    final selectedBackend = _catMap[_selectedCategory] ?? 'all';
     setState(() {
       _filtered = _activities.where((a) {
         final name = (a['name'] ?? a['activityName'] ?? '').toString().toLowerCase();
         final cat = (a['category'] ?? a['activityCategory'] ?? '').toString().toLowerCase();
         final matchSearch = q.isEmpty || name.contains(q);
-        final matchCat = _selectedCategory == 'All' || cat == _selectedCategory.toLowerCase();
+        final matchCat = selectedBackend == 'all' || cat == selectedBackend;
         return matchSearch && matchCat;
       }).toList();
     });
@@ -75,9 +86,11 @@ class _CurriculumActivityScreenState
     return Scaffold(
       backgroundColor: t.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Curriculum Activities'),
+        title: Text('Curriculum Activities', style: TextStyle(fontFamily: 'Inter', color: t.colorScheme.onSurface)),
+        backgroundColor: t.scaffoldBackgroundColor,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          Icon(Iconsax.refresh, color: t.colorScheme.onSurface
+          icon: Icon(Iconsax.arrow_left_copy, color: t.colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -85,7 +98,7 @@ class _CurriculumActivityScreenState
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // ── search bar ──
+            // search bar
             TextField(
               controller: _searchController,
               style: TextStyle(fontFamily: 'Inter', color: t.colorScheme.onSurface),
@@ -94,7 +107,7 @@ class _CurriculumActivityScreenState
                 hintStyle: TextStyle(color: t.textTheme.bodySmall?.color, fontFamily: 'Inter'),
                 prefixIcon: Icon(Iconsax.search_normal_1, color: t.textTheme.bodySmall?.color, size: 18),
                 filled: true,
-                fillColor: SAMsTheme.surface,
+                fillColor: t.colorScheme.surface,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -106,32 +119,27 @@ class _CurriculumActivityScreenState
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: SAMsTheme.accent, width: 1.5),
+                  borderSide: BorderSide(color: SAMsTheme.accent, width: 1.5),
                 ),
               ),
             ),
             const SizedBox(height: 14),
-            // ── filter chips ──
+            // filter chips
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _categoryChip('All'),
-                  _categoryChip('Sports'),
-                  _categoryChip('Cultural'),
-                  _categoryChip('Academic'),
-                  _categoryChip('Community'),
-                  _categoryChip('Leadership'),
+                  for (final cat in _categories) _categoryChip(cat, t),
                 ],
               ),
             ),
             const SizedBox(height: 18),
-            // ── list ──
+            // list
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: SAMsTheme.accent))
+                  ? Center(child: CircularProgressIndicator(color: SAMsTheme.accent))
                   : _errorMessage != null
-                      ? _errorState()
+                      ? _errorState(t)
                       : _filtered.isEmpty
                           ? Center(child: Text('No activities found.', style: TextStyle(color: t.textTheme.bodySmall?.color, fontFamily: 'Inter')))
                           : RefreshIndicator(
@@ -139,7 +147,7 @@ class _CurriculumActivityScreenState
                               color: SAMsTheme.accent,
                               child: ListView.builder(
                                 itemCount: _filtered.length,
-                                itemBuilder: (ctx, i) => _activityCard(_filtered[i]),
+                                itemBuilder: (ctx, i) => _activityCard(_filtered[i], t),
                               ),
                             ),
             ),
@@ -149,12 +157,12 @@ class _CurriculumActivityScreenState
     );
   }
 
-  Widget _errorState() {
+  Widget _errorState(ThemeData t) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(_errorMessage!, textAlign: TextAlign.center, style: const TextStyle(color: SAMsTheme.error, fontFamily: 'Inter')),
+          Text(_errorMessage!, textAlign: TextAlign.center, style: TextStyle(color: SAMsTheme.error, fontFamily: 'Inter')),
           const SizedBox(height: 12),
           ElevatedButton(onPressed: _fetchActivities, child: const Text('Retry')),
         ],
@@ -162,9 +170,8 @@ class _CurriculumActivityScreenState
     );
   }
 
-  // ── activity card ──────────────────────────────────────
-  Widget _activityCard(Map<String, dynamic> activity) {
-    final t = Theme.of(context);
+  // activity card
+  Widget _activityCard(Map<String, dynamic> activity, ThemeData t) {
     final name = activity['name'] ?? activity['activityName'] ?? '-';
     final category = (activity['category'] ?? activity['activityCategory'] ?? '').toString();
     final status = (activity['status'] ?? activity['activityStatus'] ?? 'upcoming').toString();
@@ -175,6 +182,9 @@ class _CurriculumActivityScreenState
     final participantCount = participants is List ? participants.length : 0;
     final venue = activity['venue'] ?? activity['activityLocation'] ?? '';
 
+    // Capitalize category for display
+    final catDisplay = category.isEmpty ? '-' : category[0].toUpperCase() + category.substring(1);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: GlassCard(
@@ -183,20 +193,19 @@ class _CurriculumActivityScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── top row: category tag + status badge ──
+              // category tag + status badge
               Row(
                 children: [
-                  // category tag
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: SAMsTheme.accent,
+                      color: SAMsTheme.accent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      category.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      catDisplay.toUpperCase(),
+                      style: TextStyle(
+                        color: SAMsTheme.accent,
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
@@ -205,15 +214,14 @@ class _CurriculumActivityScreenState
                     ),
                   ),
                   const Spacer(),
-                  // status badge
                   _statusBadge(status),
                 ],
               ),
               const SizedBox(height: 10),
-              // ── title ──
+              // title
               Text(
                 name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
                   color: t.colorScheme.onSurface,
@@ -221,22 +229,34 @@ class _CurriculumActivityScreenState
                 ),
               ),
               const SizedBox(height: 6),
-              // ── category + slots ──
+              // category + slots
               Row(
                 children: [
                   Text(
-                    'Category: ${category.isEmpty ? "-" : category}',
+                    'Category: $catDisplay',
                     style: TextStyle(color: t.textTheme.bodySmall?.color, fontSize: 12, fontFamily: 'Inter'),
                   ),
                   const SizedBox(width: 14),
                   Text(
-                    'Available Slots: $slots',
+                    'Slots: $participantCount/$slots',
+                    style: TextStyle(color: t.textTheme.bodySmall?.color, fontSize: 12, fontFamily: 'Inter'),
+                  ),
+                  const SizedBox(width: 14),
+                  Text(
+                    'Points: $points',
                     style: TextStyle(color: t.textTheme.bodySmall?.color, fontSize: 12, fontFamily: 'Inter'),
                   ),
                 ],
               ),
+              if (venue.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  venue,
+                  style: TextStyle(color: t.textTheme.bodySmall?.color, fontSize: 11, fontFamily: 'Inter'),
+                ),
+              ],
               const SizedBox(height: 10),
-              // ── view details ──
+              // view details
               GestureDetector(
                 onTap: () => Navigator.push(
                   context,
@@ -244,14 +264,14 @@ class _CurriculumActivityScreenState
                     builder: (_) => ActivityDetailScreen(
                       activityId: id,
                       title: name,
-                      category: category,
+                      category: catDisplay,
                       location: venue,
                       creditHours: points is int ? points : (points as num).toInt(),
                       slots: slots is int ? slots : (slots as num).toInt(),
                     ),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   'View Details',
                   style: TextStyle(
                     color: SAMsTheme.accent,
@@ -268,7 +288,7 @@ class _CurriculumActivityScreenState
     );
   }
 
-  // ── status badge ───────────────────────────────────────
+  // status badge
   Widget _statusBadge(String status) {
     Color bg;
     Color fg;
@@ -296,8 +316,8 @@ class _CurriculumActivityScreenState
     );
   }
 
-  // ── category chip ──────────────────────────────────────
-  Widget _categoryChip(String category) {
+  // category chip
+  Widget _categoryChip(String category, ThemeData t) {
     final selected = _selectedCategory == category;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -307,13 +327,13 @@ class _CurriculumActivityScreenState
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 12,
-            color: selected ? Colors.white : SAMsTheme.ink,
+            color: selected ? Colors.white : t.colorScheme.onSurface,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
         selected: selected,
         selectedColor: SAMsTheme.accent,
-        backgroundColor: SAMsTheme.surface,
+        backgroundColor: t.colorScheme.surface,
         side: BorderSide(color: selected ? SAMsTheme.accent : t.dividerColor),
         showCheckmark: false,
         onSelected: (_) {

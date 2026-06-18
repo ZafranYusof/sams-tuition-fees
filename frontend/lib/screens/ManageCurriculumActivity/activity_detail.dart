@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/glass_card.dart';
@@ -147,8 +146,8 @@ class _ActivityDetailScreenState extends ConsumerState<ActivityDetailScreen> {
                     alreadyJoined ? 'Registered' : 'Register Activity'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
-                      alreadyJoined ? SAMsTheme.textSecondary : SAMsTheme.accent,
-                  foregroundColor: SAMsTheme.ink,
+                      alreadyJoined ? t.colorScheme.outline : t.colorScheme.primary,
+                  foregroundColor: t.colorScheme.onSurface,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 onPressed: alreadyJoined || isRegistering || isCheckingStatus
@@ -169,7 +168,7 @@ class _ActivityDetailScreenState extends ConsumerState<ActivityDetailScreen> {
   Widget _infoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, color: SAMsTheme.accent),
+        Icon(icon, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 10),
         Text('$label: ',
             style: const TextStyle(fontWeight: FontWeight.bold)),
