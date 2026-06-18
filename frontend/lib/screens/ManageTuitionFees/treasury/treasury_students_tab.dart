@@ -58,6 +58,8 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
   Future<void> _load() async {
     try {
       final response = await ApiService.get('/fees');
+      print('[TREASURY_STUDENTS] response type: ${response.runtimeType}');
+      print('[TREASURY_STUDENTS] response: $response');
       List<dynamic> fees;
       if (response is Map && response.containsKey('fees')) {
         fees = response['fees'] ?? [];
@@ -66,13 +68,16 @@ class _TreasuryStudentsTabState extends ConsumerState<TreasuryStudentsTab>
       } else {
         fees = [];
       }
+      print('[TREASURY_STUDENTS] parsed ${fees.length} fees');
       if (!mounted) return;
       setState(() { _fees = fees; _loading = false; });
+      print('[TREASURY_STUDENTS] students count: ${_students.length}');
       // Stagger in after data loads
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _playStagger(_filtered.length);
       });
     } catch (e) {
+      print('[TREASURY_STUDENTS] ERROR: $e');
       if (mounted) setState(() { _loading = false; _errorMessage = e.toString(); });
     }
   }
