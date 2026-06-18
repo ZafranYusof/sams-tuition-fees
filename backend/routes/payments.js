@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const Payment = require('../models/Payment');
-const User = require('../models/User');
+const Payment = require('../models/ManageTuitionFees/Payment');
+const Student = require('../models/Student');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -9,14 +9,14 @@ const router = express.Router();
 // GET /api/payments/:studentId - view payment history
 router.get('/:studentId', auth, async (req, res) => {
   try {
-    const user = await User.findOne({ studentId: req.params.studentId });
-    if (!user) return res.json({ payments: [] });
+    const student = await Student.findOne({ studentId: req.params.studentId });
+    if (!student) return res.json({ payments: [] });
     // Authorization: only own data or admin
-    if (user._id.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (student._id.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    const payments = await Payment.find({ student: user._id }).populate('fee').sort({ paidAt: -1 });
+    const payments = await Payment.find({ student: student._id }).populate('fee').sort({ paidAt: -1 });
     res.json({ payments });
   } catch (err) {
     console.error('Get payments error:', err.message);
@@ -29,7 +29,7 @@ router.post('/', auth, async (req, res) => {
   try {
     const { fee_id, feeId, amount, bank, student_id } = req.body;
     const crypto = require('crypto');
-    const Fee = require('../models/Fee');
+    const Fee = require('../models/ManageTuitionFees/Fee');
 
     const targetFeeId = fee_id || feeId;
     if (!targetFeeId || !mongoose.Types.ObjectId.isValid(targetFeeId)) {

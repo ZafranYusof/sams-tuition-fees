@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-import '../screens/splash_screen.dart';
-import '../screens/auth/login_screen.dart';
-import '../screens/auth/register_screen.dart';
-import '../screens/home/main_shell.dart';
-import '../screens/home/dashboard_screen.dart';
-import '../screens/home/profile_screen.dart';
-import '../screens/fees/fees_screen.dart';
-import '../screens/fees/student/student_fees_shell.dart';
-import '../screens/fees/treasury/treasury_shell.dart';
+import '../screens/ManageAuth/login_screen.dart';
+import '../screens/ManageAuth/register_screen.dart';
+import '../screens/ManageHome/main_shell.dart';
+import '../screens/ManageHome/dashboard_screen.dart';
+import '../screens/ManageHome/profile_screen.dart';
+import '../screens/ManageTuitionFees/fees_screen.dart';
+import '../screens/ManageTuitionFees/student/student_fees_shell.dart';
+import '../screens/ManageTuitionFees/treasury/treasury_shell.dart';
 
 class AppRoutes {
-  static const String splash = '/';
   static const String login = '/login';
   static const String register = '/register';
   static const String home = '/home';
@@ -24,14 +22,12 @@ class AppRoutes {
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case AppRoutes.splash:
-        return _buildRoute(const SplashScreen(nextScreen: LoginScreen()));
       case AppRoutes.login:
         return _buildRoute(const LoginScreen());
       case AppRoutes.register:
         return _buildRoute(const RegisterScreen());
       case AppRoutes.home:
-        return _buildRoute(const MainShell());
+        return _buildRoute(const MainShell(role: 'student'));
       case AppRoutes.dashboard:
         return _buildRoute(const DashboardScreen());
       case AppRoutes.profile:

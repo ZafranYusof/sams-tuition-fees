@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moon_design/moon_design.dart';
 
 class UpdateChecker {
   static const String currentVersion = '1.0.0';
@@ -25,13 +26,13 @@ class UpdateChecker {
           style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 14),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Later', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
+          MoonTextButton(
+            onTap: () => Navigator.pop(ctx),
+            label: Text('Later', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Update'),
+          MoonFilledButton(
+            onTap: () => Navigator.pop(ctx),
+            label: const Text('Update'),
           ),
         ],
       ),

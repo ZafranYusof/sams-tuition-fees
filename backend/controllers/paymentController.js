@@ -1,16 +1,16 @@
 const mongoose = require('mongoose');
 const crypto = require('crypto');
-const Payment = require('../models/Payment');
-const Fee = require('../models/Fee');
-const User = require('../models/User');
+const Payment = require('../models/ManageTuitionFees/Payment');
+const Fee = require('../models/ManageTuitionFees/Fee');
+const Student = require('../models/Student');
 
 // Get payments by student ID
 exports.getPaymentsByStudentId = async (req, res) => {
   try {
-    const user = await User.findOne({ studentId: req.params.studentId });
-    if (!user) return res.json({ payments: [] });
+    const student = await Student.findOne({ studentId: req.params.studentId });
+    if (!student) return res.json({ payments: [] });
 
-    const payments = await Payment.find({ student: user._id }).populate('fee').sort({ paidAt: -1 });
+    const payments = await Payment.find({ student: student._id }).populate('fee').sort({ paymentDate: -1 });
     res.json({ payments });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -41,16 +41,16 @@ exports.createPayment = async (req, res) => {
       method: 'fpx',
       bank,
       transactionId,
-      status: 'success',
+      paymentStatus: 'completed',
       receipt: `RCP-${Date.now()}`
     });
     await payment.save();
 
     fee.paidAmount += amount;
-    fee.status = fee.paidAmount >= fee.totalAmount ? 'paid' : 'partial';
+    fee.feeStatus = fee.paidAmount >= fee.feeAmount ? 'paid' : 'partial';
     await fee.save();
 
-    res.status(201).json({ payment, fee, txn_id: transactionId, status: 'success' });
+    res.status(201).json({ payment, fee, txn_id: transactionId, paymentStatus: 'completed' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

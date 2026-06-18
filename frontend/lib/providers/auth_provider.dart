@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
+import '../services/fcm_service.dart';
 
 class AuthState {
   final bool isAuthenticated;
@@ -38,9 +39,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
         userMap['id'] = userMap['id'] ?? userMap['_id'] ?? '';
         userMap['_id'] = userMap['_id'] ?? userMap['id'] ?? '';
         state = AuthState(isAuthenticated: true, user: userMap, isInitializing: false);
-      } catch (_) {
-        await prefs.remove('token');
-        state = AuthState(isInitializing: false);
+      } catch (e) {
+        // Only remove token on 401 — network errors should preserve session
+        if (e.toString().contains('401') || e.toString().contains('Session expired')) {
+          await prefs.remove('token');
+          state = AuthState(isInitializing: false);
+        } else {
+          // Network error or other transient issue — keep token, stay authenticated
+          state = state.copyWith(isAuthenticated: true, isInitializing: false, error: 'Unable to verify session. Please check your connection.');
+        }
       }
     } else {
       state = AuthState(isInitializing: false);
@@ -58,12 +65,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
       userMap['id'] = userMap['id'] ?? userMap['_id'] ?? '';
       userMap['_id'] = userMap['_id'] ?? userMap['id'] ?? '';
       state = AuthState(isAuthenticated: true, user: userMap, isInitializing: false);
+      // Register FCM token with backend (fire-and-forget)
+      FcmService().registerTokenAfterLogin();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString().replaceAll('Exception: ', ''));
     }
   }
 
-  Future<void> register(String studentId, String name, String email, String password, String faculty, String program) async {
+  Future<void> register(String studentId, String name, String email, String password, String faculty, String program, String financingType) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final data = await ApiService.post('/auth/register', {
@@ -73,6 +82,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         'password': password,
         'faculty': faculty,
         'program': program,
+        'financingType': financingType,
       });
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', data['token']);
@@ -81,6 +91,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       userMap['id'] = userMap['id'] ?? userMap['_id'] ?? '';
       userMap['_id'] = userMap['_id'] ?? userMap['id'] ?? '';
       state = AuthState(isAuthenticated: true, user: userMap, isInitializing: false);
+      // Register FCM token with backend (fire-and-forget)
+      FcmService().registerTokenAfterLogin();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString().replaceAll('Exception: ', ''));
     }
@@ -93,10 +105,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
       userMap['id'] = userMap['id'] ?? userMap['_id'] ?? '';
       userMap['_id'] = userMap['_id'] ?? userMap['id'] ?? '';
       state = AuthState(isAuthenticated: true, user: userMap, isInitializing: false);
-    } catch (_) {}
+      // Re-register FCM token on every app launch (ensures token stays fresh)
+      FcmService().registerTokenAfterLogin();
+    } catch (e) {
+      // If 401, ApiService already removed token — clear auth state too
+      if (e.toString().contains('401') || e.toString().contains('Session expired')) {
+        state = AuthState(isInitializing: false);
+      }
+    }
   }
 
-  Future<void> logout() async {
+  void updateStudentStatus(String newStatus) {
+    if (state.user != null) {
+      final updatedUser = Map<String, dynamic>.from(state.user!);
+      updatedUser['studentStatus'] = newStatus;
+      state = state.copyWith(user: updatedUser);
+    }
+  }
+
+    Future<void> logout() async {
+    // Unregister FCM token before clearing auth (fire-and-forget)
+    FcmService().unregisterToken();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
     state = AuthState(isInitializing: false);

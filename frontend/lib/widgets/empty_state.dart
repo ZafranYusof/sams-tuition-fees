@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:moon_design/moon_design.dart';
 import '../config/theme.dart';
 
 /// Reusable empty state widget with optional Lottie animation
@@ -24,6 +25,9 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final isDark = t.brightness == Brightness.dark;
+    final iconBg = isDark ? SAMsTheme.surfaceLight : t.dividerColor.withValues(alpha: 0.3);
+    final iconColor = SAMsTheme.accent.withValues(alpha: 0.85);
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48),
@@ -39,9 +43,10 @@ class EmptyState extends StatelessWidget {
                   width: 72, height: 72,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: t.dividerColor.withOpacity(0.3),
+                    color: iconBg,
+                    border: isDark ? Border.all(color: SAMsTheme.accent.withValues(alpha: 0.3), width: 1) : null,
                   ),
-                  child: Icon(icon, size: 32, color: t.textTheme.bodySmall?.color),
+                  child: Icon(icon, size: 32, color: iconColor),
                 ),
               ),
             )
@@ -50,9 +55,10 @@ class EmptyState extends StatelessWidget {
               width: 72, height: 72,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: t.dividerColor.withOpacity(0.3),
+                color: iconBg,
+                border: isDark ? Border.all(color: SAMsTheme.accent.withValues(alpha: 0.3), width: 1) : null,
               ),
-              child: Icon(icon, size: 32, color: t.textTheme.bodySmall?.color),
+              child: Icon(icon, size: 32, color: iconColor),
             ),
           const SizedBox(height: 20),
           Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: t.colorScheme.onSurface), textAlign: TextAlign.center),
@@ -62,14 +68,10 @@ class EmptyState extends StatelessWidget {
           ],
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(height: 20),
-            OutlinedButton(
-              onPressed: onAction,
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: SAMsTheme.primary.withOpacity(0.5)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              ),
-              child: Text(actionLabel!, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: SAMsTheme.primary)),
+            MoonOutlinedButton(
+              onTap: onAction,
+              borderColor: SAMsTheme.primary.withValues(alpha: 0.5),
+              label: Text(actionLabel!, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: SAMsTheme.primary)),
             ),
           ],
         ]),

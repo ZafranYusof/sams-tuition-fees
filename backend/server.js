@@ -9,9 +9,20 @@ const feesRoutes = require('./routes/fees');
 const paymentsRoutes = require('./routes/payments');
 const notificationsRoutes = require('./routes/notifications');
 const paymentGatewayRoutes = require('./routes/payment-gateway');
+const registrationRoutes = require('./routes/registration');
+// activities route removed — consolidated into curriculum.js
+const attendanceRoutes = require('./routes/attendance');
+const sessionsRoutes = require('./routes/sessions');
+const campusRoutes = require('./routes/campus');
+const curriculumRoutes = require('./routes/curriculum');
+const validationRoutes = require('./routes/validation');
+const subjectRoutes = require('./routes/subject');
+const registrarRoutes = require('./routes/registrar');
 
-const Payment = require('./models/Payment');
-const Fee = require('./models/Fee');
+const seedRoutes = require('./routes/seed');
+
+const Payment = require('./models/ManageTuitionFees/Payment');
+const Fee = require('./models/ManageTuitionFees/Fee');
 
 const app = express();
 
@@ -30,6 +41,17 @@ app.use('/api/fees', feesRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/payment', paymentGatewayRoutes);
+app.use('/api/registration', registrationRoutes);
+// /api/activities removed — use /api/curriculum instead
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/sessions', sessionsRoutes);
+app.use('/api/campus', campusRoutes);
+app.use('/api/curriculum', curriculumRoutes);
+app.use('/api/validation', validationRoutes);
+app.use('/api/subject', subjectRoutes);
+app.use('/api/registrar', registrarRoutes);
+
+app.use('/api/seed', seedRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

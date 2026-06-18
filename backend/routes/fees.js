@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const Fee = require('../models/Fee');
-const Payment = require('../models/Payment');
+const Fee = require('../models/ManageTuitionFees/Fee');
+const Payment = require('../models/ManageTuitionFees/Payment');
 const { auth, adminOnly } = require('../middleware/auth');
 const crypto = require('crypto');
 
@@ -45,16 +45,16 @@ router.get('/:studentId', auth, async (req, res) => {
       return res.json({ fee, payments });
     }
     // Otherwise find by studentId string
-    const User = require('../models/User');
-    const user = await User.findOne({ studentId: sid });
-    if (!user) return res.json({ fees: [], summary: { total_due: 0, total_paid: 0, balance: 0 } });
+    const Student = require('../models/Student');
+    const student = await Student.findOne({ studentId: sid });
+    if (!student) return res.json({ fees: [], summary: { total_due: 0, total_paid: 0, balance: 0 } });
     // Authorization: only own data or admin
-    if (user._id.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (student._id.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
-    const fees = await Fee.find({ student: user._id }).sort({ createdAt: -1 });
-    const totalDue = fees.reduce((s, f) => s + f.totalAmount, 0);
-    const totalPaid = fees.reduce((s, f) => s + f.paidAmount, 0);
+    const fees = await Fee.find({ student: student._id }).sort({ createdAt: -1 });
+    const totalDue = fees.reduce((s, f) => s + (f.feeAmount || 0), 0);
+    const totalPaid = fees.reduce((s, f) => s + (f.paidAmount || 0), 0);
     res.json({ fees, summary: { total_due: totalDue, total_paid: totalPaid, balance: totalDue - totalPaid } });
   } catch (err) {
     console.error('Get fees error:', err.message);
@@ -65,16 +65,16 @@ router.get('/:studentId', auth, async (req, res) => {
 // Get summary by student ID
 router.get('/:studentId/summary', auth, async (req, res) => {
   try {
-    const User = require('../models/User');
-    const user = await User.findOne({ studentId: req.params.studentId });
-    if (!user) return res.json({ summary: { total_due: 0, total_paid: 0, balance: 0 } });
+    const Student = require('../models/Student');
+    const student = await Student.findOne({ studentId: req.params.studentId });
+    if (!student) return res.json({ summary: { total_due: 0, total_paid: 0, balance: 0 } });
     // Authorization: only own data or admin
-    if (user._id.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (student._id.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
-    const fees = await Fee.find({ student: user._id });
-    const totalDue = fees.reduce((s, f) => s + f.totalAmount, 0);
-    const totalPaid = fees.reduce((s, f) => s + f.paidAmount, 0);
+    const fees = await Fee.find({ student: student._id });
+    const totalDue = fees.reduce((s, f) => s + (f.feeAmount || 0), 0);
+    const totalPaid = fees.reduce((s, f) => s + (f.paidAmount || 0), 0);
     res.json({ summary: { total_due: totalDue, total_paid: totalPaid, balance: totalDue - totalPaid } });
   } catch (err) {
     console.error('Fee summary error:', err.message);
@@ -99,10 +99,10 @@ router.post('/pay', auth, async (req, res) => {
     if (fee.student.toString() !== req.user.id) {
       return res.status(403).json({ error: 'You can only pay your own fees' });
     }
-    if (fee.status === 'paid') return res.status(400).json({ error: 'Already fully paid' });
+    if (fee.feeStatus === 'paid') return res.status(400).json({ error: 'Already fully paid' });
 
     // Cap amount at remaining balance to prevent overpayment
-    const remaining = fee.totalAmount - fee.paidAmount;
+    const remaining = (fee.feeAmount || 0) - (fee.paidAmount || 0);
     const actualAmount = Math.min(amount, remaining);
 
     const transactionId = 'FPX' + crypto.randomBytes(8).toString('hex').toUpperCase();
@@ -110,11 +110,11 @@ router.post('/pay', auth, async (req, res) => {
     const payment = new Payment({
       student: req.user.id,
       fee: feeId,
-      amount: actualAmount,
-      method: 'fpx',
+      paymentAmount: actualAmount,
+      paymentMethod: 'fpx',
       bank,
-      transactionId,
-      status: 'success',
+      paymentTxnRef: transactionId,
+      paymentStatus: 'completed',
       receipt: `RCP-${Date.now()}`
     });
     await payment.save();
@@ -124,7 +124,7 @@ router.post('/pay', auth, async (req, res) => {
       { _id: feeId },
       { 
         $inc: { paidAmount: actualAmount },
-        $set: { status: (fee.paidAmount + actualAmount) >= fee.totalAmount ? 'paid' : 'partial' }
+        $set: { feeStatus: ((fee.paidAmount || 0) + actualAmount) >= (fee.feeAmount || 0) ? 'paid' : 'partial' }
       },
       { new: true }
     );
@@ -139,29 +139,48 @@ router.post('/pay', auth, async (req, res) => {
 // Admin: Create fee for student
 router.post('/', auth, adminOnly, async (req, res) => {
   try {
-    const User = require('../models/User');
-    let { student, studentId, items, semester, academicYear, dueDate } = req.body;
+    const Student = require('../models/Student');
+    let { student, studentId, items, semester, academicYear, dueDate, feeType, feeDescription, feeAmount } = req.body;
 
     // Resolve studentId string to ObjectId
     if (!student && studentId) {
-      const user = await User.findOne({ studentId });
-      if (!user) return res.status(404).json({ error: `Student ${studentId} not found` });
-      student = user._id;
+      const studentDoc = await Student.findOne({ studentId });
+      if (!studentDoc) return res.status(404).json({ error: `Student ${studentId} not found` });
+      student = studentDoc._id;
     }
     if (!student) return res.status(400).json({ error: 'Student ID required' });
-    if (!items || !items.length) return res.status(400).json({ error: 'Fee items required' });
 
-    const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0);
-    const fee = new Fee({
-      student,
-      items,
-      semester: semester || 1,
-      academicYear: academicYear || '2025/2026',
-      totalAmount,
-      paidAmount: 0,
-      status: 'unpaid',
-      dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-    });
+    // Support both items array and individual fields
+    let feeData;
+    if (items && items.length > 0) {
+      const firstItem = items[0];
+      feeData = {
+        student,
+        feeType: firstItem.category || 'Tuition',
+        feeDescription: firstItem.description || '',
+        feeAmount: items.reduce((sum, item) => sum + (item.amount || 0), 0),
+        feeSemester: semester || 1,
+        academicYear: academicYear || '2025/2026',
+        feeDueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        feeStatus: 'unpaid',
+        paidAmount: 0,
+      };
+    } else {
+      if (!feeAmount) return res.status(400).json({ error: 'Fee amount required' });
+      feeData = {
+        student,
+        feeType: feeType || 'Tuition',
+        feeDescription: feeDescription || '',
+        feeAmount,
+        feeSemester: semester || 1,
+        academicYear: academicYear || '2025/2026',
+        feeDueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        feeStatus: 'unpaid',
+        paidAmount: 0,
+      };
+    }
+
+    const fee = new Fee(feeData);
     await fee.save();
     res.status(201).json(fee);
   } catch (err) {
@@ -177,7 +196,7 @@ router.get('/', auth, adminOnly, async (req, res) => {
     const limit = parseInt(req.query.limit) || 100;
     const skip = (page - 1) * limit;
     
-    const fees = await Fee.find().populate('student', 'name studentId').skip(skip).limit(limit).sort({ createdAt: -1 });
+    const fees = await Fee.find().populate('student', 'studName studentId major').skip(skip).limit(limit).sort({ createdAt: -1 });
     const total = await Fee.countDocuments();
     res.json(fees.length <= 100 ? fees : { fees, total, page, pages: Math.ceil(total / limit) });
   } catch (err) {
