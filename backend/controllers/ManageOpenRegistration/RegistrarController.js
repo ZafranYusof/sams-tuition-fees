@@ -1,4 +1,4 @@
-const Session = require('../../models/ManageOpenRegistration/Session');
+const RegistrationSession = require('../../models/ManageOpenRegistration/RegistrationSession');
 const Course = require('../../models/ManageOpenRegistration/Course');
 const Enrollment = require('../../models/ManageOpenRegistration/Enrollment');
 
@@ -12,7 +12,7 @@ class RegistrarController {
 
       const totalCourses = await Course.countDocuments();
       const totalEnrollments = await Enrollment.countDocuments({ status: 'active' });
-      const openSessions = await Session.countDocuments({ status: 'open' });
+      const openSessions = await RegistrationSession.countDocuments({ status: 'open' });
 
       // Get enrollments by course
       const enrollmentsByCourse = await Enrollment.aggregate([
@@ -65,18 +65,44 @@ class RegistrarController {
       }
 
       const { sessionName, startDate, endDate, courseIds } = req.body;
-      
-      const session = new Session({
-        sessionId: `SES-${Date.now()}`,
+      const now = new Date();
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      const status = (start <= now && now <= end) ? 'open' : 'scheduled';
+
+      const session = new RegistrationSession({
         sessionName,
-        startDate,
-        endDate,
-        status: 'scheduled',
-        courses: courseIds || []
+        startDate: start,
+        endDate: end,
+        courses: courseIds || [],
+        status,
+        createdBy: req.user.id,
+        creatorModel: req.user.role === 'admin' ? 'FacultyRegistrar' : 'FacultyRegistrar'
       });
 
       await session.save();
       res.json({ message: 'Session setup complete', session });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  }
+
+  // Get active registration session
+  static async getActiveSession(req, res) {
+    try {
+      if (req.user.role !== 'admin' && req.user.role !== 'faculty') {
+        return res.status(403).json({ message: 'Faculty access required' });
+      }
+
+      const now = new Date();
+      const session = await RegistrationSession.findOne({
+        status: { $in: ['open', 'scheduled'] },
+        startDate: { $lte: now },
+        endDate: { $gte: now }
+      }).sort({ createdAt: -1 });
+
+      res.json(session || null);
     } catch (err) {
       res.status(500).json({ message: err.message });
     }

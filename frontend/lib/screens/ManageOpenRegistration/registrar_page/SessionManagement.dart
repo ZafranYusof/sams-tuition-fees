@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../config/theme.dart';
+import '../../../services/api_service.dart';
+import '../../../widgets/app_toast.dart';
 import '../../../widgets/glass_card.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
@@ -17,6 +19,7 @@ class _SessionManagementState extends State<SessionManagement> {
   DateTime? endDate;
   TimeOfDay? startTime;
   TimeOfDay? endTime;
+  bool _saving = false;
 
   Future<void> _selectDateRange(BuildContext context) async {
     final DateTimeRange? picked = await showDateRangePicker(
@@ -44,6 +47,25 @@ class _SessionManagementState extends State<SessionManagement> {
         if (isStart) startTime = picked;
         else endTime = picked;
       });
+    }
+  }
+
+  Future<void> _confirmTimeline() async {
+    HapticFeedback.mediumImpact();
+    setState(() => _saving = true);
+    try {
+      await ApiService.post('/registrar/session', {
+        'sessionName': 'Registration Session',
+        'startDate': startDate!.toIso8601String(),
+        'endDate': endDate!.toIso8601String(),
+      });
+      if (mounted) {
+        AppToast.success(context, 'Session created');
+      }
+    } catch (e) {
+      if (mounted) AppToast.error(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -123,14 +145,11 @@ class _SessionManagementState extends State<SessionManagement> {
                   borderRadius: BorderRadius.circular(12),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
-                    onTap: isTimelineInvalid ? null : () {
-                      HapticFeedback.mediumImpact();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(backgroundColor: SAMsTheme.success, content: Text('Timeline confirmed', style: TextStyle(fontFamily: 'Inter', color: SAMsTheme.textPrimary))),
-                      );
-                    },
+                    onTap: (isTimelineInvalid || _saving) ? null : _confirmTimeline,
                     child: Center(
-                      child: Text('Confirm Active Timeline', style: TextStyle(fontFamily: 'Inter', color: isTimelineInvalid ? muted : Colors.white, fontWeight: FontWeight.w600)),
+                      child: _saving
+                        ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text('Confirm Active Timeline', style: TextStyle(fontFamily: 'Inter', color: isTimelineInvalid ? muted : Colors.white, fontWeight: FontWeight.w600)),
                     ),
                   ),
                 ),

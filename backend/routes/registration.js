@@ -1,10 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const Enrollment = require('../models/ManageOpenRegistration/Enrollment');
-const Session = require('../models/ManageOpenRegistration/Session');
+const RegistrationSession = require('../models/ManageOpenRegistration/RegistrationSession');
 const Course = require('../models/ManageOpenRegistration/Course');
 const FacultyRegistrar = require('../models/FacultyRegistrar');
 const { auth } = require('../middleware/auth');
+
+// GET /registration/session — Get active registration session
+router.get('/session', auth, async (req, res) => {
+  try {
+    const now = new Date();
+    const session = await RegistrationSession.findOne({
+      status: 'open',
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    }).populate('courses');
+    res.json(session || null);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 // GET /registration/courses — List all available courses
 router.get('/courses', auth, async (req, res) => {
@@ -40,11 +55,11 @@ router.post('/open', auth, async (req, res) => {
     const { sessionId, courseId, startDatetime, endDatetime } = req.body;
     if (!sessionId || !courseId) return res.status(400).json({ message: 'sessionId and courseId required' });
 
-    const session = await Session.findById(sessionId);
+    const session = await RegistrationSession.findById(sessionId);
     if (!session) return res.status(404).json({ message: 'Session not found' });
 
     // Update session status
-    session.status = 'scheduled';
+    session.status = 'open';
     await session.save();
 
     res.json({ message: 'Registration opened', sessionId, courseId, startDatetime, endDatetime });
@@ -53,31 +68,43 @@ router.post('/open', auth, async (req, res) => {
   }
 });
 
-// POST /registration/enroll — Student enrolls in a session
+// POST /registration/enroll — Student enrolls in a course
 router.post('/enroll', auth, async (req, res) => {
   try {
     if (req.user.role !== 'student') {
       return res.status(403).json({ message: 'Student access required' });
     }
-    const { sessionId, courseId } = req.body;
-    if (!sessionId || !courseId) return res.status(400).json({ message: 'sessionId and courseId required' });
+    const { courseId } = req.body;
+    if (!courseId) return res.status(400).json({ message: 'courseId required' });
+
+    // Check active session exists and now is within session date range
+    const now = new Date();
+    const activeSession = await RegistrationSession.findOne({
+      status: 'open',
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    });
+
+    if (!activeSession) {
+      return res.status(400).json({ message: 'Registration is closed' });
+    }
 
     // Check capacity
-    const session = await Session.findById(sessionId);
-    if (!session) return res.status(404).json({ message: 'Session not found' });
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
 
-    const currentEnrollments = await Enrollment.countDocuments({ session: sessionId, status: 'active' });
-    if (currentEnrollments >= session.capacity) {
-      return res.status(400).json({ message: 'Session is full' });
+    const currentEnrollments = await Enrollment.countDocuments({ course: courseId, session: activeSession._id, status: 'active' });
+    if (currentEnrollments >= course.capacity) {
+      return res.status(400).json({ message: 'Course is full' });
     }
 
     // Check duplicate
-    const existing = await Enrollment.findOne({ student: req.user.id, session: sessionId, status: 'active' });
+    const existing = await Enrollment.findOne({ student: req.user.id, course: courseId, session: activeSession._id, status: 'active' });
     if (existing) return res.status(400).json({ message: 'Already enrolled' });
 
     const enrollment = await Enrollment.create({
       student: req.user.id,
-      session: sessionId,
+      session: activeSession._id,
       course: courseId,
       startDatetime: new Date(),
       faculty: req.body.facultyId

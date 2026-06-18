@@ -6,6 +6,9 @@ const { auth } = require('../middleware/auth');
 // GET /registrar/stats — Get registration statistics
 router.get('/stats', auth, RegistrarController.getRegistrationStats);
 
+// GET /registrar/session/active — Get active registration session
+router.get('/session/active', auth, RegistrarController.getActiveSession);
+
 // POST /registrar/quota — Update course quota
 router.post('/quota', auth, RegistrarController.updateQuota);
 

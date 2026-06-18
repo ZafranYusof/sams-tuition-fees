@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../config/theme.dart';
+import '../../../services/api_service.dart';
 import '../../../widgets/glass_card.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
@@ -12,15 +13,40 @@ class SubjectQuotaManagement extends StatefulWidget {
 }
 
 class _SubjectQuotaManagementState extends State<SubjectQuotaManagement> {
-  // Mock data representing the course catalog
-  final List<Map<String, dynamic>> _subjects = [
-    {'code': 'CS101', 'name': 'Intro to Programming', 'quota': 50},
-    {'code': 'CS202', 'name': 'Data Structures', 'quota': 30},
-    {'code': 'MA101', 'name': 'Calculus I', 'quota': 40},
-  ];
+  List<Map<String, dynamic>> _subjects = [];
+  bool _loading = true;
 
-  void _updateQuota(int index) {
-    final controller = TextEditingController(text: _subjects[index]['quota'].toString());
+  @override
+  void initState() {
+    super.initState();
+    _loadSubjects();
+  }
+
+  Future<void> _loadSubjects() async {
+    setState(() => _loading = true);
+    try {
+      final data = await ApiService.get('/registration/courses');
+      if (data is List) {
+        setState(() {
+          _subjects = List<Map<String, dynamic>>.from(data.map((c) => {
+            'id': c['id'] ?? c['_id'] ?? '',
+            'code': c['courseId'] ?? c['code'] ?? '',
+            'name': c['courseName'] ?? c['name'] ?? '',
+            'quota': c['capacity'] ?? c['quota'] ?? 0,
+          }));
+          _loading = false;
+        });
+      } else {
+        setState(() { _subjects = []; _loading = false; });
+      }
+    } catch (e) {
+      setState(() { _subjects = []; _loading = false; });
+    }
+  }
+
+  Future<void> _updateQuota(int index) async {
+    final subject = _subjects[index];
+    final controller = TextEditingController(text: subject['quota'].toString());
     showDialog(
       context: context,
       builder: (ctx) {
@@ -47,9 +73,20 @@ class _SubjectQuotaManagementState extends State<SubjectQuotaManagement> {
               child: Text('Cancel', style: TextStyle(fontFamily: 'Inter', color: SAMsTheme.textMuted)),
             ),
             TextButton(
-              onPressed: () {
-                setState(() => _subjects[index]['quota'] = int.tryParse(controller.text) ?? 0);
+              onPressed: () async {
+                final newQuota = int.tryParse(controller.text) ?? 0;
+                final id = subject['id'];
                 Navigator.pop(ctx);
+                try {
+                  await ApiService.put('/subject/$id', {'capacity': newQuota});
+                  await _loadSubjects();
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to update quota: $e')),
+                    );
+                  }
+                }
               },
               child: Text('Update', style: TextStyle(fontFamily: 'Inter', color: SAMsTheme.primary, fontWeight: FontWeight.w600)),
             ),
@@ -98,7 +135,11 @@ class _SubjectQuotaManagementState extends State<SubjectQuotaManagement> {
               ),
             ),
             Expanded(
-              child: ListView.builder(
+              child: _loading
+                ? Center(child: CircularProgressIndicator(color: brass, strokeWidth: 2))
+                : _subjects.isEmpty
+                  ? Center(child: Text('No courses found', style: TextStyle(fontFamily: 'Inter', color: muted)))
+                  : ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 itemCount: _subjects.length,
                 itemBuilder: (context, index) {

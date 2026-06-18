@@ -19,6 +19,7 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
   String _searchQuery = '';
   bool _loading = true;
   String? _error;
+  bool _sessionActive = false;
 
   @override
   void initState() {
@@ -29,14 +30,29 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
   Future<void> _loadCourses() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await ApiService.get('/registration/courses');
-      if (data is List) {
+      // Load courses and check session in parallel
+      final results = await Future.wait([
+        ApiService.get('/registration/courses'),
+        ApiService.get('/registration/session').catchError((_) => null),
+      ]);
+
+      final courseData = results[0];
+      final sessionData = results[1];
+
+      // Check session status
+      if (sessionData != null && sessionData is Map && sessionData.isNotEmpty) {
+        _sessionActive = true;
+      } else {
+        _sessionActive = false;
+      }
+
+      if (courseData is List) {
         setState(() {
-          _allCourses = List<Map<String, dynamic>>.from(data.map((c) => {
+          _allCourses = List<Map<String, dynamic>>.from(courseData.map((c) => {
             'code': c['courseId'] ?? c['code'] ?? '',
             'name': c['courseName'] ?? c['name'] ?? '',
             'credits': c['creditHours'] ?? c['credits'] ?? 0,
-            'quota': c['quota'] ?? 0,
+            'quota': c['capacity'] ?? c['quota'] ?? 0,
           }));
           _loading = false;
         });
@@ -44,7 +60,7 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
         setState(() { _loading = false; });
       }
     } catch (e) {
-      setState(() { _error = 'Failed to load courses'; _loading = false; });
+      setState(() { _error = 'Failed to load courses'; _loading = false; _sessionActive = false; });
     }
   }
 
@@ -94,6 +110,32 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
             ),
           ),
           const SizedBox(height: 16),
+
+          // Registration closed banner
+          if (!_loading && !_sessionActive)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: SAMsTheme.error.withAlpha(25),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: SAMsTheme.error.withAlpha(80)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Iconsax.warning_2_copy, color: SAMsTheme.error, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Registration is closed. No active session available.',
+                      style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: SAMsTheme.error, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (!_loading && !_sessionActive) const SizedBox(height: 12),
 
           // Search Bar
           Padding(
@@ -148,14 +190,14 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
                             padding: EdgeInsets.zero,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(16),
-                              onTap: () {
+                              onTap: _sessionActive ? () {
                                 HapticFeedback.selectionClick();
                                 setState(() {
                                   isSelected
                                     ? _selectedCodes.remove(course['code'])
                                     : _selectedCodes.add(course['code']);
                                 });
-                              },
+                              } : null,
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: Row(
@@ -219,11 +261,11 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
                     child: SizedBox(
                       height: 48,
                       child: Material(
-                        color: _selectedCodes.isEmpty ? (isDark ? SAMsTheme.surfaceLight : SAMsTheme.surface) : brass,
+                        color: (_selectedCodes.isEmpty || !_sessionActive) ? (isDark ? SAMsTheme.surfaceLight : SAMsTheme.surface) : brass,
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
-                          onTap: _selectedCodes.isEmpty ? null : () {
+                          onTap: (_selectedCodes.isEmpty || !_sessionActive) ? null : () {
                             HapticFeedback.mediumImpact();
                             Navigator.push(
                               context,
@@ -234,9 +276,9 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text('Next', style: TextStyle(fontFamily: 'Inter', color: _selectedCodes.isEmpty ? muted : Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                                Text('Next', style: TextStyle(fontFamily: 'Inter', color: (_selectedCodes.isEmpty || !_sessionActive) ? muted : Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
                                 const SizedBox(width: 6),
-                                Icon(Iconsax.arrow_right_3_copy, color: _selectedCodes.isEmpty ? muted : Colors.white, size: 16),
+                                Icon(Iconsax.arrow_right_3_copy, color: (_selectedCodes.isEmpty || !_sessionActive) ? muted : Colors.white, size: 16),
                               ],
                             ),
                           ),
