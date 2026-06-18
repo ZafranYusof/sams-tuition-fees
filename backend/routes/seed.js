@@ -108,42 +108,39 @@ router.post('/', async (req, res) => {
       results.push('Treasury already exists');
     }
 
-    // 6. Clean old fees and create fresh ones for CB23109
+    // 6. Seed fees for CB23109 (only if none exist — don't delete existing paid fees)
     const student = await Student.findOne({ studentId: 'CB23109' });
     if (student) {
-      // Delete ALL existing fee records (old data from users collection migration)
-      const deleted = await Fee.deleteMany({});
-      
-      // Create fresh fee records for CB23109
-      const fees = await Fee.insertMany([
-        {
-          student: student._id,
-          feeType: 'Tuition Fee',
-          feeDescription: 'Yuran Pengajian Semester 2 2025/2026',
-          feeAmount: 860,
-          feeStatus: 'unpaid',
-          feeSemester: 2,
-          academicYear: '2025/2026',
-          paidAmount: 0
-        },
-        {
-          student: student._id,
-          feeType: 'Asrama Fee',
-          feeDescription: 'Yuran Asrama Semester 2 2025/2026',
-          feeAmount: 650,
-          feeStatus: 'unpaid',
-          feeSemester: 2,
-          academicYear: '2025/2026',
-          paidAmount: 0
-        }
-      ]);
-      
-      feesResult = {
-        deleted: deleted.deletedCount,
-        created: fees.length,
-        fees: fees.map(f => ({ id: f._id, type: f.feeType, amount: f.feeAmount }))
-      };
-      results.push(`Cleaned ${deleted.deletedCount} old fee records, created ${fees.length} new ones`);
+      const existingFees = await Fee.find({ student: student._id });
+      if (existingFees.length === 0) {
+        const fees = await Fee.insertMany([
+          {
+            student: student._id,
+            feeType: 'Tuition Fee',
+            feeDescription: 'Yuran Pengajian Semester 2 2025/2026',
+            feeAmount: 860,
+            feeStatus: 'unpaid',
+            feeSemester: 2,
+            academicYear: '2025/2026',
+            paidAmount: 0
+          },
+          {
+            student: student._id,
+            feeType: 'Asrama Fee',
+            feeDescription: 'Yuran Asrama Semester 2 2025/2026',
+            feeAmount: 650,
+            feeStatus: 'unpaid',
+            feeSemester: 2,
+            academicYear: '2025/2026',
+            paidAmount: 0
+          }
+        ]);
+        feesResult = { created: fees.length, fees: fees.map(f => ({ id: f._id, type: f.feeType, amount: f.feeAmount })) };
+        results.push(`Created ${fees.length} fee records for CB23109`);
+      } else {
+        feesResult = { existing: existingFees.length, fees: existingFees.map(f => ({ id: f._id, type: f.feeType, paid: f.paidAmount, status: f.feeStatus })) };
+        results.push(`${existingFees.length} fee records already exist for CB23109 — skipped (preserves payment state)`);
+      }
     }
 
     // 7. Seed courses for Open Registration
