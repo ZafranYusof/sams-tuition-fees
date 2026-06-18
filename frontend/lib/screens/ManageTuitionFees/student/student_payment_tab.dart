@@ -332,8 +332,8 @@ class _StudentPaymentTabState extends ConsumerState<StudentPaymentTab> with Tick
           if (webResult == true || webResult == null) {
             // Poll for status (callback may be delayed)
             Map<String, dynamic>? status;
-            for (int attempt = 0; attempt < 5; attempt++) {
-              if (attempt > 0) await Future.delayed(const Duration(seconds: 2));
+            for (int attempt = 0; attempt < 8; attempt++) {
+              if (attempt > 0) await Future.delayed(const Duration(seconds: 3));
               status = await ApiService.get('/payment/fpx/status/$billCode');
               if (status?['status'] == 'completed') break;
             }

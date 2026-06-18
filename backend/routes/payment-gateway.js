@@ -288,7 +288,7 @@ router.get('/fpx/status/:billCode', auth, async (req, res) => {
     // Auto-complete stale pending payments (sandbox callback doesn't fire)
     if (payment.paymentStatus === 'pending') {
       const age = Date.now() - new Date(payment.createdAt || payment.paymentDate).getTime();
-      if (age > 60000) { // older than 1 minute
+      if (age > 5000) { // older than 5 seconds (sandbox — callback never fires)
         payment.paymentStatus = 'completed';
         if (!payment.bank || payment.bank === 'FPX') payment.bank = 'Online Banking';
         await payment.save();
