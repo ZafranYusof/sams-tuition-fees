@@ -37,8 +37,9 @@ router.get('/my', auth, async (req, res) => {
     if (req.user.role !== 'student') {
       return res.status(403).json({ message: 'Student access required' });
     }
-    const enrollments = await Enrollment.find({ student: req.user.id })
+    const enrollments = await Enrollment.find({ student: req.user.id, status: 'active' })
       .populate('course')
+      .populate('session')
       .sort({ createdAt: -1 });
     res.json(enrollments);
   } catch (err) {
@@ -135,21 +136,12 @@ router.post('/drop', auth, async (req, res) => {
   }
 });
 
-// GET /registration/my — Student's enrollments
-router.get('/my', auth, async (req, res) => {
-  try {
-    const enrollments = await Enrollment.find({ student: req.user.id, status: 'active' })
-      .populate('session')
-      .populate('course');
-    res.json({ enrollments });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
 // GET /registration/session/:sessionId — List students enrolled in a session
 router.get('/session/:sessionId', auth, async (req, res) => {
   try {
+    if (req.user.role !== 'admin' && req.user.role !== 'faculty') {
+      return res.status(403).json({ message: 'Faculty access required' });
+    }
     const enrollments = await Enrollment.find({ session: req.params.sessionId, status: 'active' })
       .populate('student', 'name studentId email');
     res.json({ total: enrollments.length, enrollments });

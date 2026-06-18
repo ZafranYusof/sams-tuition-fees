@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../services/api_service.dart';
 import 'SubjectRegistration.dart';
 
 class StudentDashboard extends ConsumerStatefulWidget {
@@ -21,6 +22,8 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> with Ticker
   bool _isFlipped = false;
 
   String _userName = 'Student';
+  List<Map<String, dynamic>> _enrollments = [];
+  bool _loadingEnrollments = false;
 
   @override
   void initState() {
@@ -43,26 +46,65 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> with Ticker
     super.dispose();
   }
 
+  Future<void> _loadEnrollments() async {
+    setState(() => _loadingEnrollments = true);
+    try {
+      final data = await ApiService.get('/registration/my');
+      if (data is List) {
+        setState(() {
+          _enrollments = List<Map<String, dynamic>>.from(data.map((e) => {
+            'courseName': e['course']?['courseName'] ?? 'Unknown',
+            'courseId': e['course']?['courseId'] ?? '',
+            'status': e['status'] ?? '',
+          }));
+          _loadingEnrollments = false;
+        });
+      } else {
+        setState(() { _enrollments = []; _loadingEnrollments = false; });
+      }
+    } catch (e) {
+      setState(() { _enrollments = []; _loadingEnrollments = false; });
+    }
+  }
+
   void _showRegisteredSubjectsPopup(BuildContext context, bool isDark) {
+    _loadEnrollments();
     showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? SAMsTheme.cardDark : SAMsTheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('MY REGISTERED SUBJECTS', style: TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: SAMsTheme.primary)),
-              const SizedBox(height: 16),
-              // Replace these hardcoded lines with your list logic
-              _buildItemizedLine('Software Engineering Project', 'BCS3133', Theme.of(context).colorScheme.onSurface),
-              _buildItemizedLine('Mobile App Development', 'BCS3233', Theme.of(context).colorScheme.onSurface),
-              const SizedBox(height: 20),
-            ],
-          ),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('MY REGISTERED SUBJECTS', style: TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: SAMsTheme.primary)),
+                  const SizedBox(height: 16),
+                  if (_loadingEnrollments)
+                    Center(child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: CircularProgressIndicator(color: SAMsTheme.primary, strokeWidth: 2),
+                    ))
+                  else if (_enrollments.isEmpty)
+                    Center(child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Text('No registered subjects found.', style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withAlpha(150))),
+                    ))
+                  else
+                    ..._enrollments.map((e) => _buildItemizedLine(
+                      e['courseName'] ?? 'Unknown',
+                      e['courseId'] ?? '',
+                      Theme.of(context).colorScheme.onSurface,
+                    )),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
         );
       },
     );

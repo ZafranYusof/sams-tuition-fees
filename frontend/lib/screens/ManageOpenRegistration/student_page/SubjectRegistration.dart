@@ -49,6 +49,7 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
       if (courseData is List) {
         setState(() {
           _allCourses = List<Map<String, dynamic>>.from(courseData.map((c) => {
+            '_id': c['_id'] ?? '',
             'code': c['courseId'] ?? c['code'] ?? '',
             'name': c['courseName'] ?? c['name'] ?? '',
             'credits': c['creditHours'] ?? c['credits'] ?? 0,
@@ -269,7 +270,7 @@ class _SubjectRegistrationState extends State<SubjectRegistration> {
                             HapticFeedback.mediumImpact();
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => RegistrationResult(selectedCodes: _selectedCodes)),
+                              MaterialPageRoute(builder: (_) => RegistrationResult(selectedCourses: _allCourses.where((c) => _selectedCodes.contains(c['code'])).toList())),
                             );
                           },
                           child: Center(

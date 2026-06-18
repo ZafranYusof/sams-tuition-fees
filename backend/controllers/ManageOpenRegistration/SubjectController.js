@@ -63,7 +63,7 @@ class SubjectController {
 
       if (courseName) course.courseName = courseName;
       if (creditHours) course.creditHours = creditHours;
-      if (capacity) course.capacity = capacity;
+      if (capacity !== undefined && capacity !== null) course.capacity = capacity;
 
       await course.save();
       res.json({ message: 'Subject updated', course });

@@ -167,11 +167,13 @@ class _ReviewClaimScreenState extends State<ReviewClaimScreen> {
                               ? (student['studentId'] ?? '-')
                               : '-';
 
-                          // Activity info (populated via registration)
+                          // Activity info (populated via activity field or registration)
                           final registration = claim['registration'];
-                          final activity = registration is Map
+                          final regActivity = registration is Map
                               ? registration['activity']
                               : null;
+                          final directActivity = claim['activity'];
+                          final activity = regActivity ?? directActivity;
                           final activityName = activity is Map
                               ? (activity['name'] ?? '-')
                               : '-';

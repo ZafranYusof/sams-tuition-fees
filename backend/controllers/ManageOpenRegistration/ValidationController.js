@@ -24,10 +24,14 @@ class ValidationController {
         return { valid: false, message: `Credit limit exceeded. Current: ${totalCredits}, Adding: ${course.creditHours}, Max: 20` };
       }
 
-      // Check seat availability
+      // Check seat availability (scoped to active session)
+      const RegistrationSession = require('../../models/ManageOpenRegistration/RegistrationSession');
+      const activeSession = await RegistrationSession.findOne({ status: 'open' }).sort({ createdAt: -1 });
+      const sessionFilter = activeSession ? { session: activeSession._id } : {};
       const enrolledCount = await Enrollment.countDocuments({
         course: courseId,
-        status: 'active'
+        status: 'active',
+        ...sessionFilter
       });
 
       const capacity = course.capacity || 30;

@@ -1,0 +1,15 @@
+const mongoose = require('mongoose');
+
+const curriculumActivitySchema = new mongoose.Schema({
+  activityId: { type: String, unique: true, required: true },
+  activityName: { type: String, required: true },
+  activityCategory: { type: String, enum: ['sports', 'cultural', 'academic', 'community', 'leadership', 'other'], required: true },
+  activityDate: { type: Date, required: true },
+  activityLocation: { type: String },
+  creditHours: { type: Number, default: 0 },
+  availableSlots: { type: Number, default: 0 },
+  activityStatus: { type: String, enum: ['upcoming', 'ongoing', 'completed', 'cancelled'], default: 'upcoming' },
+  createdAt: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('CurriculumActivity', curriculumActivitySchema);

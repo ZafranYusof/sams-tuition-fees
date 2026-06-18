@@ -56,8 +56,8 @@ class _SessionManagementState extends State<SessionManagement> {
     try {
       await ApiService.post('/registrar/session', {
         'sessionName': 'Registration Session',
-        'startDate': startDate!.toIso8601String(),
-        'endDate': endDate!.toIso8601String(),
+        'startDate': DateTime(startDate!.year, startDate!.month, startDate!.day, startTime!.hour, startTime!.minute).toIso8601String(),
+        'endDate': DateTime(endDate!.year, endDate!.month, endDate!.day, endTime!.hour, endTime!.minute).toIso8601String(),
       });
       if (mounted) {
         AppToast.success(context, 'Session created');

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const activityRegistrationSchema = new mongoose.Schema({
   student: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
-  activity: { type: mongoose.Schema.Types.ObjectId, ref: 'CurriculumActivity', required: true },
+  activity: { type: mongoose.Schema.Types.ObjectId, ref: 'Activity', required: true },
   registeredAt: { type: Date, default: Date.now },
   status: { type: String, enum: ['registered', 'attended', 'cancelled'], default: 'registered' }
 });

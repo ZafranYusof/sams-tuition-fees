@@ -1,3 +1,4 @@
+// LEGACY: This controller is not imported after route consolidation. Kept for reference only.
 const CurriculumActivity = require('../models/ManageCurriculumActivity/CurriculumActivity');
 const Activity = require('../models/ManageCurriculumActivity/Activity');
 const ActivityRegistration = require('../models/ManageCurriculumActivity/ActivityRegistration');

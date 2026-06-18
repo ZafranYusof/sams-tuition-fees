@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/glass_card.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
@@ -32,11 +33,38 @@ class ActivityDetailScreen extends ConsumerStatefulWidget {
 class _ActivityDetailScreenState extends ConsumerState<ActivityDetailScreen> {
   bool isRegistering = false;
   bool alreadyJoined = false;
+  bool isCheckingStatus = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAlreadyJoined();
+  }
+
+  Future<void> _checkAlreadyJoined() async {
+    try {
+      final data = await ApiService.get('/curriculum/${widget.activityId}');
+      final List<dynamic> participants =
+          data is Map ? (data['participants'] ?? []) : [];
+      final currentUser = ref.read(authProvider).user;
+      final currentUserId = currentUser?['_id'] ?? currentUser?['id'] ?? '';
+
+      final found = participants.any((p) {
+        if (p is Map) return p['_id'] == currentUserId;
+        return p.toString() == currentUserId;
+      });
+
+      if (mounted) setState(() => alreadyJoined = found);
+    } catch (_) {
+      // ignore — user can still try to register
+    } finally {
+      if (mounted) setState(() => isCheckingStatus = false);
+    }
+  }
 
   Future<void> _register() async {
     setState(() => isRegistering = true);
     try {
-      // POST /api/curriculum/:id/join — adds student to participants in DB
       await ApiService.post('/curriculum/${widget.activityId}/join', {});
 
       if (mounted) {
@@ -123,12 +151,12 @@ class _ActivityDetailScreenState extends ConsumerState<ActivityDetailScreen> {
                   foregroundColor: SAMsTheme.ink,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                // Disable button if already joined or currently loading
-                onPressed: alreadyJoined || isRegistering ? null : _register,
-                // Show loading spinner inside button while calling API
+                onPressed: alreadyJoined || isRegistering || isCheckingStatus
+                    ? null
+                    : _register,
               ),
             ),
-            if (isRegistering) ...[
+            if (isRegistering || isCheckingStatus) ...[
               const SizedBox(height: 12),
               const Center(child: CircularProgressIndicator()),
             ],

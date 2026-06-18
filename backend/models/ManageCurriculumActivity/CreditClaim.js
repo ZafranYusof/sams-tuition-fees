@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const creditClaimSchema = new mongoose.Schema({
-  registration: { type: mongoose.Schema.Types.ObjectId, ref: 'ActivityRegistration', required: true },
+  registration: { type: mongoose.Schema.Types.ObjectId, ref: 'ActivityRegistration' },
+  activity: { type: mongoose.Schema.Types.ObjectId, ref: 'Activity' },
   student: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
   paStaff: { type: mongoose.Schema.Types.ObjectId, ref: 'PusatAdab' },
   supportingClaim: { type: String },

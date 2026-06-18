@@ -7,9 +7,9 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'RegistrationConfirmation.dart';
 
 class RegistrationResult extends StatefulWidget {
-  final List<String> selectedCodes;
+  final List<Map<String, dynamic>> selectedCourses;
 
-  const RegistrationResult({super.key, required this.selectedCodes});
+  const RegistrationResult({super.key, required this.selectedCourses});
 
   @override
   State<RegistrationResult> createState() => _RegistrationResultState();
@@ -21,10 +21,10 @@ class _RegistrationResultState extends State<RegistrationResult> {
   Future<void> _confirmRegistration() async {
     setState(() => _submitting = true);
     try {
-      // Register each course via API
-      for (final code in widget.selectedCodes) {
-        await ApiService.post('/registration/register', {
-          'courseId': code,
+      // Register each course via API using _id
+      for (final course in widget.selectedCourses) {
+        await ApiService.post('/registration/enroll', {
+          'courseId': course['_id'],
           'semester': 1,
           'academicYear': '2025/2026',
         });
@@ -32,7 +32,7 @@ class _RegistrationResultState extends State<RegistrationResult> {
       if (mounted) {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => RegistrationConfirmation(codes: widget.selectedCodes)),
+          MaterialPageRoute(builder: (_) => RegistrationConfirmation(codes: widget.selectedCourses.map((c) => c['code'] as String).toList())),
         );
       }
     } catch (e) {
@@ -79,7 +79,7 @@ class _RegistrationResultState extends State<RegistrationResult> {
               children: [
                 Text('Confirm Your\nSubjects.', style: TextStyle(fontFamily: 'Inter', fontSize: 28, fontWeight: FontWeight.w400, height: 1.15, color: t.colorScheme.onSurface)),
                 const SizedBox(height: 8),
-                Text('${widget.selectedCodes.length} subject(s) selected for registration.', style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: muted)),
+                Text('${widget.selectedCourses.length} subject(s) selected for registration.', style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: muted)),
               ],
             ),
           ),
@@ -88,7 +88,7 @@ class _RegistrationResultState extends State<RegistrationResult> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              itemCount: widget.selectedCodes.length,
+              itemCount: widget.selectedCourses.length,
               itemBuilder: (ctx, i) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: GlassCard(
@@ -107,7 +107,13 @@ class _RegistrationResultState extends State<RegistrationResult> {
                       ),
                       const SizedBox(width: 14),
                       Expanded(
-                        child: Text(widget.selectedCodes[i], style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w500, color: t.colorScheme.onSurface)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(widget.selectedCourses[i]['code'] ?? '', style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w500, color: t.colorScheme.onSurface)),
+                            Text(widget.selectedCourses[i]['name'] ?? '', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: muted)),
+                          ],
+                        ),
                       ),
                       Icon(Iconsax.tick_circle_copy, color: SAMsTheme.success, size: 18),
                     ],

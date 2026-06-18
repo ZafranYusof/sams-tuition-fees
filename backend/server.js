@@ -10,7 +10,7 @@ const paymentsRoutes = require('./routes/payments');
 const notificationsRoutes = require('./routes/notifications');
 const paymentGatewayRoutes = require('./routes/payment-gateway');
 const registrationRoutes = require('./routes/registration');
-const activitiesRoutes = require('./routes/activities');
+// activities route removed — consolidated into curriculum.js
 const attendanceRoutes = require('./routes/attendance');
 const sessionsRoutes = require('./routes/sessions');
 const campusRoutes = require('./routes/campus');
@@ -42,7 +42,7 @@ app.use('/api/payments', paymentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/payment', paymentGatewayRoutes);
 app.use('/api/registration', registrationRoutes);
-app.use('/api/activities', activitiesRoutes);
+// /api/activities removed — use /api/curriculum instead
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/campus', campusRoutes);

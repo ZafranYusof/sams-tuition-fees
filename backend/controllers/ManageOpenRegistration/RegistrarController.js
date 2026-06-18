@@ -78,7 +78,7 @@ class RegistrarController {
         courses: courseIds || [],
         status,
         createdBy: req.user.id,
-        creatorModel: req.user.role === 'admin' ? 'FacultyRegistrar' : 'FacultyRegistrar'
+        creatorModel: 'FacultyRegistrar'
       });
 
       await session.save();
@@ -97,7 +97,7 @@ class RegistrarController {
 
       const now = new Date();
       const session = await RegistrationSession.findOne({
-        status: { $in: ['open', 'scheduled'] },
+        status: 'open',
         startDate: { $lte: now },
         endDate: { $gte: now }
       }).sort({ createdAt: -1 });

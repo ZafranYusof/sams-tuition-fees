@@ -1,4 +1,4 @@
-const Session = require('../../models/ManageOpenRegistration/Session');
+const RegistrationSession = require('../../models/ManageOpenRegistration/RegistrationSession');
 
 class SessionController {
   // Create new registration session
@@ -10,7 +10,7 @@ class SessionController {
 
       const { sessionName, startDate, endDate, capacity } = req.body;
       
-      const session = new Session({
+      const session = new RegistrationSession({
         sessionId: `SES-${Date.now()}`,
         sessionName,
         startDate,
@@ -34,7 +34,7 @@ class SessionController {
       }
 
       const { sessionId } = req.params;
-      const session = await Session.findById(sessionId);
+      const session = await RegistrationSession.findById(sessionId);
       
       if (!session) {
         return res.status(404).json({ message: 'Session not found' });
@@ -58,7 +58,7 @@ class SessionController {
       }
 
       const { sessionId } = req.params;
-      const session = await Session.findById(sessionId);
+      const session = await RegistrationSession.findById(sessionId);
       
       if (!session) {
         return res.status(404).json({ message: 'Session not found' });
@@ -77,7 +77,7 @@ class SessionController {
   // Get all sessions
   static async getSessions(req, res) {
     try {
-      const sessions = await Session.find().sort({ createdAt: -1 });
+      const sessions = await RegistrationSession.find().sort({ createdAt: -1 });
       res.json(sessions);
     } catch (err) {
       res.status(500).json({ message: err.message });
