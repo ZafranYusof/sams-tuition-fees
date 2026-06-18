@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
+import '../../../widgets/glass_card.dart';
 
 import '../../../config/theme.dart';
 import '../../../services/api_service.dart';
@@ -176,8 +178,8 @@ class _ManageActivityScreenState extends State<ManageActivityScreen> {
                             } catch (_) {}
                           }
 
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
+                          return GlassCard(
+                                                      margin: const EdgeInsets.only(bottom: 12),
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Column(
@@ -224,12 +226,12 @@ class _ManageActivityScreenState extends State<ManageActivityScreen> {
 
                                   const SizedBox(height: 10),
 
-                                  _row(Icons.category, category),
-                                  _row(Icons.location_on, venue),
-                                  _row(Icons.calendar_today, dateStr),
-                                  _row(Icons.workspace_premium,
+                                  _row(Iconsax.category, category),
+                                  _row(Iconsax.location, venue),
+                                  _row(Iconsax.calendar_1, dateStr),
+                                  _row(Iconsax.medal_star,
                                       '$points credit points'),
-                                  _row(Icons.people,
+                                  _row(Iconsax.people,
                                       '$capacity slots'),
 
                                   const SizedBox(height: 14),
@@ -240,8 +242,7 @@ class _ManageActivityScreenState extends State<ManageActivityScreen> {
                                         child: OutlinedButton.icon(
                                           onPressed: () =>
                                               _showForm(existing: a),
-                                          icon: const Icon(Icons.edit,
-                                              size: 16),
+                                          icon: const Icon(Iconsax.edit, size: 16),
                                           label: const Text('Edit'),
                                         ),
                                       ),
@@ -250,9 +251,7 @@ class _ManageActivityScreenState extends State<ManageActivityScreen> {
                                         child: OutlinedButton.icon(
                                           onPressed: () =>
                                               _confirmDelete(id, name),
-                                          icon: const Icon(Icons.delete,
-                                              size: 16,
-                                              color: SAMsTheme.error),
+                                          icon: const Icon(Iconsax.trash, size: 16, color: SAMsTheme.error),
                                           label: const Text('Delete',
                                               style: TextStyle(
                                                   color: SAMsTheme.error)),
