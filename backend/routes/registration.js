@@ -113,7 +113,11 @@ router.post('/enroll', auth, async (req, res) => {
 
     res.status(201).json({ message: 'Enrolled successfully', enrollment });
   } catch (err) {
-    if (err.code === 11000) return res.status(400).json({ message: 'Already enrolled' });
+    if (err.code === 11000) {
+      console.error('DUPLICATE KEY on enroll:', JSON.stringify(err.keyValue || err.message));
+      return res.status(400).json({ message: 'Already enrolled' });
+    }
+    console.error('Enroll error:', err.message);
     res.status(500).json({ message: err.message });
   }
 });

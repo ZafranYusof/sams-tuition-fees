@@ -32,21 +32,37 @@ router.post('/', async (req, res) => {
     }
 
     // Drop stale enrollment index (student_1_course_1 without session)
+    // Drop ALL stale enrollment indexes and recreate cleanly
     try {
       const enrollmentsCol = mongoose.connection.db.collection("enrollments");
       const indexes = await enrollmentsCol.indexes();
-      const hasOld = indexes.some(i => i.name === "student_1_course_1");
-      if (hasOld) {
-        await enrollmentsCol.dropIndex("student_1_course_1");
-        results.push("Dropped stale student_1_course_1 enrollment index");
-      } else {
-        results.push("student_1_course_1 index already gone");
+      for (const idx of indexes) {
+        if (idx.name !== '_id') {
+          try { await enrollmentsCol.dropIndex(idx.name); results.push(`Dropped index: ${idx.name}`); } catch(e) { results.push(`Index ${idx.name}: ${e.message}`); }
+        }
       }
-      // Ensure new index exists
+      // Re-create the correct unique index
       await enrollmentsCol.createIndex({ student: 1, course: 1, session: 1 }, { unique: true });
-      results.push("Ensured student_1_course_1_session_1 index");
-    } catch (e) {
-      results.push("Enrollment index: " + e.message);
+      results.push("Re-created student_1_course_1_session_1 unique index");
+
+      // Also drop any duplicate enrollment documents (same student+course+session, keep latest)
+      const allEnrollments = await enrollmentsCol.find({}).toArray();
+      const seen = {};
+      const duplicates = [];
+      for (const e of allEnrollments) {
+        const key = `${e.student}_${e.course}_${e.session}`;
+        if (seen[key]) {
+          duplicates.push(e._id);
+        } else {
+          seen[key] = e._id;
+        }
+      }
+      if (duplicates.length > 0) {
+        await enrollmentsCol.deleteMany({ _id: { $in: duplicates } });
+        results.push(`Removed ${duplicates.length} duplicate enrollment(s)`);
+      }
+    } catch(e) {
+      results.push("Enrollment cleanup: " + e.message);
     }
 
     // Drop ALL non-system enrollment records to start clean
