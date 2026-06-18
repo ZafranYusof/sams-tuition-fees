@@ -152,9 +152,18 @@ router.post('/', async (req, res) => {
       results.push('Treasury already exists');
     }
 
-    // 6. Seed fees for CB23109 (only if none exist — don't delete existing paid fees)
+    // 6. Seed fees for CB23109
+    const Payment = require('../models/ManageTuitionFees/Payment');
     const student = await Student.findOne({ studentId: 'CB23109' });
     if (student) {
+      const resetFees = req.query.resetFees === 'true';
+      if (resetFees) {
+        // Delete ALL fees and payments for this student
+        const deletedFees = await Fee.deleteMany({ student: student._id });
+        const deletedPayments = await Payment.deleteMany({ student: student._id });
+        results.push(`Reset: deleted ${deletedFees.deletedCount} fees + ${deletedPayments.deletedCount} payments`);
+      }
+
       const existingFees = await Fee.find({ student: student._id });
       if (existingFees.length === 0) {
         const fees = await Fee.insertMany([
