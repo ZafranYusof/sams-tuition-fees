@@ -493,3 +493,28 @@ router.get('/card/config', (req, res) => {
 });
 
 module.exports = router;
+
+// ADMIN: Reset all fees to unpaid (for testing)
+router.post('/reset-fees', auth, async (req, res) => {
+  try {
+    const Fee = require('../models/ManageTuitionFees/Fee');
+    const Payment = require('../models/ManageTuitionFees/Payment');
+    const studentId = req.user.id;
+    
+    // Reset all fees for this student
+    const feeResult = await Fee.updateMany(
+      { student: studentId },
+      { $set: { paidAmount: 0, feeStatus: 'unpaid' } }
+    );
+    
+    // Delete all payments for this student
+    const payResult = await Payment.deleteMany({ student: studentId });
+    
+    res.json({
+      feesReset: feeResult.modifiedCount,
+      paymentsDeleted: payResult.deletedCount
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
