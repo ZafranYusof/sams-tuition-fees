@@ -19,32 +19,53 @@ class _RegistrationResultState extends State<RegistrationResult> {
   bool _submitting = false;
 
   Future<void> _confirmRegistration() async {
-    setState(() => _submitting = true);
-    try {
-      // Register each course via API using _id
-      for (final course in widget.selectedCourses) {
-        await ApiService.post('/registration/enroll', {
-          'courseId': course['_id'],
-          'semester': 1,
-          'academicYear': '2025/2026',
-        });
+      setState(() => _submitting = true);
+      final List<String> succeeded = [];
+      final List<String> skipped = [];
+      final List<String> failed = [];
+      try {
+        for (final course in widget.selectedCourses) {
+          try {
+            await ApiService.post('/registration/enroll', {
+              'courseId': course['_id'],
+              'semester': 1,
+              'academicYear': '2025/2026',
+            });
+            succeeded.add(course['code'] as String);
+          } catch (e) {
+            final msg = e.toString().replaceAll('Exception: ', '');
+            if (msg.toLowerCase().contains('already enrolled')) {
+              skipped.add(course['code'] as String);
+            } else {
+              failed.add(course['code'] as String);
+            }
+          }
+        }
+        if (mounted) {
+          if (failed.isEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => RegistrationConfirmation(
+                codes: [...succeeded, ...skipped],
+                skipped: skipped,
+              )),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed: ${failed.join(", ")}', style: TextStyle(fontFamily: 'Inter')), backgroundColor: SAMsTheme.error),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Registration failed. Please try again.', style: TextStyle(fontFamily: 'Inter')), backgroundColor: SAMsTheme.error),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _submitting = false);
       }
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => RegistrationConfirmation(codes: widget.selectedCourses.map((c) => c['code'] as String).toList())),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registration failed. Please try again.', style: TextStyle(fontFamily: 'Inter')), backgroundColor: SAMsTheme.error),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _submitting = false);
     }
-  }
 
   @override
   Widget build(BuildContext context) {

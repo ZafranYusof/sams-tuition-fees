@@ -5,7 +5,8 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 class RegistrationConfirmation extends StatelessWidget {
   final List<String> codes;
-  const RegistrationConfirmation({super.key, required this.codes});
+    final List<String> skipped;
+    const RegistrationConfirmation({super.key, required this.codes, this.skipped = const []});
 
   @override
   Widget build(BuildContext context) {
